@@ -15,11 +15,17 @@ const NavBar: React.FC = () => {
   const pathName = usePathname();
   return (
     <Navbar bg="light" expand="lg">
-      <Container>
-        <Navbar.Brand href="/">Next.js Application Template</Navbar.Brand>
+      <Container fluid className="px-5">
+        <Navbar.Brand href="/">Manoa Menu</Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
-          <Nav className="me-auto justify-content-start">
+          <Nav className="me-auto justify-content-start px-2">
+            <Nav.Link id="menu-nav" className="mx-2" href="/menu" key="menu" active={pathName === '/menu'}>
+              Menu
+            </Nav.Link>
+            <Nav.Link id="campus-cravings-nav" className="mx-2" href="/favs" key="favs" active={pathName === '/favs'}>
+              Campus Cravings
+            </Nav.Link>
             {currentUser
               ? [
                   <Nav.Link id="add-stuff-nav" href="/add" key="add" active={pathName === '/add'}>
