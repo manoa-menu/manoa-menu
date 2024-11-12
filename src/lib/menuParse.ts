@@ -1,5 +1,5 @@
-const fs = require('fs');
-const pdf = require('pdf-parse');
+import fs from 'fs';
+import pdf from 'pdf-parse';
 
 interface PDFData {
   numpages: number;
