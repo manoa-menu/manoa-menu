@@ -12,7 +12,7 @@ const Page = () => {
 
   const fetchMenu = async () => {
     try {
-      const response = await fetch('/api/parseCampusCenterMenu?fileName=menu.pdf');
+      const response = await fetch('/api/cc-menu?fileName=menu.pdf');
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
