@@ -18,7 +18,7 @@ interface DayMenu {
 }
 
 const parseMenu = (fileName: string): DayMenu[] => {
-  const dataBuffer = fs.readFileSync('../public/menus/cc.pdf');
+  const dataBuffer = fs.readFileSync(`../public/menus/cc-menus/${fileName}.pdf`);
 
   const weeklyMenu: DayMenu[] = [];
 
@@ -102,3 +102,5 @@ const parseMenu = (fileName: string): DayMenu[] => {
 
   return weeklyMenu;
 };
+
+export default parseMenu;
