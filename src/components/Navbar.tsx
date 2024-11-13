@@ -28,11 +28,8 @@ const NavBar: React.FC = () => {
             </Nav.Link>
             {currentUser
               ? [
-                  <Nav.Link id="add-stuff-nav" href="/add" key="add" active={pathName === '/add'}>
-                    Add Stuff
-                  </Nav.Link>,
-                  <Nav.Link id="list-stuff-nav" href="/list" key="list" active={pathName === '/list'}>
-                    List Stuff
+                  <Nav.Link id="dashboard" href="/dashboard" key="dashboard" active={pathName === '/dashboard'}>
+                    Dashboard
                   </Nav.Link>,
                 ]
               : ''}
