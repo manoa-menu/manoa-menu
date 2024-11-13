@@ -11,7 +11,7 @@ interface DayMenu {
 }
 
 const parseCampusCenterMenu = async (fileName: string): Promise<DayMenu[]> => {
-  const filePath = path.join(process.cwd(), 'public', 'menus', 'cc-menus', `${fileName}.pdf`);
+  const filePath = path.join(process.cwd(), 'public', 'cc-menus', `${fileName}.pdf`);
   const dataBuffer = fs.readFileSync(filePath);
   const weeklyMenu: DayMenu[] = [];
   const weekdays = ['Mon \n', 'Tue \n', 'Wed \n', 'Thurs \n', 'Fri \n', 'Thu\nrs\n'];
