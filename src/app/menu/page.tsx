@@ -1,15 +1,21 @@
 /* eslint-disable react/jsx-indent, @typescript-eslint/indent */
 
-'use client';
-
 import React from 'react';
 import { Container } from 'react-bootstrap';
+import '@/styles/Menu.css';
 
-const page = () => (
-  <Container className="my-5">
-    <h1>Menu</h1>
-    <p>Menu page</p>
-  </Container>
-);
+import parseCampusCenterMenu from '@/lib/menuParse';
+import MenuList from '@/components/MenuList';
 
-export default page;
+const Page = async () => {
+  const menu = await parseCampusCenterMenu('menu2');
+
+  return (
+    <Container fluid className="my-5 menu-container">
+      <h1>Menu</h1>
+      <MenuList menu={menu} />
+    </Container>
+  );
+};
+
+export default Page;
