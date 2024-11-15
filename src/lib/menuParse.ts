@@ -17,8 +17,8 @@ interface DayMenu {
   specialMessage: string;
 }
 
-const parseCampusCenterMenu = (fileName: string): DayMenu[] => {
-  const dataBuffer = fs.readFileSync(`../public/menus/cc-menus/${fileName}.pdf`);
+export default async function (fileName: string): Promise<DayMenu[]> {
+  const dataBuffer = fs.readFileSync(`./public/cc-menus/${fileName}.pdf`);
 
   const weeklyMenu: DayMenu[] = [];
 
@@ -101,6 +101,4 @@ const parseCampusCenterMenu = (fileName: string): DayMenu[] => {
   });
 
   return weeklyMenu;
-};
-
-export default parseCampusCenterMenu;
+}

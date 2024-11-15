@@ -1,6 +1,6 @@
 var fs = require('fs');
 var pdf = require('pdf-parse');
-var dataBuffer = fs.readFileSync('../public/menus/cc.pdf');
+var dataBuffer = fs.readFileSync('./public/cc-menus/menu.pdf');
 var weeklyMenu = [];
 var weekdays = ['Mon \n', 'Tue \n', 'Wed \n', 'Thurs \n', 'Fri \n', 'Thu\nrs\n'];
 var messageArr = [];

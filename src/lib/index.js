@@ -1,31 +1,21 @@
-const fs = require('fs');
-const pdf = require('pdf-parse');
+import fs from 'fs';
+import pdf from 'pdf-parse';
 
-interface PDFData {
-  numpages: number;
-  numrender: number;
-  info: any;
-  metadata: any;
-  version: string;
-  text: string;
-}
+// const parseCampusCenterMenu = (fileName) => {
+const parseCampusCenterMenu = () => {
+  if (!fs.existsSync('./public/cc-menus/menu.pdf')) {
+    console.error('File not found: ./public/cc-menus/menu.pdf');
+    return [];
+  }
 
-interface DayMenu {
-  name: string;
-  plateLunch: string[];
-  grabAndGo: string[];
-  specialMessage: string;
-}
+  const dataBuffer = fs.readFileSync('./public/menus/cc-menus/menu.pdf');
 
-const parseCampusCenterMenu = (fileName: string): DayMenu[] => {
-  const dataBuffer = fs.readFileSync(`./public/menus/cc-menus/${fileName}.pdf`);
-
-  const weeklyMenu: DayMenu[] = [];
+  const weeklyMenu = [];
 
   const weekdays = ['Mon \n', 'Tue \n', 'Wed \n', 'Thurs \n', 'Fri \n', 'Thu\nrs\n'];
-  const messageArr: string[] = [];
+  const messageArr = [];
 
-  pdf(dataBuffer).then(function (data: PDFData) {
+  pdf(dataBuffer).then(function (data) {
     const parsedText = data.text;
     // Create a regular expression to match any of the weekdays
     const regex = new RegExp(weekdays.join('|'), 'g');
@@ -36,7 +26,7 @@ const parseCampusCenterMenu = (fileName: string): DayMenu[] => {
     weeklyMenuPT.forEach((day, index) => {
       const dayOfWeek = weekdays[index].trim();
 
-      const dayObject: DayMenu = {
+      const dayObject = {
         name: dayOfWeek,
         plateLunch: [],
         grabAndGo: [],

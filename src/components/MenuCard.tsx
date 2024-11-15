@@ -16,7 +16,7 @@ const MenuCard: React.FC<MenuCardProps> = ({ name, plateLunch, grabAndGo, messag
     <Card>
       <Card.Body>
         <Card.Title>{name}</Card.Title>
-        <Card.Text>
+        <div>
           <h5>Plate Lunch</h5>
           <ul>
             {plateLunch.map((item) => (
@@ -30,7 +30,7 @@ const MenuCard: React.FC<MenuCardProps> = ({ name, plateLunch, grabAndGo, messag
             ))}
           </ul>
           <p>{message}</p>
-        </Card.Text>
+        </div>
       </Card.Body>
     </Card>
   );
