@@ -34,7 +34,26 @@ export default async function (fileName: string): Promise<DayMenu[]> {
     // console.log(weeklyMenuPT);
 
     weeklyMenuPT.forEach((day, index) => {
-      const dayOfWeek = weekdays[index].trim();
+      let dayOfWeek = '';
+      switch (weekdays[index].trim()) {
+        case 'Mon':
+          dayOfWeek = 'Monday';
+          break;
+        case 'Tue':
+          dayOfWeek = 'Tuesday';
+          break;
+        case 'Wed':
+          dayOfWeek = 'Wednesday';
+          break;
+        case 'Thurs':
+          dayOfWeek = 'Thursday';
+          break;
+        case 'Fri':
+          dayOfWeek = 'Friday';
+          break;
+        default:
+          dayOfWeek = '';
+      }
 
       const dayObject: DayMenu = {
         name: dayOfWeek,
