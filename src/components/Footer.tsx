@@ -6,10 +6,14 @@ const Footer = () => (
     <Container>
       <Row>
         <Col className="text-center">
-          <Image src="" alt="Manoa Menu Logo goes here along with other stuff" width="150px" />
+          <hr />
+          <Image src="manoa-menu-logo.jpg" alt="Manoa Menu Logo" width="100px" />
         </Col>
         <Col className="text-center">
-          Made with ♥ by Brendan Kuwabara, Adam Graham, Eric Kim, Dat Truong, and Justin Sumiye
+          <hr />
+          Maintained by
+          <br />
+          Brendan Kuwabara, Adam Graham, Eric Kim, Dat Truong, and Justin Sumiye
           <br />
           University of Hawaii at Manoa
           <br />
@@ -17,7 +21,10 @@ const Footer = () => (
           <br />
           <a href="https://manoa-menu.github.io/">Documentation</a>
         </Col>
-        <Col className="text-center mt-5">
+        <Col className="text-center">
+          <hr />
+          <h5>Here to help</h5>
+          <p>If you run into any issues, were here to help make the experience smoother</p>
           <a href="https://forms.gle/9PpZQAKeNpWkX4NNA">Contact Us</a>
           <br />
         </Col>
