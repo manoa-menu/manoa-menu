@@ -5,7 +5,7 @@ import { Card, Col, Container, Row } from 'react-bootstrap';
 const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const Calendar = () => (
-  <Container>
+  <Container fluid>
     <Row>
       {daysOfWeek.map((day) => (
         <Col>

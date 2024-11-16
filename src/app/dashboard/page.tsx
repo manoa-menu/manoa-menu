@@ -5,8 +5,7 @@ import Calendar from '@/components/Calendar';
 
 const DashboardPage = () => (
   <Container>
-    <Row>
-      <h1>Calendar</h1>
+    <Row className="py-4 my-4">
       <Calendar />
     </Row>
     <Row>
