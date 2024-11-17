@@ -91,12 +91,15 @@ export default async function parseCampusCenterMenu(fileName: string): Promise<D
       // console.log(plateLunchOptions);
       // console.log(grabAndGoOptions);
 
-      const lastGGOption = grabAndGoOptions[grabAndGoOptions.length - 1];
+      let lastGGOption = grabAndGoOptions[grabAndGoOptions.length - 1];
       if (/\n\S/.test(lastGGOption)) {
         const message = lastGGOption.slice(lastGGOption.indexOf('\n') + 1);
         // message = message.replace(/\n/g, '').trim();
         messageArr.push(message);
+
+        lastGGOption = lastGGOption.slice(0, lastGGOption.indexOf('\n'));
       }
+      grabAndGoOptions[grabAndGoOptions.length - 1] = lastGGOption;
 
       plateLunchOptions?.forEach((option) => {
         const formattedOption = option.replace(/\n/g, '').trim();
