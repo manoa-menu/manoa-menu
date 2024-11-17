@@ -17,7 +17,7 @@ interface DayMenu {
   specialMessage: string;
 }
 
-export default async function (fileName: string): Promise<DayMenu[]> {
+export default async function parseCampusCenterMenu(fileName: string): Promise<DayMenu[]> {
   const dataBuffer = fs.readFileSync(`./public/cc-menus/${fileName}.pdf`);
 
   const weeklyMenu: DayMenu[] = [];
@@ -111,7 +111,7 @@ export default async function (fileName: string): Promise<DayMenu[]> {
     });
 
     const holidays = weeklyMenu.filter((day) => day.plateLunch.length === 0 && day.grabAndGo.length === 0);
-    console.log(holidays);
+    // console.log(holidays);
 
     messageArr.forEach((message, index) => {
       holidays[index].specialMessage = message;

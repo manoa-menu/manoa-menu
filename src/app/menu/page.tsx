@@ -1,20 +1,24 @@
 /* eslint-disable react/jsx-indent, @typescript-eslint/indent */
 
 import React from 'react';
-import { Container } from 'react-bootstrap';
 import '@/styles/Menu.css';
 
 import parseCampusCenterMenu from '@/lib/menuParse';
-import MenuList from '@/components/MenuList';
+import MenuCall from '@/components/MenuCall';
+
+interface DayMenu {
+  name: string;
+  plateLunch: string[];
+  grabAndGo: string[];
+  specialMessage: string;
+}
 
 const Page = async () => {
-  const menu = await parseCampusCenterMenu('menu2');
+  const parsedMenu: DayMenu[] = await parseCampusCenterMenu('menu2');
+  console.log('Parsed Menu:', parsedMenu);
 
   return (
-    <Container fluid className="my-5 menu-container">
-      <h1>Menu</h1>
-      <MenuList menu={menu} />
-    </Container>
+    <MenuCall menu={parsedMenu} />
   );
 };
 
