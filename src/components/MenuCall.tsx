@@ -1,8 +1,6 @@
 /* eslint-disable react/jsx-indent, @typescript-eslint/indent */
 
 // 'use client';
-
-import React, { useEffect, useState } from 'react';
 import { Container } from 'react-bootstrap';
 import '@/styles/Menu.css';
 
@@ -17,7 +15,7 @@ interface DayMenu {
   specialMessage: string;
 }
 
-interface MenuListProps {
+interface MenuCallProps {
   menu: DayMenu[];
 }
 
@@ -25,24 +23,8 @@ interface MenuResponse {
   day_menus: DayMenu[];
 }
 
-const MenuCall: React.FC<MenuListProps> = async ({ menu }) => {
-  // const [englishMenu, setEnglishMenu] = useState<DayMenu[]>(menu);
-  // const [translatedMenu, setTranslatedMenu] = useState<DayMenu[]>([]);
-
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     const menuResponse: MenuResponse = await fetchOpenAI(englishMenu);
-  //     const responseDayMenus: DayMenu[] = menuResponse.day_menus;
-  //     console.log('Translated Menu:', responseDayMenus);
-
-  //     setTranslatedMenu(responseDayMenus);
-  //   };
-
-  //   fetchData();
-  // }, [englishMenu]);
-
-  // console.log('Parsed Menu:', translatedMenu);
-
+// eslint-disable-next-line react/prop-types
+const MenuCall: React.FC<MenuCallProps> = async ({ menu }) => {
   const translatedMenu: MenuResponse = await fetchOpenAI(menu);
   const translatedDayMenus: DayMenu[] = translatedMenu.day_menus;
   console.log('Translated Menu:', translatedDayMenus);
