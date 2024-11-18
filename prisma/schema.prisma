@@ -35,3 +35,9 @@ model Menus {
   week_of    DateTime    @default(now())
   menu       Json    @default("[]")
 }
+
+model MenuImages {
+  id        Int      @id @default(autoincrement())
+  name      String
+  url       String
+}
