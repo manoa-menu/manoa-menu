@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { Container, Nav, Navbar, NavDropdown } from 'react-bootstrap';
 import { BoxArrowRight, Lock, PersonFill, PersonPlusFill } from 'react-bootstrap-icons';
+import Image from 'next/image';
 
 const NavBar: React.FC = () => {
   const { data: session } = useSession();
@@ -16,13 +17,28 @@ const NavBar: React.FC = () => {
   return (
     <Navbar bg="light" expand="lg">
       <Container fluid className="px-5">
-        <Navbar.Brand href="/">Manoa Menu</Navbar.Brand>
+          <Navbar.Brand>
+            <Image
+              src="/manoa-menu-logo.jpg"
+              alt="Manoa Menu Logo"
+              width={50}
+              height={50}
+              className="d-inline-block align-top"
+            />
+          </Navbar.Brand>
+
+          <Navbar.Brand className="me-auto justify-content-start px-2" href="/">
+            Manoa Menu
+          </Navbar.Brand>
+
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
+
           <Nav className="me-auto justify-content-start px-2">
             <Nav.Link id="menu-nav" className="mx-2" href="/menu" key="menu" active={pathName === '/menu'}>
               Menu
             </Nav.Link>
+
             <Nav.Link
               id="campus-cravings-nav"
               className="mx-2"
@@ -32,6 +48,7 @@ const NavBar: React.FC = () => {
             >
               Campus Cravings
             </Nav.Link>
+
             <Nav.Link
               id="dasboard-nav"
               className="mx-2"
