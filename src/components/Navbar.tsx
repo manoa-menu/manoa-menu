@@ -32,15 +32,6 @@ const NavBar: React.FC = () => {
             >
               Campus Cravings
             </Nav.Link>
-            <Nav.Link
-              id="dasboard-nav"
-              className="mx-2"
-              href="/dashboard"
-              key="dashboard"
-              active={pathName === '/dashboard'}
-            >
-              Dashboard
-            </Nav.Link>
             {currentUser
               ? [
                   <Nav.Link id="dashboard" href="/dashboard" key="dashboard" active={pathName === '/dashboard'}>
