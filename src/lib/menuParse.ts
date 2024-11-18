@@ -17,7 +17,7 @@ interface DayMenu {
   specialMessage: string;
 }
 
-export default async function (fileName: string): Promise<DayMenu[]> {
+export default async function parseCampusCenterMenu(fileName: string): Promise<DayMenu[]> {
   const dataBuffer = fs.readFileSync(`./public/cc-menus/${fileName}.pdf`);
 
   const weeklyMenu: DayMenu[] = [];
@@ -91,12 +91,15 @@ export default async function (fileName: string): Promise<DayMenu[]> {
       // console.log(plateLunchOptions);
       // console.log(grabAndGoOptions);
 
-      const lastGGOption = grabAndGoOptions[grabAndGoOptions.length - 1];
+      let lastGGOption = grabAndGoOptions[grabAndGoOptions.length - 1];
       if (/\n\S/.test(lastGGOption)) {
         const message = lastGGOption.slice(lastGGOption.indexOf('\n') + 1);
         // message = message.replace(/\n/g, '').trim();
         messageArr.push(message);
+
+        lastGGOption = lastGGOption.slice(0, lastGGOption.indexOf('\n'));
       }
+      grabAndGoOptions[grabAndGoOptions.length - 1] = lastGGOption;
 
       plateLunchOptions?.forEach((option) => {
         const formattedOption = option.replace(/\n/g, '').trim();
@@ -111,7 +114,7 @@ export default async function (fileName: string): Promise<DayMenu[]> {
     });
 
     const holidays = weeklyMenu.filter((day) => day.plateLunch.length === 0 && day.grabAndGo.length === 0);
-    console.log(holidays);
+    // console.log(holidays);
 
     messageArr.forEach((message, index) => {
       holidays[index].specialMessage = message;

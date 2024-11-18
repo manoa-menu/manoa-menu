@@ -39,7 +39,7 @@ const MenuCard: React.FC<MenuCardProps> = ({ name, plateLunch, grabAndGo, messag
         </Table>
         ) : (
         <div className="d-flex justify-content-center text-center">
-          <h1 className="display-3 mt-4">
+          <h1 className="display-4 mt-4">
             <strong>
               {`${message} ${checkHoliday(message)}`}
             </strong>
