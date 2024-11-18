@@ -1,0 +1,148 @@
+.section-container {
+  padding: 80px 20px; 
+  box-shadow: none;
+  margin-bottom: 0;
+  background-color: transparent;
+}
+
+h2 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+h2:hover {
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+p {
+  font-size: 1.125rem;
+  color: #666;
+  line-height: 1.6;
+}
+
+h2 span {
+  font-weight: 700;
+  color: #024731;
+}
+
+#title {
+    color:#024731;
+}
+
+#landing-page-translation,
+#landing-page-currency {
+  padding: 0 300px;
+}
+
+#landing-page-currency h2 {
+  text-align: right;
+}
+
+#landing-page-currency p {
+  text-align: right;
+}
+
+.currency-container {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.scrolling-banner {
+  display: flex;
+  animation: scrollBanner 15s linear infinite;
+  flex-wrap: nowrap; /* Ensure all items stay in a single row */
+  align-items: center;
+}
+
+.currency-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20px;
+  min-width: auto;
+}
+
+.currency-flag {
+  width: 50px;
+  height: auto;
+  object-fit: contain;
+}
+
+h3 {
+  margin-top: 5px;
+  font-size: 1.1rem;
+}
+
+@keyframes scrollBanner {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%); /* Move all flags to the left */
+  }
+}
+
+.currency-container .scrolling-banner {
+  width: calc(100% + 100px); /* Ensure there's extra space for smooth scrolling */
+}
+
+.currency-container .scrolling-banner .currency-item {
+  flex-shrink: 0; /* Prevent items from shrinking */
+  width: auto; /* Prevent flags from resizing */
+}
+
+#get-started {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+#get-started h1 {
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+  color: #024731;
+}
+
+#get-started p {
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.carousel-container {
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto; /* Center the carousel horizontally */
+}
+
+#carouselExampleIndicators .carousel-inner img {
+  width: 100%;
+  height: auto;
+  max-height: 400px;
+}
+
+#carouselExampleIndicators .carousel-item img {
+  object-fit: cover;
+}
+
+@media (max-width: 767px) {
+  #get-started h1 {
+    font-size: 2rem;
+  }
+
+  #get-started p {
+    font-size: 1rem;
+  }
+
+  .carousel-container {
+    margin: 0 20px;
+  }
+
+  #carouselExampleIndicators .carousel-inner img {
+    max-height: 300px;
+  }
+}
