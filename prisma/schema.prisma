@@ -26,20 +26,18 @@ model User {
   id       Int    @id @default(autoincrement())
   email    String @unique
   password String
+  favorites String[] @default([])
   role     Role   @default(USER)
 }
 
-enum Condition {
-  excellent
-  good
-  fair
-  poor
+model Menus {
+  id         Int      @id @default(autoincrement())
+  week_of    DateTime    @default(now())
+  menu       Json    @default("[]")
 }
 
-model Stuff {
-  id        Int       @id @default(autoincrement())
+model MenuImages {
+  id        Int      @id @default(autoincrement())
   name      String
-  quantity  Int
-  condition Condition
-  owner     String
+  url       String
 }
