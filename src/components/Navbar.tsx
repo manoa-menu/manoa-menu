@@ -23,7 +23,13 @@ const NavBar: React.FC = () => {
             <Nav.Link id="menu-nav" className="mx-2" href="/menu" key="menu" active={pathName === '/menu'}>
               Menu
             </Nav.Link>
-            <Nav.Link id="campus-cravings-nav" className="mx-2" href="/favs" key="favs" active={pathName === '/favs'}>
+            <Nav.Link
+              id="campus-cravings-nav"
+              className="mx-2"
+              href="/campus-cravings"
+              key="favs"
+              active={pathName === '/campus-cravings'}
+            >
               Campus Cravings
             </Nav.Link>
             <Nav.Link

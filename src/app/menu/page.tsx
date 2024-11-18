@@ -1,15 +1,25 @@
 /* eslint-disable react/jsx-indent, @typescript-eslint/indent */
 
-'use client';
-
 import React from 'react';
-import { Container } from 'react-bootstrap';
+import '@/styles/Menu.css';
 
-const page = () => (
-  <Container className="my-5">
-    <h1>Menu</h1>
-    <p>Menu page</p>
-  </Container>
-);
+import parseCampusCenterMenu from '@/lib/menuParse';
+import MenuCall from '@/components/MenuCall';
 
-export default page;
+interface DayMenu {
+  name: string;
+  plateLunch: string[];
+  grabAndGo: string[];
+  specialMessage: string;
+}
+
+const Page = async () => {
+  const parsedMenu: DayMenu[] = await parseCampusCenterMenu('menu2');
+  console.log('Parsed Menu:', parsedMenu);
+
+  return (
+    <MenuCall menu={parsedMenu} />
+  );
+};
+
+export default Page;
