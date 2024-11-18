@@ -12,15 +12,3 @@ body {
   display: flex;
   flex-direction: column;
 }
-#landing-page-translation {
-  padding: 0 200px;
-}
-#landing-page-currency {
-  padding: 0 200px;
-}
-#landing-page-currency h2 {
-  text-align: right;
-}
-#landing-page-currency p {
-  text-align: right;
-}
