@@ -12,9 +12,14 @@ interface PDFData {
 
 interface DayMenu {
   name: string;
-  plateLunch: string[];
-  grabAndGo: string[];
+  plateLunch: MenuItem[];
+  grabAndGo: MenuItem[];
   specialMessage: string;
+}
+
+interface MenuItem {
+  name: string;
+  imgURL: string;
 }
 
 export default async function parseCampusCenterMenu(fileName: string): Promise<DayMenu[]> {
@@ -103,11 +108,11 @@ export default async function parseCampusCenterMenu(fileName: string): Promise<D
 
       plateLunchOptions?.forEach((option) => {
         const formattedOption = option.replace(/\n/g, '').trim();
-        dayObject.plateLunch.push(formattedOption);
+        dayObject.plateLunch.push({ name: formattedOption, imgURL: '' });
       });
       grabAndGoOptions?.forEach((option) => {
         const formattedOption = option.replace(/\n/g, '').trim();
-        dayObject.grabAndGo.push(formattedOption);
+        dayObject.grabAndGo.push({ name: formattedOption, imgURL: '' });
       });
 
       weeklyMenu.push(dayObject);
