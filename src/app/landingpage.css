@@ -1,3 +1,11 @@
+body {
+  background-image: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=3872&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+  background-size: cover;
+  background-position: center center;
+  background-attachment: fixed;
+  background-color: #f0f0f0; /* Fallback color */
+}
+
 .section-container {
   padding: 80px 20px; 
   box-shadow: none;
@@ -18,17 +26,17 @@ h2:hover {
 
 p {
   font-size: 1.125rem;
-  color: #666;
+  color: #ffffff;
   line-height: 1.6;
 }
 
 h2 span {
   font-weight: 700;
-  color: #024731;
+  color: #198754;
 }
 
 #title {
-    color:#024731;
+    color:#198754;
 }
 
 #landing-page-translation,
@@ -64,6 +72,7 @@ h2 span {
   justify-content: center;
   margin-right: 20px;
   min-width: auto;
+  color: white;
 }
 
 .currency-flag {
@@ -103,13 +112,13 @@ h3 {
 #get-started h1 {
   font-size: 2.5rem;
   margin-bottom: 20px;
-  color: #024731;
+  color: #198754;
 }
 
 #get-started p {
   font-size: 1.125rem;
   line-height: 1.6;
-  color: #666;
+  color: #ffffff;
   margin-bottom: 20px;
 }
 
@@ -127,6 +136,10 @@ h3 {
 
 #carouselExampleIndicators .carousel-item img {
   object-fit: cover;
+}
+
+#carouselExampleIndicators:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 @media (max-width: 767px) {

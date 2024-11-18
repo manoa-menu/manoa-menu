@@ -15,7 +15,7 @@ const Home = () => (
         </Col>
       </Row>
     </Container>
-    <Container id="landing-page-translation" fluid className="section-container py-5 mb-5">
+    <Container id="landing-page-translation" fluid className="section-container py-5">
       <Row className="align-items-center">
         <Col xs={8} className="d-flex flex-column justify-content-center">
           <h2><span>Choose a language</span></h2>
