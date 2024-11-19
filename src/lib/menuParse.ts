@@ -1,5 +1,6 @@
-import fs from 'fs';
+// import fs from 'fs';
 import pdf from 'pdf-parse';
+import fetch from 'node-fetch';
 
 interface PDFData {
   numpages: number;
@@ -17,8 +18,12 @@ interface DayMenu {
   specialMessage: string;
 }
 
-export default async function parseCampusCenterMenu(fileName: string): Promise<DayMenu[]> {
-  const dataBuffer = fs.readFileSync(`./public/cc-menus/${fileName}.pdf`);
+export default async function parseCampusCenterMenu(fileURL: string): Promise<DayMenu[]> {
+  const response = await fetch(fileURL);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch data from ${fileURL}: ${response.statusText}`);
+  }
+  const dataBuffer = await response.buffer();
 
   const weeklyMenu: DayMenu[] = [];
 
