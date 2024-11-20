@@ -111,78 +111,110 @@ const Home = () => (
           <Col xs={12} className="currency-container">
             <Row className="scrolling-banner">
               <Col xs="auto" className="currency-item">
-                <Image
-                  src="https://cdn.prod.website-files.com/6034c69970fc1de43a4bcbc0/656a0b222e79ee994e012ca7_England.png"
-                  alt="English Flag"
-                  className="currency-flag"
-                />
-                <h3>English</h3>
+                <h3>U.S. dollar</h3>
+                <h3>USD</h3>
               </Col>
               <Col xs="auto" className="currency-item">
-                <Image
-                  src="https://cdn.prod.website-files.com/6034c69970fc1de43a4bcbc0/656a0b259f872fdcb8a7c3af_Spain.png"
-                  alt="Spanish Flag"
-                  className="currency-flag"
-                />
-                <h3>Spanish</h3>
+                <h3>Pound sterling</h3>
+                <h3>GBP</h3>
               </Col>
               <Col xs="auto" className="currency-item">
-                <Image
-                  src="https://cdn.prod.website-files.com/6034c69970fc1de43a4bcbc0/656a0b236291951495107905_France.png"
-                  alt="French Flag"
-                  className="currency-flag"
-                />
-                <h3>French</h3>
+                <h3>Australian dollar</h3>
+                <h3>AUD</h3>
               </Col>
               <Col xs="auto" className="currency-item">
-                <Image
-                  src="https://cdn.prod.website-files.com/6034c69970fc1de43a4bcbc0/656a0b23776b00b1f125bf55_Germany.png"
-                  alt="German Flag"
-                  className="currency-flag"
-                />
-                <h3>German</h3>
+                <h3>Swedish krona</h3>
+                <h3>SEK</h3>
               </Col>
               <Col xs="auto" className="currency-item">
-                <Image
-                  src="https://cdn.prod.website-files.com/6034c69970fc1de43a4bcbc0/656a0b2501d250a3c9d51dc8_Russia.png"
-                  alt="Russian Flag"
-                  className="currency-flag"
-                />
-                <h3>Russian</h3>
+                <h3>Norwegian krone</h3>
+                <h3>NOK</h3>
+              </Col>
+              <Col xs="auto" className="currency-item">
+                <h3>Mexican peso</h3>
+                <h3>MXN</h3>
+              </Col>
+              <Col xs="auto" className="currency-item">
+                <h3>Hungarian forint</h3>
+                <h3>HUF</h3>
+              </Col>
+              <Col xs="auto" className="currency-item">
+                <h3>Euro</h3>
+                <h3>EUR</h3>
+              </Col>
+              <Col xs="auto" className="currency-item">
+                <h3>Canadian dollar</h3>
+                <h3>CAD</h3>
+              </Col>
+              <Col xs="auto" className="currency-item">
+                <h3>Swiss franc</h3>
+                <h3>CHF</h3>
+              </Col>
+              <Col xs="auto" className="currency-item">
+                <h3>Singapore dollar</h3>
+                <h3>SGD</h3>
+              </Col>
+              <Col xs="auto" className="currency-item">
+                <h3>New Zealand dollar</h3>
+                <h3>NZD</h3>
+              </Col>
+              <Col xs="auto" className="currency-item">
+                <h3>Japanese yen</h3>
+                <h3>JPY</h3>
               </Col>
 
               {/* Duplicate the items for infinite scrolling effect, starting from second flag */}
               <Col xs="auto" className="currency-item">
-                <Image
-                  src="https://cdn.prod.website-files.com/6034c69970fc1de43a4bcbc0/656a0b259f872fdcb8a7c3af_Spain.png"
-                  alt="Spanish Flag"
-                  className="currency-flag"
-                />
-                <h3>Spanish</h3>
+                <h3>U.S. dollar</h3>
+                <h3>USD</h3>
               </Col>
               <Col xs="auto" className="currency-item">
-                <Image
-                  src="https://cdn.prod.website-files.com/6034c69970fc1de43a4bcbc0/656a0b236291951495107905_France.png"
-                  alt="French Flag"
-                  className="currency-flag"
-                />
-                <h3>French</h3>
+                <h3>Pound sterling</h3>
+                <h3>GBP</h3>
               </Col>
               <Col xs="auto" className="currency-item">
-                <Image
-                  src="https://cdn.prod.website-files.com/6034c69970fc1de43a4bcbc0/656a0b23776b00b1f125bf55_Germany.png"
-                  alt="German Flag"
-                  className="currency-flag"
-                />
-                <h3>German</h3>
+                <h3>Australian dollar</h3>
+                <h3>AUD</h3>
               </Col>
               <Col xs="auto" className="currency-item">
-                <Image
-                  src="https://cdn.prod.website-files.com/6034c69970fc1de43a4bcbc0/656a0b2501d250a3c9d51dc8_Russia.png"
-                  alt="Russian Flag"
-                  className="currency-flag"
-                />
-                <h3>Russian</h3>
+                <h3>Swedish krona</h3>
+                <h3>SEK</h3>
+              </Col>
+              <Col xs="auto" className="currency-item">
+                <h3>Norwegian krone</h3>
+                <h3>NOK</h3>
+              </Col>
+              <Col xs="auto" className="currency-item">
+                <h3>Mexican peso</h3>
+                <h3>MXN</h3>
+              </Col>
+              <Col xs="auto" className="currency-item">
+                <h3>Hungarian forint</h3>
+                <h3>HUF</h3>
+              </Col>
+              <Col xs="auto" className="currency-item">
+                <h3>Euro</h3>
+                <h3>EUR</h3>
+              </Col>
+              <Col xs="auto" className="currency-item">
+                <h3>Canadian dollar</h3>
+                <h3>CAD</h3>
+              </Col>
+              <Col xs="auto" className="currency-item">
+                <h3>Swiss franc</h3>
+                <h3>CHF</h3>
+              </Col>
+              <Col xs="auto" className="currency-item">
+                <h3>Singapore dollar</h3>
+                <h3>SGD</h3>
+              </Col>
+              <Col xs="auto" className="currency-item">
+                <h3>New Zealand dollar</h3>
+                <h3>NZD</h3>
+              </Col>
+              <Col xs="auto" className="currency-item">
+                <h3>Japanese yen</h3>
+                <h3>JPY</h3>
               </Col>
             </Row>
           </Col>
