@@ -33,7 +33,7 @@ model User {
 model Menus {
   id         Int      @id @default(autoincrement())
   week_of    DateTime    @default(now())
-  location   Location
+  location   Location @default(CAMPUS_CENTER)
   menu       Json    @default("[]")
   language   String   @default("English")
   country    String   @default("USA")
