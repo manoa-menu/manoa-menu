@@ -17,6 +17,24 @@ const DashboardPage = () => (
         label={['Chicken', 'Sandwich']}
       />
       <FoodItem name="Loco Moco" picture="/images/gettyimages-1386914868-612x612.jpg" label={['Beef', 'Rice', 'Egg']} />
+      <FoodItem
+        name="Chicken Sandwich"
+        picture="/images/gettyimages-1442136071-612x612.jpg"
+        label={['Chicken', 'Sandwich']}
+      />
+      <FoodItem name="Loco Moco" picture="/images/gettyimages-1386914868-612x612.jpg" label={['Beef', 'Rice', 'Egg']} />
+      <FoodItem name="Loco Moco" picture="/images/gettyimages-1386914868-612x612.jpg" label={['Beef', 'Rice', 'Egg']} />
+      <FoodItem
+        name="Chicken Sandwich"
+        picture="/images/gettyimages-1442136071-612x612.jpg"
+        label={['Chicken', 'Sandwich']}
+      />
+      <FoodItem name="Loco Moco" picture="/images/gettyimages-1386914868-612x612.jpg" label={['Beef', 'Rice', 'Egg']} />
+      <FoodItem
+        name="Chicken Sandwich"
+        picture="/images/gettyimages-1442136071-612x612.jpg"
+        label={['Chicken', 'Sandwich']}
+      />
     </Row>
   </Container>
 );
