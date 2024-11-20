@@ -17,6 +17,8 @@ const NavBar: React.FC = () => {
   return (
     <Navbar bg="light" expand="lg">
       <Container fluid className="px-5">
+
+        <div className="d-flex align-items-center">
           <Navbar.Brand>
             <Image
               src="/manoa-menu-logo.jpg"
@@ -30,7 +32,9 @@ const NavBar: React.FC = () => {
           <Navbar.Brand className="me-auto justify-content-start px-2" href="/">
             Manoa Menu
           </Navbar.Brand>
+        </div>
 
+      <div className="ms-auto">
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
 
@@ -99,6 +103,7 @@ const NavBar: React.FC = () => {
             )}
           </Nav>
         </Navbar.Collapse>
+      </div>
       </Container>
     </Navbar>
   );
