@@ -1,5 +1,5 @@
 body {
-  background-image: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=3872&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+  background-image: url('https://images.unsplash.com/photo-1624359136353-f60129a367b9?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
   background-size: cover;
   background-position: center center;
   background-attachment: fixed;
@@ -30,6 +30,10 @@ p {
   line-height: 1.6;
 }
 
+.header-description {
+  color: white;
+}
+
 h2 span {
   font-weight: 700;
   color: #198754;
@@ -37,6 +41,13 @@ h2 span {
 
 #title {
     color:#198754;
+}
+
+.title-subheader {
+  text-align: center;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  color:#f5f5f5;
 }
 
 #landing-page-translation,
@@ -53,15 +64,20 @@ h2 span {
 }
 
 .currency-container {
+  font-size: 15px;
+  padding-block: 8px;
   overflow: hidden;
-  position: relative;
-  width: 100%;
+  user-select: none;
+
+  --gap: 20px;
+  display: flex;
+  gap: var(--gap);
 }
 
 .scrolling-banner {
   display: flex;
-  animation: scrollBanner 15s linear infinite;
-  flex-wrap: nowrap; /* Ensure all items stay in a single row */
+  animation: scrollBanner 25s linear infinite;
+  flex-wrap: nowrap;
   align-items: center;
 }
 
@@ -87,21 +103,13 @@ h3 {
 }
 
 @keyframes scrollBanner {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-100%); /* Move all flags to the left */
+  to {
+    transform: translateX(calc(-100% - var(--gap)));
   }
 }
 
-.currency-container .scrolling-banner {
-  width: calc(100% + 100px); /* Ensure there's extra space for smooth scrolling */
-}
-
-.currency-container .scrolling-banner .currency-item {
-  flex-shrink: 0; /* Prevent items from shrinking */
-  width: auto; /* Prevent flags from resizing */
+.currency-container:hover .scrolling-banner {
+  animation-play-state: paused;
 }
 
 #get-started {
