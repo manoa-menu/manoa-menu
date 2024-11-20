@@ -46,8 +46,8 @@ const SignIn = () => {
                       placeholder="Enter your password"
                     />
                   </Form.Group>
-                  <Button type="submit" className="w-100 btn-primary mt-3">
-                    Sign In
+                  <Button type="submit" className="w-100 btn-dark mt-3">
+                    Sign In &#8594;
                   </Button>
                 </Form>
               </Card.Body>
