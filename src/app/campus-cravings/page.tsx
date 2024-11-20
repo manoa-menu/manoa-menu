@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Container, Card, Col, Button } from 'react-bootstrap';
+import { Container, Card, Col, Button, Row, Form } from 'react-bootstrap';
 import { StarFill, Star } from 'react-bootstrap-icons';
 import { useSession } from 'next-auth/react';
 
@@ -19,7 +19,24 @@ const CampusCravings: React.FC = () => {
 
   return (
     <Container className="my-5">
-      <h1 className="p-4">Popular Food Choices at UH Manoa</h1>
+      <Row>
+        <h1>Popular Food Choices</h1>
+        <Container>
+          <Form.Select className="my-2" style={{ width: '150px', border: '2px solid' }}>
+            <option>All</option>
+            <option>Campus Center Food Court</option>
+            <option>Gateway Café</option>
+            <option>Hale Aloha Café</option>
+          </Form.Select>
+          {currentUser
+          && (
+          <Form.Select className="my-2" style={{ width: '150px', border: '2px solid' }}>
+            <option>All Favorites</option>
+            <option>My Favorites</option>
+          </Form.Select>
+          )}
+        </Container>
+      </Row>
       <div className="overflow-auto" style={{ maxHeight: '500px', border: '3px solid', borderRadius: '5px' }}>
         <Col>
           <Card className="my-3">
