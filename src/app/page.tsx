@@ -11,7 +11,9 @@ const Home = () => (
       <Row>
         <Col>
           <h1 className="text-center mt-5"><span>Manoa Menu</span></h1>
-          <h5 className="text-center mt-3 mb-5">Menu Translations for International Students at UH Manoa</h5>
+          <h5 className="title-subheader">
+            <span>Menu Translations for International Students at UH Manoa</span>
+          </h5>
         </Col>
       </Row>
     </Container>
@@ -19,7 +21,7 @@ const Home = () => (
       <Row className="align-items-center">
         <Col xs={8} className="d-flex flex-column justify-content-center">
           <h2><span>Choose a language</span></h2>
-          <p>Translate a menu item from a UH eatery</p>
+          <p className="header-description">Translate a menu item from a UH eatery</p>
         </Col>
         <Col xs={4}>
           <Col xs={12} className="currency-container">
@@ -221,7 +223,7 @@ const Home = () => (
         </Col>
         <Col xs={8} md={6} className="d-flex flex-column justify-content-center ms-auto">
           <h2><span>Pick a currency</span></h2>
-          <p>Have a currency to display alongside the dollar value of an item</p>
+          <p className="header-description">Have a currency to display alongside the dollar value of an item</p>
         </Col>
       </Row>
     </Container>
