@@ -13,14 +13,19 @@ interface MenuResponse {
   day_menus: DayMenu[];
 }
 
+export enum Option {
+  CC = 'CAMPUS_CENTER',
+  GW = 'GATEWAY',
+  HA = 'HALE_ALOHA',
+}
+
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const language = 'Japanese';
-const country = 'Japan';
-
-const prompt = `You will translate all menu items into ${language}. 
+// eslint-disable-next-line max-len
+async function fetchOpenAI(option: Option, weeklyMenu: DayMenu[], language: string, country: string): Promise<MenuResponse> {
+  const prompt = `You will translate all menu items into ${language}. 
   They do not have to be exact, but they should be close enough to be understood by ${language} people.
   In parenthesis provide a brief description of dish contents in ${language}
   for foods that are local to Hawaii.
@@ -30,7 +35,6 @@ const prompt = `You will translate all menu items into ${language}.
   Do not add or create new items that are not on the menu.
   If there is a special message, provide a translation in ${language}.`;
 
-async function fetchOpenAI(weeklyMenu: DayMenu[]): Promise<MenuResponse> {
   const chatCompletion = await client.beta.chat.completions.parse({
     model: 'gpt-4o',
     messages: [

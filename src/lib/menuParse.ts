@@ -1,5 +1,6 @@
-import fs from 'fs';
+// import fs from 'fs';
 import pdf from 'pdf-parse';
+import fetch from 'node-fetch';
 
 interface PDFData {
   numpages: number;
@@ -17,8 +18,12 @@ interface DayMenu {
   specialMessage: string;
 }
 
-export default async function parseCampusCenterMenu(fileName: string): Promise<DayMenu[]> {
-  const dataBuffer = fs.readFileSync(`./public/cc-menus/${fileName}.pdf`);
+export default async function parseCampusCenterMenu(fileURL: string): Promise<DayMenu[]> {
+  const response = await fetch(fileURL);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch data from ${fileURL}: ${response.statusText}`);
+  }
+  const dataBuffer = await response.buffer();
 
   const weeklyMenu: DayMenu[] = [];
 
@@ -83,6 +88,23 @@ export default async function parseCampusCenterMenu(fileName: string): Promise<D
 
         grabAndGoOptions = day.slice(endOfValue);
         grabAndGoOptions = grabAndGoOptions.split('• ').slice(1);
+
+        grabAndGoOptions.forEach(option => {
+          const miniIndex = option.lastIndexOf('Mini');
+          const valueIndex = option.lastIndexOf('Value');
+
+          if (miniIndex !== -1) {
+            grabAndGoOptions.push(option.slice(miniIndex));
+            // eslint-disable-next-line no-param-reassign
+            option = option.slice(0, miniIndex).trim();
+          } else if (valueIndex !== -1) {
+            grabAndGoOptions.push(option.slice(valueIndex));
+            // eslint-disable-next-line no-param-reassign
+            option = option.slice(0, valueIndex).trim();
+          }
+
+          grabAndGoOptions.push(option);
+        });
       } else {
         plateLunchOptions = day.split('•').slice(1, 7);
         grabAndGoOptions = day.split('•').slice(7);
@@ -116,9 +138,11 @@ export default async function parseCampusCenterMenu(fileName: string): Promise<D
     const holidays = weeklyMenu.filter((day) => day.plateLunch.length === 0 && day.grabAndGo.length === 0);
     // console.log(holidays);
 
-    messageArr.forEach((message, index) => {
-      holidays[index].specialMessage = message;
-    });
+    if (holidays.length > 0) {
+      messageArr.forEach((message, index) => {
+        holidays[index].specialMessage = message;
+      });
+    }
     // console.log(weeklyMenu);
   });
 
