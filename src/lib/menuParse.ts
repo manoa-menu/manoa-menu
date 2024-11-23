@@ -121,9 +121,11 @@ export default async function parseCampusCenterMenu(fileURL: string): Promise<Da
     const holidays = weeklyMenu.filter((day) => day.plateLunch.length === 0 && day.grabAndGo.length === 0);
     // console.log(holidays);
 
-    messageArr.forEach((message, index) => {
-      holidays[index].specialMessage = message;
-    });
+    if (holidays.length > 0) {
+      messageArr.forEach((message, index) => {
+        holidays[index].specialMessage = message;
+      });
+    }
     // console.log(weeklyMenu);
   });
 

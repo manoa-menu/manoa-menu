@@ -12,7 +12,7 @@ interface DayMenu {
   specialMessage: string;
 }
 
-export enum Location {
+enum Location {
   CAMPUS_CENTER = 'CAMPUS_CENTER',
   GATEWAY = 'GATEWAY',
   HALE_ALOHA = 'HALE_ALOHA',
@@ -36,47 +36,56 @@ function getCurrentWeek(): Date {
  * @param menuRow, an object with the following properties: email, password.
  */
 export async function insertMenu(menuInfo: DayMenu[], location: Location, language: string, country: string) {
-  const weekOf = getCurrentWeek();
-  const weekMenu = JSON.parse(JSON.stringify(menuInfo));
-  await prisma.menus.create({
-    data: {
-      week_of: weekOf,
-      location,
-      menu: weekMenu,
-      language,
-      country,
-    },
-  });
+  try {
+    const weekOf = getCurrentWeek();
+    const weekMenu = JSON.parse(JSON.stringify(menuInfo));
+    await prisma.menus.create({
+      data: {
+        week_of: weekOf,
+        location,
+        menu: weekMenu,
+        language,
+        country,
+      },
+    });
+  } catch (error) {
+    console.error('Error inserting menu:', error);
+    throw error;
+  }
 }
 
 /**
- * Edits an existing menu in the database.
- * @param id, the ID of the menu to edit.
- * @param menuRow, an object with the updated menu properties.
+ * Edits a menu in the database.
+ * @param id - The ID of the menu to edit.
+ * @param data - The new data for the menu.
+ * @returns the updated menu object.
  */
-export async function editMenu(id: number, menuInfo: DayMenu[], location: Location, language: string, country: string) {
-  const weekOf = getCurrentWeek();
-  const weekMenu = JSON.parse(JSON.stringify(menuInfo));
-  await prisma.menus.update({
-    where: { id },
-    data: {
-      week_of: weekOf,
-      location,
-      menu: weekMenu,
-      language,
-      country,
-    },
-  });
+export async function editMenu(id: number, data: any) {
+  try {
+    return await prisma.menus.update({
+      where: { id },
+      data,
+    });
+  } catch (error) {
+    console.error('Error editing menu:', error);
+    throw error;
+  }
 }
 
 /**
  * Deletes a menu from the database.
- * @param id, the ID of the menu to delete.
+ * @param id - The ID of the menu to delete.
+ * @returns the deleted menu object.
  */
 export async function deleteMenu(id: number) {
-  await prisma.menus.delete({
-    where: { id },
-  });
+  try {
+    return await prisma.menus.delete({
+      where: { id },
+    });
+  } catch (error) {
+    console.error('Error deleting menu:', error);
+    throw error;
+  }
 }
 
 /**
@@ -85,12 +94,17 @@ export async function deleteMenu(id: number) {
  * @returns the menu object.
  */
 export async function getMenu(week_of: Date, language: string) {
-  return prisma.menus.findFirst({
-    where: {
-      week_of,
-      language,
-    },
-  });
+  try {
+    return await prisma.menus.findFirst({
+      where: {
+        week_of,
+        language,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching menu:', error);
+    throw error;
+  }
 }
 
 /**
@@ -98,14 +112,19 @@ export async function getMenu(week_of: Date, language: string) {
  * @returns the latest menu object.
  */
 export async function getLatestMenu() {
-  return prisma.menus.findFirst({
-    where: {
-      language: 'English',
-    },
-    orderBy: {
-      week_of: 'desc',
-    },
-  });
+  try {
+    return await prisma.menus.findFirst({
+      where: {
+        language: 'English',
+      },
+      orderBy: {
+        week_of: 'desc',
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching latest menu:', error);
+    throw error;
+  }
 }
 
 /**
@@ -113,7 +132,12 @@ export async function getLatestMenu() {
  * @returns an array of menu objects.
  */
 export async function getAllMenus() {
-  return prisma.menus.findMany();
+  try {
+    return await prisma.menus.findMany();
+  } catch (error) {
+    console.error('Error fetching all menus:', error);
+    throw error;
+  }
 }
 
 /**
