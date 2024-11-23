@@ -12,10 +12,10 @@ const Footer = () => (
           <Row className="d-flex align-items-center">
             <Col className="pe-0">
               <Image
-                src="manoa-menu-logo.jpg"
+                src="/manoa-menu-logo.jpg"
                 alt="Manoa Menu Logo"
                 width="120px"
-                className="rounded border border-light"
+                className="rounded border border-secondary"
               />
             </Col>
             <Col className="ps-1">
@@ -83,7 +83,7 @@ const Footer = () => (
           <small>
             ©
             {new Date().getFullYear()}
-            <span className="ms-2">University of Hawaii at Manoa. All Rights Reserved.</span>
+            <span className="ms-1">All Rights Reserved.</span>
           </small>
         </Col>
       </Row>
