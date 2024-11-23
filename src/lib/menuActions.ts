@@ -41,10 +41,15 @@ async function getCheckCCMenu(language: string, country: string): Promise<DayMen
 
   // Gets latest English menu from database
   const dbLatestMenu = await getLatestMenu();
+  console.log('dbLatestMenu:', dbLatestMenu);
 
-  // If the latest menu is older than the current week,
-  // insert the parsed menu into the database
-  if ((dbLatestMenu?.week_of ?? 0) < getCurrentWeek()) {
+  // If the latest menu is not up to date, insert the parsed menu into the database
+  const dbMenuParsed: DayMenu[] = typeof dbLatestMenu?.menu === 'string' ? JSON.parse(dbLatestMenu.menu) : [];
+
+  console.log('dbLatestMenu.menu:', JSON.stringify(dbLatestMenu?.menu));
+  console.log('parsedMenu:', JSON.stringify(parsedMenu));
+
+  if (JSON.stringify(dbMenuParsed) !== JSON.stringify(parsedMenu) || !dbLatestMenu) {
     console.log('Inserting parsedMenu into database');
     await insertMenu(parsedMenu, Location.CAMPUS_CENTER, 'English', 'USA');
     const translatedMenu: MenuResponse = await fetchOpenAI(Option.CC, parsedMenu, 'Japanese', 'Japan');

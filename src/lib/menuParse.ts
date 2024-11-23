@@ -88,6 +88,23 @@ export default async function parseCampusCenterMenu(fileURL: string): Promise<Da
 
         grabAndGoOptions = day.slice(endOfValue);
         grabAndGoOptions = grabAndGoOptions.split('• ').slice(1);
+
+        grabAndGoOptions.forEach(option => {
+          const miniIndex = option.lastIndexOf('Mini');
+          const valueIndex = option.lastIndexOf('Value');
+
+          if (miniIndex !== -1) {
+            grabAndGoOptions.push(option.slice(miniIndex));
+            // eslint-disable-next-line no-param-reassign
+            option = option.slice(0, miniIndex).trim();
+          } else if (valueIndex !== -1) {
+            grabAndGoOptions.push(option.slice(valueIndex));
+            // eslint-disable-next-line no-param-reassign
+            option = option.slice(0, valueIndex).trim();
+          }
+
+          grabAndGoOptions.push(option);
+        });
       } else {
         plateLunchOptions = day.split('•').slice(1, 7);
         grabAndGoOptions = day.split('•').slice(7);
