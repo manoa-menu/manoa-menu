@@ -26,7 +26,7 @@ const client = new OpenAI({
 // eslint-disable-next-line max-len
 async function fetchOpenAI(option: Option, weeklyMenu: DayMenu[], language: string, country: string): Promise<MenuResponse> {
   const prompt = `You will translate all menu items into ${language}. 
-  They do not have to be exact, but they should be close enough to be understood by ${language} people.
+  Translate and word in a way that is easy for native speakers of ${language} to understand.
   In parenthesis provide a brief description of dish contents in ${language}
   for foods that are local to Hawaii.
   or foods that people from ${country} may not be familiar with,

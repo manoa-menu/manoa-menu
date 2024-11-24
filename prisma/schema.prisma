@@ -27,12 +27,13 @@ model User {
   email    String @unique
   password String
   favorites String[] @default([])
+  language String @default("English")
   role     Role   @default(USER)
 }
 
 model Menus {
   id         Int      @id @default(autoincrement())
-  week_of    DateTime    @default(now())
+  week_of    String    @default("1996-12-29")
   location   Location @default(CAMPUS_CENTER)
   menu       Json    @default("[]")
   language   String   @default("English")
@@ -49,4 +50,10 @@ model MenuImages {
   id        Int      @id @default(autoincrement())
   name      String
   url       String
+}
+
+model AIStatus {
+  id        Int      @id @default(autoincrement())
+  menu_id   Int
+  status    String  @default("pending")
 }

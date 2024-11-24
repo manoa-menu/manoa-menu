@@ -23,7 +23,8 @@ export default async function parseCampusCenterMenu(fileURL: string): Promise<Da
   if (!response.ok) {
     throw new Error(`Failed to fetch data from ${fileURL}: ${response.statusText}`);
   }
-  const dataBuffer = await response.buffer();
+  const arrayBuffer = await response.arrayBuffer();
+  const dataBuffer = Buffer.from(arrayBuffer);
 
   const weeklyMenu: DayMenu[] = [];
 
@@ -62,8 +63,8 @@ export default async function parseCampusCenterMenu(fileURL: string): Promise<Da
 
       const dayObject: DayMenu = {
         name: dayOfWeek,
-        plateLunch: [],
         grabAndGo: [],
+        plateLunch: [],
         specialMessage: '',
       };
 
@@ -134,7 +135,6 @@ export default async function parseCampusCenterMenu(fileURL: string): Promise<Da
 
       weeklyMenu.push(dayObject);
     });
-
     const holidays = weeklyMenu.filter((day) => day.plateLunch.length === 0 && day.grabAndGo.length === 0);
     // console.log(holidays);
 

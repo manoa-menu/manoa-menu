@@ -18,17 +18,18 @@ enum Location {
   HALE_ALOHA = 'HALE_ALOHA',
 }
 
-function getCurrentWeek(): Date {
+function getCurrentWeek(): string {
   const today = new Date();
   // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
   const dayOfWeek = today.getDay();
   // Calculate the start of the week (Sunday)
   const startOfWeek = new Date(today);
   startOfWeek.setDate(today.getDate() - dayOfWeek);
-  // Calculate the end of the week (Saturday)
-  const endOfWeek = new Date(today);
-  endOfWeek.setDate(today.getDate() + (6 - dayOfWeek));
-  return startOfWeek;
+  // Format the date as yyyy-mm-dd
+  const yyyy = startOfWeek.getFullYear();
+  const mm = String(startOfWeek.getMonth() + 1).padStart(2, '0');
+  const dd = String(startOfWeek.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 /**
@@ -93,7 +94,7 @@ export async function deleteMenu(id: number) {
  * @param id, the ID of the menu to retrieve.
  * @returns the menu object.
  */
-export async function getMenu(week_of: Date, language: string) {
+export async function getMenu(week_of: string, language: string) {
   try {
     return await prisma.menus.findFirst({
       where: {
@@ -111,11 +112,11 @@ export async function getMenu(week_of: Date, language: string) {
  * Retrieves the latest menu from the database using the week_of field.
  * @returns the latest menu object.
  */
-export async function getLatestMenu() {
+export async function getLatestMenu(language: string) {
   try {
     return await prisma.menus.findFirst({
       where: {
-        language: 'English',
+        language,
       },
       orderBy: {
         week_of: 'desc',
