@@ -2,10 +2,9 @@
 
 import { useRef, useState } from 'react';
 import { Button, Col, Container, Row } from 'react-bootstrap';
-
+import { CaretLeft, CaretLeftFill, CaretRight, CaretRightFill } from 'react-bootstrap-icons';
 import FoodItem from './FoodItem';
 import './foodItemSlider.css';
-import { CaretLeft, CaretLeftFill, CaretRight, CaretRightFill } from 'react-bootstrap-icons';
 
 export type FoodItemType = {
   name: string;
