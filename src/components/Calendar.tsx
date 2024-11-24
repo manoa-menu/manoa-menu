@@ -6,7 +6,7 @@ import './calendar.css';
 const daysOfTheWeek: string[] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const Calendar = ({ weeklyItems }: { weeklyItems: string[][] }) => (
-  <Container fluid>
+  <Container>
     <Row>
       {daysOfTheWeek.map((dayTitle, dayIndex) => (
         <Col>
