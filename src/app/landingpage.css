@@ -21,7 +21,7 @@
 
 /* TITLE SECTION - GREETS USERS TO ORGANIZATION */
 .title {
-  font-family: 'CustomFont', sans-serif;
+  font-family: 'CustomFont', Georgia, 'Times New Roman', Times, serif;
   font-size: 80px;
   color:#ffffff;
   width: 100%;
