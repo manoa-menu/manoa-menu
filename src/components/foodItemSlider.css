@@ -1,0 +1,48 @@
+/* Hide scroll bars */
+.container {
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
+}
+.container::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}
+/* FoodItem styling */
+.card-container {
+  padding: 10px;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.hover-card {
+  width: 300px;
+  height: 100px;
+  transition: transform 200ms ease-in-out;
+  transform-origin: center;
+}
+
+.hover-card:hover {
+  transform: scale(1.12);
+  z-index: 1;
+}
+/* Arrow buttons styling*/
+.arrow-btn {
+  all: unset;
+  display: block;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  cursor: pointer;
+  z-index: 2;
+  transition: background 200ms ease-in-out;
+}
+
+.arrow-btn > * {
+  stroke: black;
+  fill: black;
+  width: 2rem;
+  height: 2rem;
+}
+
+.arrow-btn:hover {
+  background-color: rgb(0, 0, 0, 0.6);
+}
