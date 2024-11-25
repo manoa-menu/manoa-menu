@@ -2,6 +2,8 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import OpenAI from 'openai';
 
+import jpManualReplace from '@/lib/manualTranslate';
+
 interface DayMenu {
   name: string;
   plateLunch: string[];
@@ -28,9 +30,10 @@ async function fetchOpenAI(option: Option, weeklyMenu: DayMenu[], language: stri
   const prompt = `You will translate all menu items into ${language}. 
   Translate and word in a way that is easy for native speakers of ${language} to understand.
   In parenthesis provide a brief description of dish contents in ${language}
-  for foods that are local to Hawaii.
   or foods that people from ${country} may not be familiar with,
-  or foods that are not self-explanatory (Have a lot of ingredients in the name).
+  or Chinese food, Uncommon Mexican food, Hawaiian food,
+  or Chicken Parmesan, Cobb Salad, Huli Huli
+  or foods that are not self-explanatory.
   Must describe pasta dishes, special salads, non-famous American dishes, and foreign asian dishes.
   Do not add or create new items that are not on the menu.
   If there is a special message, provide a translation in ${language}.`;
@@ -104,11 +107,17 @@ async function fetchOpenAI(option: Option, weeklyMenu: DayMenu[], language: stri
     max_tokens: 1500,
   });
   console.log(`Total tokens used: ${chatCompletion.usage?.total_tokens}`);
+
   if (chatCompletion.choices[0].message.parsed) {
-    return chatCompletion.choices[0].message.parsed;
+    const response = chatCompletion.choices[0].message.parsed;
+    const japaneseFixed = jpManualReplace(response);
+
+    return japaneseFixed;
   }
   if (chatCompletion.choices[0].message.content) {
-    return JSON.parse(chatCompletion.choices[0].message.content);
+    const response = chatCompletion.choices[0].message.content;
+
+    return JSON.parse(response);
   }
   throw new Error('Failed to parse the response from OpenAI');
 }
