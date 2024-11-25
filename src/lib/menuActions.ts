@@ -1,5 +1,5 @@
 /* eslint-disable eqeqeq */
-import scapeCCUrl from '@/lib/scrapeCCUrlPptr';
+import scapeCCUrl from '@/lib/scrapeCCUrl';
 import parseCampusCenterMenu from '@/lib/menuParse';
 import { getLatestMenu, insertMenu } from '@/lib/dbActions';
 import fetchOpenAI, { Option } from '../app/utils/api/openai';
