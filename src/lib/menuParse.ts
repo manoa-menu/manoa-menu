@@ -41,7 +41,8 @@ export default async function parseCampusCenterMenu(fileURL: string): Promise<Da
 
     weeklyMenuPT.forEach((day, index) => {
       let dayOfWeek = '';
-      switch (weekdays[index].trim()) {
+      const weekday = weekdays[index]?.trim(); // Add optional chaining to handle undefined values
+      switch (weekday) {
         case 'Mon':
           dayOfWeek = 'Monday';
           break;

@@ -9,13 +9,15 @@ interface MenuResponse {
   day_menus: DayMenu[];
 }
 
+const jpDaysOfWeek = ['月曜日', '火曜日', '水曜日', '木曜日', '金曜日'];
+
 const jpManualReplace = (original: MenuResponse): MenuResponse => {
   const replacedMenu: MenuResponse = {
     day_menus: [],
   };
-  original.day_menus.forEach((dayMenu) => {
+  original.day_menus.forEach((dayMenu, index) => {
     const replacedDayMenu: DayMenu = {
-      name: dayMenu.name,
+      name: jpDaysOfWeek[index],
       plateLunch: dayMenu.plateLunch.map((item) => {
         // Replace Value Bowl
         if (item.includes('バリューボウル')) {
