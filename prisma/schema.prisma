@@ -25,6 +25,7 @@ enum Role {
 model User {
   id       Int    @id @default(autoincrement())
   email    String @unique
+  username String @unique
   password String
   favorites String[] @default([])
   language String @default("English")
