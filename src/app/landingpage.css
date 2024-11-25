@@ -1,23 +1,27 @@
 @font-face {
-  font-family: 'CustomFont';  /* The name you will use to reference the font */
-  src: url('./fonts/FloralpersonaluseBold-K7wry.otf') format('opentype'),  /* Path to the .otf font */
-       url('./fonts/FloralpersonaluseBold-2OYod.otf') format('opentype');  /* Path to the .otf font */
-  font-weight: normal;  /* Optional: Define the weight if needed */
-  font-style: normal;   /* Optional: Define the style (e.g., italic, normal) */
+  font-family: 'CustomFont';
+  src: url('./fonts/FloralpersonaluseBold-K7wry.otf') format('opentype'),  
+       url('./fonts/FloralpersonaluseBold-2OYod.otf') format('opentype'); 
+  font-weight: normal;
+  font-style: normal;
 }
 
-
-body {
-  background-image: url('https://images.unsplash.com/photo-1624359136353-f60129a367b9?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
-  background-size: cover;
-  background-position: center center;
-  background-attachment: fixed;
-  background-color: #f0f0f0; /* Fallback color */
+.language-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  padding: 0 20px;
+  color: white;
+  text-align: center;
+  background: linear-gradient(33deg, #d422b1, #ffce00);
+  background-size: 600% 600%;
 }
 
 /* TITLE SECTION - GREETS USERS TO ORGANIZATION */
 .title {
-  font-family: 'CustomFont', sans-serif;
+  font-family: 'CustomFont', Georgia, 'Times New Roman', Times, serif;
   font-size: 80px;
   color:#ffffff;
   width: 100%;
@@ -97,16 +101,6 @@ body {
 };
 
 /* LANGUAGE CONTAINER */
-.language-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  padding: 0 20px;
-  text-align: center;
-}
-
 .language-title {
   text-align: center;
   margin-top: 45px;
@@ -120,7 +114,7 @@ body {
   font-size: 20px;
   text-align: center;
   margin-top: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 50px;
   color:#f5f5f5;
 }
 
@@ -133,6 +127,8 @@ body {
   height: 100vh;
   padding: 0 20px;
   text-align: center;
+  background: linear-gradient(33deg, #0a15ef, #0FC39E, #2DBDE3);
+  background-size: 600% 600%;
 }
 
 .currency-title {
@@ -148,6 +144,138 @@ body {
   font-size: 20px;
   text-align: center;
   margin-top: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 50px;
   color:#f5f5f5;
+}
+
+/* CURRENCY SCROLLING BANNER */
+.logo-slider-currency {
+  --min-image-size: 20px;
+  --max-image-size: 60px;
+  
+  --image-size: var(--max-image-size);
+  
+  padding: 20px;
+  overflow: hidden;
+  /* max-width: 900px; */
+  width: 100%;
+  margin: 0 auto;  
+  position: relative;
+  display: flex;
+  flex-direction: row;
+
+  /* Optional pause upon hover over scrolling banner - uncomment to apply style */
+  /* &:hover .container {
+    animation-play-state: paused;
+  } */
+  
+  .container { 
+    display: flex;
+    position: relative;
+    animation: marquee 30s linear infinite;
+    justify-content: space-around;
+    
+    /* Uncomment the following for debugging borders */
+    /* &:nth-of-type(1) { &, img { border:1px dashed red; }} */
+    /* &:nth-of-type(2) { &, img { border:1px dashed blue; }} */
+    
+    /* Optional: Force divs to cover 100% width */
+    min-width: 100%;
+  }
+
+  .currency {
+    display: block;
+    min-width: var(--image-size);
+    height: var(--image-size);
+    margin: 0 1vw;
+    color: #ffffff;
+  }
+
+  .currency span {
+  display: inline-block;
+  text-transform: uppercase;
+}
+  
+  img {
+    display: block;
+    min-width: var(--image-size);
+    height: var(--image-size);
+    margin: 0 1vw;
+  }
+
+  &:after {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    background: linear-gradient(to right, #0EA1AD, rgba(255, 255, 255, 0) 80px, rgba(255, 255, 255, 0) calc(100% - 80px), #0EB8A2);
+  }
+  
+  @media (max-width: 900px) {
+    --image-size: calc(min(max(var(--min-image-size), 10vw), var(--max-image-size)));
+  }
+}
+
+/* LANGUAGE SCROLLING BANNER */
+.logo-slider-language {
+  --min-image-size: 20px;
+  --max-image-size: 60px;
+  
+  --image-size: var(--max-image-size);
+  
+  padding: 20px;
+  overflow: hidden;
+  /* max-width: 900px; */
+  width: 100%;
+  margin: 0 auto;  
+  position: relative;
+  display: flex;
+  flex-direction: row;
+
+  /* Optional pause upon hover over scrolling banner - uncomment to apply style */
+  /* &:hover .container {
+    animation-play-state: paused;
+  } */
+  
+  .container { 
+    display: flex;
+    position: relative;
+    animation: marquee 30s linear infinite;
+    justify-content: space-around;
+    
+    /* Uncomment the following for debugging borders */
+    /* &:nth-of-type(1) { &, img { border:1px dashed red; }} */
+    /* &:nth-of-type(2) { &, img { border:1px dashed blue; }} */
+    
+    /* Optional: Force divs to cover 100% width */
+    min-width: 100%;
+  }
+  
+  img {
+    display: block;
+    min-width: var(--image-size);
+    height: var(--image-size);
+    margin: 0 1vw;
+  }
+
+  &:after {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    background: linear-gradient(to right, #E56769, rgba(255, 255, 255, 0) 80px, rgba(255, 255, 255, 0) calc(100% - 80px), #E8735D);
+  }
+  
+  @media (max-width: 900px) {
+    --image-size: calc(min(max(var(--min-image-size), 10vw), var(--max-image-size)));
+  }
+}
+
+@keyframes marquee {
+  0%   { transform: translateX(0%); }
+  100% { transform: translateX(-100%); }
 }
