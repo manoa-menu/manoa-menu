@@ -19,6 +19,7 @@ async function main() {
       update: {},
       create: {
         email: account.email,
+        username: account.username,
         password,
         role,
       },

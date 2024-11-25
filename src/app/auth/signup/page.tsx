@@ -6,9 +6,12 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
 import { Card, Col, Container, Button, Form, Row } from 'react-bootstrap';
 import { createUser } from '@/lib/dbActions';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { use } from 'react';
 
 type SignUpForm = {
   email: string;
+  username: string;
   password: string;
   confirmPassword: string;
   // acceptTerms: boolean;
@@ -18,6 +21,7 @@ type SignUpForm = {
 const SignUp = () => {
   const validationSchema = Yup.object().shape({
     email: Yup.string().required('Email is required').email('Email is invalid'),
+    username: Yup.string().required('Username is required'),
     password: Yup.string()
       .required('Password is required')
       .min(6, 'Password must be at least 6 characters')
