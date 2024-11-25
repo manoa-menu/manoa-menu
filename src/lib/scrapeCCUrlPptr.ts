@@ -1,7 +1,11 @@
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
+import { executablePath } from 'puppeteer';
 
 export default async function scrapeCCUrl(url: string): Promise<string> {
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch({
+    executablePath: executablePath(), // Use the path to your custom Chromium binary
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  });
   const page = await browser.newPage();
   await page.goto(url, { waitUntil: 'networkidle2' });
 
@@ -16,5 +20,5 @@ export default async function scrapeCCUrl(url: string): Promise<string> {
   if (href) {
     return href;
   }
-  throw new Error('Anchor element not found');
+  throw new Error('No href found');
 }
