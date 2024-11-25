@@ -2,23 +2,19 @@
 
 import Image from 'next/image';
 import { Badge, Card, Col } from 'react-bootstrap';
+import './foodItemSlider.css';
 
 const FoodItem = ({ name, picture, label }: { name: string; picture: string; label: string[] }) => (
-  <Col xs={12} md={3} className="my-2">
+  <Col>
     <Card
-      className="h-100"
+      className=" hover-card h-50"
       style={{
         borderWidth: '0.25rem',
         borderColor: 'lightgray',
       }}
     >
       <Card.Body className="d-flex flex-column align-items-center">
-        <Card.Title
-          className="text-center mb-3"
-          style={{
-            fontSize: 24,
-          }}
-        >
+        <Card.Title className="text-center mb-3" style={{ fontSize: 24 }}>
           {name}
         </Card.Title>
         <Card.Text className="d-flex gap-2 flex-wrap justify-content-center">

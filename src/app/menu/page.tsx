@@ -1,10 +1,10 @@
 /* eslint-disable react/jsx-indent, @typescript-eslint/indent */
 
-import React from 'react';
 import '@/styles/Menu.css';
 
-import parseCampusCenterMenu from '@/lib/menuParse';
-import MenuCall from '@/components/MenuCall';
+import getCheckCCMenu from '@/lib/menuActions';
+import MenuList from '@/components/MenuList';
+import { Container } from 'react-bootstrap';
 
 interface DayMenu {
   name: string;
@@ -14,11 +14,19 @@ interface DayMenu {
 }
 
 const Page = async () => {
-  const parsedMenu: DayMenu[] = await parseCampusCenterMenu('menu2');
-  console.log('Parsed Menu:', parsedMenu);
-
+  const parsedMenu: DayMenu[] = await getCheckCCMenu('Japanese', 'Japan');
   return (
-    <MenuCall menu={parsedMenu} />
+    (parsedMenu !== null && parsedMenu !== undefined) ? (
+      <Container fluid className="my-5 menu-container">
+        <h1>Menu</h1>
+        <MenuList menu={parsedMenu} />
+      </Container>
+    ) : (
+      <Container fluid className="my-5 menu-container">
+        <h1>Menu</h1>
+        <p>Menu not available</p>
+      </Container>
+    )
   );
 };
 

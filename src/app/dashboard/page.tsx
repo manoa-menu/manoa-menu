@@ -2,7 +2,8 @@
 
 import { Container, Form, Row } from 'react-bootstrap';
 import Calendar from '@/components/Calendar';
-import FoodItem from '@/components/FoodItem';
+import FoodItemSlider from '@/components/FoodItemSlider';
+import type { FoodItemType } from '@/components/FoodItemSlider';
 
 const testSample: string[][] = [
   [''],
@@ -12,6 +13,50 @@ const testSample: string[][] = [
   ['BBQ Beef Brisket', 'Shrimp Caesar Salad', 'Mini or Bowl: Mochiko Chicken or Roast Pork'],
   [''],
   ['Surf and Turf'],
+];
+
+const testFoodItem: FoodItemType[] = [
+  {
+    name: 'Chicken Sandwich',
+    image: '/images/gettyimages-1442136071-612x612.jpg',
+    label: ['Chicken', 'Bread'],
+  },
+  {
+    name: 'Chicken Sandwich',
+    image: '/images/gettyimages-1442136071-612x612.jpg',
+    label: ['Chicken', 'Bread'],
+  },
+  {
+    name: 'Chicken Sandwich',
+    image: '/images/gettyimages-1442136071-612x612.jpg',
+    label: ['Chicken', 'Bread'],
+  },
+  {
+    name: 'Chicken Sandwich',
+    image: '/images/gettyimages-1442136071-612x612.jpg',
+    label: ['Chicken', 'Bread'],
+  },
+  {
+    name: 'Loco Moco',
+    image: '/images/gettyimages-1386914868-612x612.jpg',
+    label: ['Beef', 'Rice', 'Egg'],
+  },
+  {
+    name: 'Loco Moco',
+    image: '/images/gettyimages-1386914868-612x612.jpg',
+    label: ['Beef', 'Rice', 'Egg'],
+  },
+  {
+    name: 'Loco Moco',
+    image: '/images/gettyimages-1386914868-612x612.jpg',
+    label: ['Beef', 'Rice', 'Egg'],
+  },
+
+  {
+    name: 'Loco Moco',
+    image: '/images/gettyimages-1386914868-612x612.jpg',
+    label: ['Beef', 'Rice', 'Egg'],
+  },
 ];
 
 const DashboardPage = () => (
@@ -31,30 +76,9 @@ const DashboardPage = () => (
     </Row>
     <Row>
       <h1>Recommended:</h1>
-      <FoodItem
-        name="Chicken Sandwich"
-        picture="/images/gettyimages-1442136071-612x612.jpg"
-        label={['Chicken', 'Sandwich']}
-      />
-      <FoodItem name="Loco Moco" picture="/images/gettyimages-1386914868-612x612.jpg" label={['Beef', 'Rice', 'Egg']} />
-      <FoodItem
-        name="Chicken Sandwich"
-        picture="/images/gettyimages-1442136071-612x612.jpg"
-        label={['Chicken', 'Sandwich']}
-      />
-      <FoodItem name="Loco Moco" picture="/images/gettyimages-1386914868-612x612.jpg" label={['Beef', 'Rice', 'Egg']} />
-      <FoodItem name="Loco Moco" picture="/images/gettyimages-1386914868-612x612.jpg" label={['Beef', 'Rice', 'Egg']} />
-      <FoodItem
-        name="Chicken Sandwich"
-        picture="/images/gettyimages-1442136071-612x612.jpg"
-        label={['Chicken', 'Sandwich']}
-      />
-      <FoodItem name="Loco Moco" picture="/images/gettyimages-1386914868-612x612.jpg" label={['Beef', 'Rice', 'Egg']} />
-      <FoodItem
-        name="Chicken Sandwich"
-        picture="/images/gettyimages-1442136071-612x612.jpg"
-        label={['Chicken', 'Sandwich']}
-      />
+    </Row>
+    <Row>
+      <FoodItemSlider foodItem={testFoodItem} />
     </Row>
   </Container>
 );
