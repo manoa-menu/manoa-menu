@@ -73,6 +73,11 @@ export default async function parseCampusCenterMenu(fileURL: string): Promise<Da
       const valueBowlRegex = /Value Bowl: .*?\n/g;
       const valueBowlMatches = day.match(valueBowlRegex);
 
+      const specialMessageKeywords = [
+        'closed', 'holiday', 'no service', 'canceled',
+        'maintenance', 'event', 'break', 'vacation',
+      ];
+
       // console.log(`valueBowlMatches: ${valueBowlMatches}`);
 
       let plateLunchOptions;
@@ -104,24 +109,25 @@ export default async function parseCampusCenterMenu(fileURL: string): Promise<Da
             // eslint-disable-next-line no-param-reassign
             option = option.slice(0, valueIndex).trim();
           }
-
-          grabAndGoOptions.push(option);
         });
       } else {
-        plateLunchOptions = day.split('•').slice(1, 7);
-        grabAndGoOptions = day.split('•').slice(7);
+        const splitDay = day.split('•');
+        plateLunchOptions = splitDay.slice(1, 7);
+        grabAndGoOptions = splitDay.slice(7);
+        plateLunchOptions = Array.from(new Set(plateLunchOptions));
+        grabAndGoOptions = Array.from(new Set(grabAndGoOptions));
       }
-
-      // console.log(plateLunchOptions);
-      // console.log(grabAndGoOptions);
 
       let lastGGOption = grabAndGoOptions[grabAndGoOptions.length - 1];
       if (/\n\S/.test(lastGGOption)) {
         const message = lastGGOption.slice(lastGGOption.indexOf('\n') + 1);
-        // message = message.replace(/\n/g, '').trim();
-        messageArr.push(message);
 
-        lastGGOption = lastGGOption.slice(0, lastGGOption.indexOf('\n'));
+        if (specialMessageKeywords.some((keyword) => message.toLowerCase().includes(keyword))) {
+          messageArr.push(message);
+          lastGGOption = lastGGOption.slice(0, lastGGOption.indexOf('\n'));
+        } else {
+          lastGGOption = message;
+        }
       }
       grabAndGoOptions[grabAndGoOptions.length - 1] = lastGGOption;
 
@@ -134,10 +140,12 @@ export default async function parseCampusCenterMenu(fileURL: string): Promise<Da
         dayObject.grabAndGo.push(formattedOption);
       });
 
+      // console.log(dayObject.plateLunch);
+      // console.log(dayObject.grabAndGo);
+
       weeklyMenu.push(dayObject);
     });
     const holidays = weeklyMenu.filter((day) => day.plateLunch.length === 0 && day.grabAndGo.length === 0);
-    // console.log(holidays);
 
     if (holidays.length > 0) {
       messageArr.forEach((message, index) => {
