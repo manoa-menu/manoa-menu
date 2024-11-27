@@ -104,7 +104,7 @@ async function fetchOpenAI(option: Option, weeklyMenu: DayMenu[], language: stri
       },
     },
     temperature: 1,
-    max_tokens: 1500,
+    max_tokens: 2000,
   });
   console.log(`Total tokens used: ${chatCompletion.usage?.total_tokens}`);
 
