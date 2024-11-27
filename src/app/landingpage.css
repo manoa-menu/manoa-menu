@@ -1,30 +1,84 @@
-@font-face {
-  font-family: 'CustomFont';
-  src: url('./fonts/FloralpersonaluseBold-K7wry.otf') format('opentype'),  
-       url('./fonts/FloralpersonaluseBold-2OYod.otf') format('opentype'); 
-  font-weight: normal;
-  font-style: normal;
+@keyframes moveBackground {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 50% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
-#features-title {
-  font-family: Verdana, Geneva, Tahoma, sans-serif;
-  font-size: 50px;
-  color: #f5f5f5;
-  margin-top: 200px;
-  margin-bottom: 20px;
+body {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  background: url('/campuscenter.jpg') no-repeat center center fixed;
+  background-size: cover;
+  animation: moveBackground 100s ease-in-out infinite;
+  font-family: Arial, sans-serif;
 }
 
-.language-card:hover {
-  transform: scale(1.12);
-  z-index: 1;
+body::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  min-height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: -1;
 }
 
-.language-card {
+/* Title Container */
+.title-container {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  width: 300px;
+  height: 100vh;
+  padding: 0 20px;
+  text-align: center;
+}
+
+/* Title */
+.title {
+  font-family: Georgia, 'Times New Roman', Times, serif;
+  font-size: 80px;
+  color: #ffffff;
+  width: 100%;
+  margin: 0;
+  animation: 1.1s ease-out 0s 1 slideInFromLeft;
+}
+
+/* Subheader */
+.title-subheader {
+  font-family: Verdana, Tahoma, sans-serif;
+  font-size: 25px;
+  text-align: center;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  color: #f5f5f5;
+  animation: 1.1s ease-out 0s 1 slideInFromRight;
+}
+
+/* Features Section Title */
+#features-title {
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-size: 50px;
+  color: #f5f5f5;
+  margin: 0 0 40px 0;
+  text-align: center;
+}
+
+/* Card styles */
+.language-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 550px;
+  height: 140px;
   padding: 20px;
   background-color: #212529;
   color: white;
@@ -32,28 +86,20 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   transition: transform 200ms ease-in-out;
   transform-origin: center;
+  overflow: hidden;
 }
 
-/* TITLE SECTION - GREETS USERS TO ORGANIZATION */
-.title {
-  font-family: Georgia, 'Times New Roman', Times, serif;
-  font-size: 80px;
-  color:#ffffff;
-  width: 100%;
-  padding: 0;
+.language-card h5 {
+  margin: 0 0 20px 0;
+}
+
+.language-card p {
   margin: 0;
-  animation: 1.1s ease-out 0s 1 slideInFromLeft;
+  flex-grow: 1;
+  display: flex;
 }
 
-@keyframes slideInFromLeft {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(0);
-  }
-}
-
+/* Title Border */
 #title-border {
   border: none;
   border-bottom: 3px solid rgb(255, 255, 255);
@@ -69,26 +115,7 @@
   }
 }
 
-.title-subheader {
-  font-family: Verdana, Tahoma, sans-serif;
-  font-size: 25px;
-  text-align: center;
-  margin-top: 20px;
-  margin-bottom: 20px;
-  color:#f5f5f5;
-  animation: 1.1s ease-out 0s 1 slideInFromRight;
-}
-
-@keyframes slideInFromRight {
-  0% {
-    transform: translateX(100%);
-  }
-  100% {
-    transform: translateX(0);
-  }
-}
-
-.title-container {
+.language-content {
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -96,21 +123,4 @@
   height: 100vh;
   padding: 0 20px;
   text-align: center;
-  background: linear-gradient(45deg, #10AA46, #0FC39E, #2DBDE3);
-  background-size: 600% 600%;
-  animation: GradientBackground 10s ease infinite;
 }
-
-@keyframes GradientBackground {
-  0% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0% 50%;
-  }
-};

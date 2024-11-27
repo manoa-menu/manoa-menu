@@ -17,20 +17,21 @@ const Home = () => (
           </h5>
         </Col>
       </Row>
+    </Container>
 
-      {/* Language Section */}
+    <Container className="language-content">
       <h2 id="features-title"><span>Features</span></h2>
       <Row>
         <Col>
           <Card className="language-card">
             <h5>Choose a language</h5>
-            <p>Choose from English, Japanese, Korean, and Spanish</p>
+            <p>Choose from English, Japanese, Korean, or Spanish</p>
           </Card>
         </Col>
         <Col>
           <Card className="language-card">
             <h5>Favorite an item</h5>
-            <p>Save your favorite items for later</p>
+            <p>Favorite items to save for later</p>
           </Card>
         </Col>
         <Col>
@@ -42,7 +43,7 @@ const Home = () => (
         <Col>
           <Card className="language-card">
             <h5>See what&apos;s popular</h5>
-            <p>See what food is currently popular</p>
+            <p>See what food is currently popular on campus</p>
           </Card>
         </Col>
       </Row>
