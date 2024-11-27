@@ -9,6 +9,25 @@ const CampusCravings: React.FC = () => {
   const { data: session } = useSession();
   const currentUser = session?.user?.email;
   const [starredItems, setStarredItems] = useState<{ [key: string]: boolean }>({});
+  const [selectedOption, setSelectedOption] = useState<string>('All');
+
+  const foodItems = [
+    { id: 'item1', name: 'Food Item 1', description: 'Food Item 1 Description', location: 'Campus Center Food Court' },
+    { id: 'item2', name: 'Food Item 2', description: 'Food Item 2 Description', location: 'Gateway Café' },
+    { id: 'item3', name: 'Food Item 3', description: 'Food Item 3 Description', location: 'Hale Aloha Café' },
+    { id: 'item4', name: 'Food Item 4', description: 'Food Item 4 Description', location: 'Campus Center Food Court' },
+  ];
+
+  // Handle dropdown selection change
+  const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedOption(event.target.value);
+  };
+
+  // Filter the food items based on the selected option
+  const filteredFoodItems = foodItems.filter((foodItem) => {
+    if (selectedOption === 'All') return true;
+    return foodItem.location === selectedOption;
+  });
 
   const toggleStar = (item: string) => {
     setStarredItems((prev) => ({
@@ -17,24 +36,24 @@ const CampusCravings: React.FC = () => {
     }));
   };
 
-  const foodItems = [
-    { id: 'item1', name: 'Food Item 1', description: 'Food Item 1 Description' },
-    { id: 'item2', name: 'Food Item 2', description: 'Food Item 2 Description' },
-    { id: 'item3', name: 'Food Item 3', description: 'Food Item 3 Description' },
-    { id: 'item4', name: 'Food Item 4', description: 'Food Item 4 Description' },
-  ];
-
   return (
     <Container className="my-5">
       <Row>
         <h1>Popular Food Choices</h1>
         <Container>
-          <Form.Select className="my-2" style={{ width: '150px', border: '2px solid' }}>
+          {/* Dropdown for selecting food court location */}
+          <Form.Select
+            className="my-2"
+            style={{ width: '150px', border: '2px solid' }}
+            value={selectedOption}
+            onChange={handleSelectChange}
+          >
             <option>All</option>
             <option>Campus Center Food Court</option>
             <option>Gateway Café</option>
             <option>Hale Aloha Café</option>
           </Form.Select>
+
           {currentUser && (
             <Form.Select className="my-2" style={{ width: '150px', border: '2px solid' }}>
               <option>All Favorites</option>
@@ -43,9 +62,11 @@ const CampusCravings: React.FC = () => {
           )}
         </Container>
       </Row>
+
+      {/* Displaying filtered food items */}
       <div className="overflow-auto" style={{ maxHeight: '500px', border: '3px solid', borderRadius: '5px' }}>
         <Col>
-          {foodItems.map((foodItem) => (
+          {filteredFoodItems.map((foodItem) => (
             <Card className="my-3" key={foodItem.id}>
               <Card.Header>{foodItem.name}</Card.Header>
               <Card.Body>
