@@ -41,29 +41,27 @@ async function getCheckCCMenu(language: string, country: string): Promise<DayMen
   // console.log(dbMenuParsed[0].plateLunch, '._.', parsedMenu[0].plateLunch);
 
   if (JSON.stringify(dbMenuParsed[1]) !== JSON.stringify(parsedMenu[1])
-    && JSON.stringify(dbMenuParsed[2]) !== JSON.stringify(parsedMenu[2])) {
+    && JSON.stringify(dbMenuParsed[2]) !== JSON.stringify(parsedMenu[2])
+  ) {
     console.log('Inserting parsedMenu into database');
     await insertMenu(parsedMenu, Location.CAMPUS_CENTER, 'English', 'USA');
     const translatedMenu: MenuResponse = await fetchOpenAI(Option.CC, parsedMenu, 'Japanese', 'Japan');
     const translatedDayMenus: DayMenu[] = translatedMenu.day_menus;
     await insertMenu(translatedDayMenus, Location.CAMPUS_CENTER, 'Japanese', 'Japan');
-
     // Populate foodTable with the new menu
     await populateFoodTableFromMenu(parsedMenu);
 
-    return parsedMenu;
-  }
     console.log(`Fetching parsedMenu from database in ${language}`);
     const dbMenuLanguage = await getLatestMenu(language);
-    const dbMenuLanguageParsed: DayMenu[] = (dbMenuLanguage) ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
+    const dbMenuLanguageParsed: DayMenu[] = dbMenuLanguage ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
     if (dbMenuLanguageParsed) {
       return dbMenuLanguageParsed;
     }
   } else {
-  // If the latest menu is up to date, fetch the menu from the database
+    // If the latest menu is up to date, fetch the menu from the database
     console.log(`Fetching parsedMenu from database in ${language}`);
     const dbMenuLanguage = await getLatestMenu(language);
-    const dbMenuLanguageParsed: DayMenu[] = (dbMenuLanguage) ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
+    const dbMenuLanguageParsed: DayMenu[] = dbMenuLanguage ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
     if (dbMenuLanguageParsed) {
       return dbMenuLanguageParsed;
     }
