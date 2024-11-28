@@ -17,7 +17,6 @@ const NavBar: React.FC = () => {
   return (
     <Navbar bg="light" expand="lg">
       <Container fluid className="px-5">
-
         <div className="d-flex align-items-center">
           <Navbar.Brand>
             <Image
@@ -66,7 +65,7 @@ const NavBar: React.FC = () => {
               key="maps"
               active={pathName === '/maps'}
             >
-              Maps
+              Find a Location
             </Nav.Link>
             {currentUser
               ? [
