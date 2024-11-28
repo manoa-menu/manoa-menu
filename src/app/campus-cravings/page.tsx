@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Container, Card, Col, Button, Row, Form } from 'react-bootstrap';
-import { StarFill, Star } from 'react-bootstrap-icons';
+import { Container, Card, Col, Row, Form } from 'react-bootstrap';
 import { useSession } from 'next-auth/react';
+import StarButton from './StarButton';
 
 const CampusCravings: React.FC = () => {
   const { data: session } = useSession();
@@ -17,6 +17,13 @@ const CampusCravings: React.FC = () => {
     }));
   };
 
+  const foodItems = [
+    { id: 'item1', name: 'Food Item 1', description: 'Food Item 1 Description' },
+    { id: 'item2', name: 'Food Item 2', description: 'Food Item 2 Description' },
+    { id: 'item3', name: 'Food Item 3', description: 'Food Item 3 Description' },
+    { id: 'item4', name: 'Food Item 4', description: 'Food Item 4 Description' },
+  ];
+
   return (
     <Container className="my-5">
       <Row>
@@ -28,85 +35,40 @@ const CampusCravings: React.FC = () => {
             <option>Gateway Café</option>
             <option>Hale Aloha Café</option>
           </Form.Select>
-          {currentUser
-          && (
-          <Form.Select className="my-2" style={{ width: '150px', border: '2px solid' }}>
-            <option>All Favorites</option>
-            <option>My Favorites</option>
-          </Form.Select>
+          {currentUser && (
+            <Form.Select className="my-2" style={{ width: '150px', border: '2px solid' }}>
+              <option>All Favorites</option>
+              <option>My Favorites</option>
+            </Form.Select>
           )}
         </Container>
       </Row>
       <div className="overflow-auto" style={{ maxHeight: '500px', border: '3px solid', borderRadius: '5px' }}>
         <Col>
-          <Card className="my-3">
-            <Card.Header>Food Item 1</Card.Header>
-            <Card.Body>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Card.Title>Food Item 1</Card.Title>
-                <Button
-                  variant="link"
-                  onClick={() => toggleStar('item1')}
-                  style={{ color: starredItems.item1 ? 'gold' : 'gray' }}
-                >
-                  {starredItems.item1 ? <StarFill /> : <Star />}
-                </Button>
-              </div>
-              <Card.Text>Food Item 1 Description</Card.Text>
-              {session && <Card.Text>Additional Info for Food Item 1</Card.Text>}
-            </Card.Body>
-          </Card>
-          <Card className="my-3">
-            <Card.Header>Food Item 2</Card.Header>
-            <Card.Body>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Card.Title>Food Item 2</Card.Title>
-                <Button
-                  variant="link"
-                  onClick={() => toggleStar('item2')}
-                  style={{ color: starredItems.item2 ? 'gold' : 'gray' }}
-                >
-                  {starredItems.item2 ? <StarFill /> : <Star />}
-                </Button>
-              </div>
-              <Card.Text>Food Item 2 Description</Card.Text>
-              {session && <Card.Text>Additional Info for Food Item 2</Card.Text>}
-            </Card.Body>
-          </Card>
-          <Card className="my-3">
-            <Card.Header>Food Item 3</Card.Header>
-            <Card.Body>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Card.Title>Food Item 3</Card.Title>
-                <Button
-                  variant="link"
-                  onClick={() => toggleStar('item3')}
-                  style={{ color: starredItems.item3 ? 'gold' : 'gray' }}
-                >
-                  {starredItems.item3 ? <StarFill /> : <Star />}
-                </Button>
-              </div>
-              <Card.Text>Food Item 3 Description</Card.Text>
-              {currentUser && <Card.Text>Additional Info for Food Item 3</Card.Text>}
-            </Card.Body>
-          </Card>
-          <Card className="my-3">
-            <Card.Header>Food Item 4</Card.Header>
-            <Card.Body>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Card.Title>Food Item 4</Card.Title>
-                <Button
-                  variant="link"
-                  onClick={() => toggleStar('item3')}
-                  style={{ color: starredItems.item3 ? 'gold' : 'gray' }}
-                >
-                  {starredItems.item3 ? <StarFill /> : <Star />}
-                </Button>
-              </div>
-              <Card.Text>Food Item 4 Description</Card.Text>
-              {currentUser && <Card.Text>Additional Info for Food Item 4</Card.Text>}
-            </Card.Body>
-          </Card>
+          {foodItems.map((foodItem) => (
+            <Card className="my-3" key={foodItem.id}>
+              <Card.Header>{foodItem.name}</Card.Header>
+              <Card.Body>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Card.Title>{foodItem.name}</Card.Title>
+                  <StarButton
+                    item={foodItem.id}
+                    isStarred={starredItems[foodItem.id] || false}
+                    onToggle={toggleStar}
+                  />
+                </div>
+                <Card.Text>{foodItem.description}</Card.Text>
+                {session && (
+                  <div>
+                    <Card.Text>
+                      Additional info for&nbsp;
+                      {foodItem.name}
+                    </Card.Text>
+                  </div>
+                )}
+              </Card.Body>
+            </Card>
+          ))}
         </Col>
       </div>
     </Container>
