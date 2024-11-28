@@ -25,7 +25,10 @@ interface MenuResponse {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function getCheckCCMenu(language: string, country: string): Promise<DayMenu[]> {
   const menuURL: string = 'https://uhm.sodexomyway.com/en-us/locations/campus-center-food-court';
-  const menuPdf: string = await scapeCCUrl(menuURL);
+  const menuPdf: string | null = await scapeCCUrl(menuURL);
+  if (menuPdf === null) {
+    throw new Error('Failed to scrape menu PDF');
+  }
   const parsedMenu: DayMenu[] = await parseCampusCenterMenu(menuPdf);
 
   // Gets latest English menu from database
@@ -37,8 +40,7 @@ async function getCheckCCMenu(language: string, country: string): Promise<DayMen
 
   // console.log(dbMenuParsed[0].plateLunch, '._.', parsedMenu[0].plateLunch);
 
-  if (JSON.stringify(dbMenuParsed[0]) !== JSON.stringify(parsedMenu[0])
-    && JSON.stringify(dbMenuParsed[1]) !== JSON.stringify(parsedMenu[1])
+  if (JSON.stringify(dbMenuParsed[1]) !== JSON.stringify(parsedMenu[1])
     && JSON.stringify(dbMenuParsed[2]) !== JSON.stringify(parsedMenu[2])) {
     console.log('Inserting parsedMenu into database');
     await insertMenu(parsedMenu, Location.CAMPUS_CENTER, 'English', 'USA');
@@ -51,11 +53,20 @@ async function getCheckCCMenu(language: string, country: string): Promise<DayMen
 
     return parsedMenu;
   }
+    console.log(`Fetching parsedMenu from database in ${language}`);
+    const dbMenuLanguage = await getLatestMenu(language);
+    const dbMenuLanguageParsed: DayMenu[] = (dbMenuLanguage) ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
+    if (dbMenuLanguageParsed) {
+      return dbMenuLanguageParsed;
+    }
+  } else {
   // If the latest menu is up to date, fetch the menu from the database
-  console.log('Fetching parsedMenu from database');
-  const dbMenu = await getLatestMenu('English');
-  if (dbMenu) {
-    return dbMenuParsed;
+    console.log(`Fetching parsedMenu from database in ${language}`);
+    const dbMenuLanguage = await getLatestMenu(language);
+    const dbMenuLanguageParsed: DayMenu[] = (dbMenuLanguage) ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
+    if (dbMenuLanguageParsed) {
+      return dbMenuLanguageParsed;
+    }
   }
   console.error('Failed to fetch parsedMenu from database');
   throw new Error('Failed to load parsedMenu. Please try again later.');
