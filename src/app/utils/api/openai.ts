@@ -1,25 +1,9 @@
 // import axios from 'axios';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import OpenAI from 'openai';
 
 import jpManualReplace from '@/lib/manualTranslate';
 
-interface DayMenu {
-  name: string;
-  plateLunch: string[];
-  grabAndGo: string[];
-  specialMessage: string;
-}
-
-interface MenuResponse {
-  day_menus: DayMenu[];
-}
-
-export enum Option {
-  CC = 'CAMPUS_CENTER',
-  GW = 'GATEWAY',
-  HA = 'HALE_ALOHA',
-}
+import { DayMenu, MenuResponse, Option } from '@/types/menuTypes';
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -32,7 +16,7 @@ async function fetchOpenAI(option: Option, weeklyMenu: DayMenu[], language: stri
   In parenthesis provide a brief description of dish contents in ${language}
   or foods that people from ${country} may not be familiar with,
   or Chinese food, Uncommon Mexican food, Hawaiian food,
-  or Chicken Parmesan, Cobb Salad, Huli Huli
+  or Chicken Parmesan, Cobb Salad, Huli Huli Chicken
   or foods that are not self-explanatory.
   Must describe pasta dishes, special salads, non-famous American dishes, and foreign asian dishes.
   Do not add or create new items that are not on the menu.
@@ -51,16 +35,23 @@ async function fetchOpenAI(option: Option, weeklyMenu: DayMenu[], language: stri
         schema: {
           type: 'object',
           properties: {
-            day_menus: {
+            weekOne: {
               type: 'array',
-              description: 'An array of daily menu objects.',
+              description: 'Array of daily menu objects (week 1).',
+              items: {
+                $ref: '#/$defs/day_menu',
+              },
+            },
+            weekTwo: {
+              type: 'array',
+              description: 'Array of daily menu objects (week 2).',
               items: {
                 $ref: '#/$defs/day_menu',
               },
             },
           },
           required: [
-            'day_menus',
+            'weekOne',
           ],
           additionalProperties: false,
           $defs: {
@@ -87,7 +78,7 @@ async function fetchOpenAI(option: Option, weeklyMenu: DayMenu[], language: stri
                 },
                 specialMessage: {
                   type: 'string',
-                  description: 'Any special message or announcement for the day if any.',
+                  description: 'Any special message for the day if any.',
                 },
               },
               required: [
@@ -103,16 +94,24 @@ async function fetchOpenAI(option: Option, weeklyMenu: DayMenu[], language: stri
         strict: true,
       },
     },
-    temperature: 1,
+    temperature: 0.1,
     max_tokens: 2000,
   });
   console.log(`Total tokens used: ${chatCompletion.usage?.total_tokens}`);
 
   if (chatCompletion.choices[0].message.parsed) {
     const response = chatCompletion.choices[0].message.parsed;
-    const japaneseFixed = jpManualReplace(response);
 
-    return japaneseFixed;
+    switch (language) {
+      case 'Japanese':
+        return jpManualReplace(response);
+      // case 'Korean':
+      //   return krManualReplace(response);
+      // case 'Spanish':
+      //   return esManualReplace(response);
+      default:
+        return JSON.parse(response);
+    }
   }
   if (chatCompletion.choices[0].message.content) {
     const response = chatCompletion.choices[0].message.content;

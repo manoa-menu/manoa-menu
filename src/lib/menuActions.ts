@@ -2,24 +2,9 @@
 import scapeCCUrl from '@/lib/scrapeCCUrl';
 import parseCampusCenterMenu from '@/lib/menuParse';
 import { getLatestMenu, insertMenu } from '@/lib/dbActions';
-import fetchOpenAI, { Option } from '../app/utils/api/openai';
+import { Location, DayMenu, MenuResponse, Option } from '@/types/menuTypes';
 
-enum Location {
-  CAMPUS_CENTER = 'CAMPUS_CENTER',
-  GATEWAY = 'GATEWAY',
-  HALE_ALOHA = 'HALE_ALOHA',
-}
-
-interface DayMenu {
-  name: string;
-  plateLunch: string[];
-  grabAndGo: string[];
-  specialMessage: string;
-}
-
-interface MenuResponse {
-  day_menus: DayMenu[];
-}
+import fetchOpenAI from '../app/utils/api/openai';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function getCheckCCMenu(language: string, country: string): Promise<DayMenu[]> {
@@ -44,8 +29,10 @@ async function getCheckCCMenu(language: string, country: string): Promise<DayMen
     console.log('Inserting parsedMenu into database');
     await insertMenu(parsedMenu, Location.CAMPUS_CENTER, 'English', 'USA');
     const translatedMenu: MenuResponse = await fetchOpenAI(Option.CC, parsedMenu, 'Japanese', 'Japan');
-    const translatedDayMenus: DayMenu[] = translatedMenu.day_menus;
+    const translatedDayMenus: DayMenu[] = translatedMenu.weekOne;
+    const translatedDayMenus2: DayMenu[] = translatedMenu.weekTwo;
     await insertMenu(translatedDayMenus, Location.CAMPUS_CENTER, 'Japanese', 'Japan');
+    await insertMenu(translatedDayMenus2, Location.CAMPUS_CENTER, 'Japanese', 'Japan');
 
     console.log(`Fetching parsedMenu from database in ${language}`);
     const dbMenuLanguage = await getLatestMenu(language);

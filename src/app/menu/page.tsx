@@ -5,13 +5,7 @@ import '@/styles/Menu.css';
 import getCheckCCMenu from '@/lib/menuActions';
 import MenuList from '@/components/MenuList';
 import { Container } from 'react-bootstrap';
-
-interface DayMenu {
-  name: string;
-  plateLunch: string[];
-  grabAndGo: string[];
-  specialMessage: string;
-}
+import { DayMenu } from '@/types/menuTypes';
 
 const Page = async () => {
   const parsedMenu: DayMenu[] = await getCheckCCMenu('Japanese', 'Japan');

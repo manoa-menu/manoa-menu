@@ -1,22 +1,7 @@
 // import fs from 'fs';
 import pdf from 'pdf-parse';
 import fetch from 'node-fetch';
-
-interface PDFData {
-  numpages: number;
-  numrender: number;
-  info: any;
-  metadata: any;
-  version: string;
-  text: string;
-}
-
-interface DayMenu {
-  name: string;
-  plateLunch: string[];
-  grabAndGo: string[];
-  specialMessage: string;
-}
+import { DayMenu, PDFData } from '@/types/menuTypes';
 
 export default async function parseCampusCenterMenu(fileURL: string): Promise<DayMenu[]> {
   const response = await fetch(fileURL);
