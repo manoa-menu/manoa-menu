@@ -2,6 +2,7 @@
 import scapeCCUrl from '@/lib/scrapeCCUrl';
 import parseCampusCenterMenu from '@/lib/menuParse';
 import { getLatestMenu, insertMenu } from '@/lib/dbActions';
+import populateFoodTableFromMenu from './foodTable';
 import fetchOpenAI, { Option } from '../app/utils/api/openai';
 
 enum Location {
@@ -44,6 +45,9 @@ async function getCheckCCMenu(language: string, country: string): Promise<DayMen
     const translatedMenu: MenuResponse = await fetchOpenAI(Option.CC, parsedMenu, 'Japanese', 'Japan');
     const translatedDayMenus: DayMenu[] = translatedMenu.day_menus;
     await insertMenu(translatedDayMenus, Location.CAMPUS_CENTER, 'Japanese', 'Japan');
+
+    // Populate foodTable with the new menu
+    await populateFoodTableFromMenu(parsedMenu);
 
     return parsedMenu;
   }
