@@ -33,7 +33,7 @@ async function getCheckCCMenu(language: string, country: string): Promise<DayMen
   // console.log('dbLatestMenu:', dbLatestMenu);
 
   // If the latest menu is not up to date, insert the parsed menu into the database
-  const dbMenuParsed: DayMenu[] = (dbLatestMenu) ? JSON.parse(JSON.stringify(dbLatestMenu?.menu)) : [];
+  const dbMenuParsed: DayMenu[] = dbLatestMenu ? JSON.parse(JSON.stringify(dbLatestMenu?.menu)) : [];
 
   // console.log(dbMenuParsed[0].plateLunch, '._.', parsedMenu[0].plateLunch);
 
