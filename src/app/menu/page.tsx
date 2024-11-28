@@ -15,18 +15,16 @@ interface DayMenu {
 
 const Page = async () => {
   const parsedMenu: DayMenu[] = await getCheckCCMenu('Japanese', 'Japan');
-  return (
-    (parsedMenu !== null && parsedMenu !== undefined) ? (
-      <Container fluid className="my-5 menu-container">
-        <h1>Menu</h1>
-        <MenuList menu={parsedMenu} />
-      </Container>
-    ) : (
-      <Container fluid className="my-5 menu-container">
-        <h1>Menu</h1>
-        <p>Menu not available</p>
-      </Container>
-    )
+  return parsedMenu !== null && parsedMenu !== undefined ? (
+    <Container fluid className="my-5 menu-container">
+      <h1>Menu</h1>
+      <MenuList menu={parsedMenu} />
+    </Container>
+  ) : (
+    <Container fluid className="my-5 menu-container">
+      <h1>Menu</h1>
+      <p>Menu not available</p>
+    </Container>
   );
 };
 
