@@ -47,10 +47,12 @@ enum Location {
   HALE_ALOHA
 }
 
-model MenuImages {
-  id        Int      @id @default(autoincrement())
-  name      String
-  url       String
+model FoodTable {
+  id           Int      @id @default(autoincrement())
+  name         String   @unique
+  url          String   
+  label        String[]
+  translation  String[]
 }
 
 model AIStatus {

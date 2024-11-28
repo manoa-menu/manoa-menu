@@ -118,9 +118,14 @@ export async function getLatestMenu(language: string) {
       where: {
         language,
       },
-      orderBy: {
-        week_of: 'desc',
-      },
+      orderBy: [
+        {
+          week_of: 'desc',
+        },
+        {
+          id: 'desc',
+        },
+      ],
     });
   } catch (error) {
     console.error('Error fetching latest menu:', error);
