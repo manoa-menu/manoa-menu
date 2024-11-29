@@ -36,9 +36,10 @@ model Menus {
   id         Int      @id @default(autoincrement())
   week_of    String    @default("1996-12-29")
   location   Location @default(CAMPUS_CENTER)
-  menu       Json    @default("[]")
   language   String   @default("English")
   country    String   @default("USA")
+  menu       Json    @default("[]")
+  created_at DateTime @default(now())
 }
 
 enum Location {

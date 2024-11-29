@@ -13,42 +13,60 @@ async function getCheckCCMenu(language: string, country: string): Promise<DayMen
   if (menuPdf === null) {
     throw new Error('Failed to scrape menu PDF');
   }
-  const parsedMenu: DayMenu[] = await parseCampusCenterMenu(menuPdf);
+  const parsedMenu: MenuResponse = await parseCampusCenterMenu(menuPdf);
 
   // Gets latest English menu from database
   const dbLatestMenu = await getLatestMenu('English');
-  // console.log('dbLatestMenu:', dbLatestMenu);
 
-  // If the latest menu is not up to date, insert the parsed menu into the database
+  // Parse the latest menu from the database
   const dbMenuParsed: DayMenu[] = (dbLatestMenu) ? JSON.parse(JSON.stringify(dbLatestMenu?.menu)) : [];
 
-  // console.log(dbMenuParsed[0].plateLunch, '._.', parsedMenu[0].plateLunch);
-
-  if (JSON.stringify(dbMenuParsed[1]) !== JSON.stringify(parsedMenu[1])
-    && JSON.stringify(dbMenuParsed[2]) !== JSON.stringify(parsedMenu[2])) {
+  // Check if the latest menu is not up to date
+  if (JSON.stringify(dbMenuParsed[1]) !== JSON.stringify(parsedMenu.weekOne[1])
+    && JSON.stringify(dbMenuParsed[2]) !== JSON.stringify(parsedMenu.weekOne[2])) {
     console.log('Inserting parsedMenu into database');
-    await insertMenu(parsedMenu, Location.CAMPUS_CENTER, 'English', 'USA');
-    const translatedMenu: MenuResponse = await fetchOpenAI(Option.CC, parsedMenu, 'Japanese', 'Japan');
-    const translatedDayMenus: DayMenu[] = translatedMenu.weekOne;
-    const translatedDayMenus2: DayMenu[] = translatedMenu.weekTwo;
-    await insertMenu(translatedDayMenus, Location.CAMPUS_CENTER, 'Japanese', 'Japan');
-    await insertMenu(translatedDayMenus2, Location.CAMPUS_CENTER, 'Japanese', 'Japan');
 
+    // Insert the parsed menu for week one into the database
+    await insertMenu(parsedMenu.weekOne, Location.CAMPUS_CENTER, 'English', 'USA');
+
+    // If week two menu exists, insert it into the database
+    if (parsedMenu.weekTwo) {
+      await insertMenu(parsedMenu.weekTwo, Location.CAMPUS_CENTER, 'English', 'USA');
+    }
+
+    // Fetch the translated menu using OpenAI
+    const translatedMenu: MenuResponse = await fetchOpenAI(Option.CC, parsedMenu, 'Japanese', 'Japan');
+
+    // Insert the translated menu for week one into the database
+    await insertMenu(translatedMenu.weekOne, Location.CAMPUS_CENTER, 'Japanese', 'Japan');
+
+    // If week two translated menu exists, insert it into the database
+    if (translatedMenu.weekTwo) {
+      await insertMenu(translatedMenu.weekTwo, Location.CAMPUS_CENTER, 'Japanese', 'Japan');
+    }
+
+    // Fetch the menu in the specified language from the database
     console.log(`Fetching parsedMenu from database in ${language}`);
     const dbMenuLanguage = await getLatestMenu(language);
     const dbMenuLanguageParsed: DayMenu[] = (dbMenuLanguage) ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
+
+    // Return the parsed menu if it exists
     if (dbMenuLanguageParsed) {
       return dbMenuLanguageParsed;
     }
   } else {
-  // If the latest menu is up to date, fetch the menu from the database
+    // If the latest menu is up to date, fetch the menu from the database
     console.log(`Fetching parsedMenu from database in ${language}`);
     const dbMenuLanguage = await getLatestMenu(language);
     const dbMenuLanguageParsed: DayMenu[] = (dbMenuLanguage) ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
+
+    // Return the parsed menu if it exists
     if (dbMenuLanguageParsed) {
       return dbMenuLanguageParsed;
     }
   }
+
+  // Log an error if fetching the parsed menu from the database fails
   console.error('Failed to fetch parsedMenu from database');
   throw new Error('Failed to load parsedMenu. Please try again later.');
 }

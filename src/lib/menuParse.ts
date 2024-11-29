@@ -1,9 +1,9 @@
 // import fs from 'fs';
 import pdf from 'pdf-parse';
 import fetch from 'node-fetch';
-import { DayMenu, PDFData } from '@/types/menuTypes';
+import { DayMenu, PDFData, MenuResponse } from '@/types/menuTypes';
 
-export default async function parseCampusCenterMenu(fileURL: string): Promise<DayMenu[]> {
+export default async function parseCampusCenterMenu(fileURL: string): Promise<MenuResponse> {
   const response = await fetch(fileURL);
   if (!response.ok) {
     throw new Error(`Failed to fetch data from ${fileURL}: ${response.statusText}`);
@@ -140,5 +140,11 @@ export default async function parseCampusCenterMenu(fileURL: string): Promise<Da
     // console.log(weeklyMenu);
   });
 
-  return weeklyMenu;
+  const weekOne = weeklyMenu.slice(0, 5);
+  const weekTwo = weeklyMenu.length >= 7 ? weeklyMenu.slice(5) : [];
+
+  return {
+    weekOne,
+    weekTwo,
+  };
 }

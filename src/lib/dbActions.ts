@@ -154,6 +154,22 @@ export async function getAllMenus() {
   }
 }
 
+export async function getUserLanguage(email: string): Promise<string> {
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { language: true },
+  });
+  return user?.language || 'English';
+}
+
+export async function getUserFavorites(email: string): Promise<string> {
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { favorites: true },
+  });
+  return user?.favorties || [];
+}
+
 /**
  * Creates a new user in the database.
  * @param credentials, an object with the following properties: email, password.

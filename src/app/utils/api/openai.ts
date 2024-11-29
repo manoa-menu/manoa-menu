@@ -3,14 +3,14 @@ import OpenAI from 'openai';
 
 import jpManualReplace from '@/lib/manualTranslate';
 
-import { DayMenu, MenuResponse, Option } from '@/types/menuTypes';
+import { MenuResponse, Option } from '@/types/menuTypes';
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
 // eslint-disable-next-line max-len
-async function fetchOpenAI(option: Option, weeklyMenu: DayMenu[], language: string, country: string): Promise<MenuResponse> {
+async function fetchOpenAI(option: Option, weeklyMenu: MenuResponse, language: string, country: string): Promise<MenuResponse> {
   const prompt = `You will translate all menu items into ${language}. 
   Translate and word in a way that is easy for native speakers of ${language} to understand.
   In parenthesis provide a brief description of dish contents in ${language}
