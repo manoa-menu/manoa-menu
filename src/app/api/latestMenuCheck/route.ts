@@ -1,0 +1,20 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getLatestMenu } from '@/lib/dbActions';
+
+// eslint-disable-next-line import/prefer-default-export
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const language = searchParams.get('language') || 'English';
+
+  try {
+    const latestMenu = await getLatestMenu(language);
+
+    if (!latestMenu) {
+      return new Response('No menu found', { status: 404 });
+    }
+    return NextResponse.json(latestMenu);
+  } catch (error) {
+    console.error('Error fetching latest menu:', error);
+    return new Response('Error fetching latest menu', { status: 500 });
+  }
+}
