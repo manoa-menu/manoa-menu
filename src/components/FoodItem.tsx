@@ -27,11 +27,10 @@ const FoodItem = ({ name, picture, label }: { name: string; picture: string; lab
         src={picture}
         alt={name}
         width={0}
-        height={0}
+        height={200}
         sizes="100vw"
         style={{
           width: '100%',
-          height: 'auto',
           objectFit: 'cover',
         }}
       />
