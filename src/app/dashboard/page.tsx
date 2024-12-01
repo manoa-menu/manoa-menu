@@ -20,7 +20,8 @@ const testSample: string[][] = [
 const testFoodItem: FoodItemType[] = [
   {
     name: 'Chicken Sandwich',
-    image: '/images/gettyimages-1442136071-612x612.jpg',
+    image:
+      'https://www.simplyrecipes.com/thmb/eNeZK5vnEFJhq3fqk8HJhxltowg=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/Simply-Recipes-One-Pot-Mac-Cheese-LEAD-4-b54f2372ddcc49ab9ad09a193df66f20.jpg',
     label: ['Chicken', 'Bread'],
   },
   {
