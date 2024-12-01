@@ -3,6 +3,7 @@
 import { signIn } from 'next-auth/react';
 import { Button, Card, Col, Container, Form, Row } from 'react-bootstrap';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import './signin-style.css';
 
 /** The sign in page. */
 const SignIn = () => {
