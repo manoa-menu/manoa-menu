@@ -5,7 +5,6 @@ import getCheckCCMenu from '@/lib/menuActions';
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const language = searchParams.get('language') || 'English';
-  const country = searchParams.get('country') || 'USA';
 
   try {
     const menu = await getCheckCCMenu(language);
