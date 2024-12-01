@@ -1,15 +1,16 @@
 /* eslint-disable eqeqeq */
-import scapeCCUrl from '@/lib/scrapeCCUrl';
+import scrapeCCUrl from '@/lib/scrapeCCUrl';
 import parseCampusCenterMenu from '@/lib/menuParse';
 import { getLatestMenu, insertMenu } from '@/lib/dbActions';
 import { Location, DayMenu, MenuResponse, Option } from '@/types/menuTypes';
 
 import fetchOpenAI from '../app/utils/api/openai';
+// import { parse } from 'path';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function getCheckCCMenu(language: string, country: string): Promise<DayMenu[]> {
   const menuURL: string = 'https://uhm.sodexomyway.com/en-us/locations/campus-center-food-court';
-  const menuPdf: string | null = await scapeCCUrl(menuURL);
+  const menuPdf: string | null = await scrapeCCUrl(menuURL);
   if (menuPdf === null) {
     throw new Error('Failed to scrape menu PDF');
   }
@@ -21,28 +22,33 @@ async function getCheckCCMenu(language: string, country: string): Promise<DayMen
   // Parse the latest menu from the database
   const dbMenuParsed: DayMenu[] = (dbLatestMenu) ? JSON.parse(JSON.stringify(dbLatestMenu?.menu)) : [];
 
+  // console.log(`dbMenuParsed: ${JSON.stringify(dbMenuParsed)}`);
+
   // Check if the latest menu is not up to date
-  if (JSON.stringify(dbMenuParsed[1]) !== JSON.stringify(parsedMenu.weekOne[1])
-    && JSON.stringify(dbMenuParsed[2]) !== JSON.stringify(parsedMenu.weekOne[2])) {
+  if (JSON.stringify(dbMenuParsed[1].grabAndGo) !== JSON.stringify(parsedMenu.weekOne[1].grabAndGo)
+    && JSON.stringify(dbMenuParsed[2].plateLunch) !== JSON.stringify(parsedMenu.weekOne[2].plateLunch)) {
     console.log('Inserting parsedMenu into database');
 
+    // console.log(parsedMenu.weekOne);
     // Insert the parsed menu for week one into the database
     await insertMenu(parsedMenu.weekOne, Location.CAMPUS_CENTER, 'English', 'USA');
 
     // If week two menu exists, insert it into the database
     if (parsedMenu.weekTwo) {
-      await insertMenu(parsedMenu.weekTwo, Location.CAMPUS_CENTER, 'English', 'USA');
+      await insertMenu(parsedMenu.weekTwo, Location.CAMPUS_CENTER, 'English', 'USA', 2);
+      // console.log(parsedMenu.weekTwo);
     }
 
     // Fetch the translated menu using OpenAI
-    const translatedMenu: MenuResponse = await fetchOpenAI(Option.CC, parsedMenu, 'Japanese', 'Japan');
+    console.log('Translating menu into Japanese');
+    const translatedMenu: MenuResponse = await fetchOpenAI(Option.CC, parsedMenu, 'Japanese');
 
     // Insert the translated menu for week one into the database
     await insertMenu(translatedMenu.weekOne, Location.CAMPUS_CENTER, 'Japanese', 'Japan');
 
     // If week two translated menu exists, insert it into the database
     if (translatedMenu.weekTwo) {
-      await insertMenu(translatedMenu.weekTwo, Location.CAMPUS_CENTER, 'Japanese', 'Japan');
+      await insertMenu(translatedMenu.weekTwo, Location.CAMPUS_CENTER, 'Japanese', 'Japan', 2);
     }
 
     // Fetch the menu in the specified language from the database
@@ -52,6 +58,8 @@ async function getCheckCCMenu(language: string, country: string): Promise<DayMen
 
     // Return the parsed menu if it exists
     if (dbMenuLanguageParsed) {
+      console.log(`Returning parsedMenu in ${language}`);
+      console.log(`dbMenuLanguageParsed: ${JSON.stringify(dbMenuLanguageParsed)}`);
       return dbMenuLanguageParsed;
     }
   } else {

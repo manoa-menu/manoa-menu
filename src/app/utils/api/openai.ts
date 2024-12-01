@@ -10,11 +10,11 @@ const client = new OpenAI({
 });
 
 // eslint-disable-next-line max-len
-async function fetchOpenAI(option: Option, weeklyMenu: MenuResponse, language: string, country: string): Promise<MenuResponse> {
+async function fetchOpenAI(option: Option, weeklyMenu: MenuResponse, language: string): Promise<MenuResponse> {
   const prompt = `You will translate all menu items into ${language}. 
   Translate and word in a way that is easy for native speakers of ${language} to understand.
   In parenthesis provide a brief description of dish contents in ${language}
-  or foods that people from ${country} may not be familiar with,
+  or foods that ${language} people may not be familiar with,
   or Chinese food, Uncommon Mexican food, Hawaiian food,
   or Chicken Parmesan, Cobb Salad, Huli Huli Chicken
   or foods that are not self-explanatory.
@@ -52,6 +52,7 @@ async function fetchOpenAI(option: Option, weeklyMenu: MenuResponse, language: s
           },
           required: [
             'weekOne',
+            'weekTwo',
           ],
           additionalProperties: false,
           $defs: {

@@ -1,11 +1,8 @@
-export default async function scrapeCCUrl(url: string): Promise<string> {
-  if (typeof window !== 'undefined') {
-    throw new Error('scrapeCCUrl can only be run in a Node.js environment');
-  }
+import { NextRequest, NextResponse } from 'next/server';
+import { JSDOM, VirtualConsole } from 'jsdom';
+import fetch from 'node-fetch';
 
-  const { JSDOM, VirtualConsole } = await import('jsdom');
-  const fetch = (await import('node-fetch')).default;
-
+async function scrapeCCUrl(url: string): Promise<string> {
   const response = await fetch(url, {
     method: 'GET',
     headers: {
@@ -45,4 +42,21 @@ export default async function scrapeCCUrl(url: string): Promise<string> {
   }
 
   throw new Error('Anchor element not found');
+}
+
+// eslint-disable-next-line import/prefer-default-export
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const url = searchParams.get('url');
+
+  if (!url) {
+    return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
+  }
+
+  try {
+    const result = await scrapeCCUrl(url);
+    return NextResponse.json({ href: result });
+  } catch (error) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+  }
 }

@@ -16,7 +16,10 @@ export default async function parseCampusCenterMenu(fileURL: string): Promise<Me
   const weekdays = ['Mon \n', 'Tue \n', 'Wed \n', 'Thurs \n', 'Fri \n', 'Thu\nrs\n'];
   const messageArr: string[] = [];
 
-  pdf(dataBuffer).then(function (data: PDFData) {
+  let weekOne: DayMenu[] = [];
+  let weekTwo: DayMenu[] = [];
+
+  await pdf(dataBuffer).then(function (data: PDFData) {
     const parsedText = data.text;
     // Create a regular expression to match any of the weekdays
     const regex = new RegExp(weekdays.join('|'), 'g');
@@ -137,11 +140,13 @@ export default async function parseCampusCenterMenu(fileURL: string): Promise<Me
         holidays[index].specialMessage = message;
       });
     }
-    // console.log(weeklyMenu);
+
+    weekOne = weeklyMenu.slice(0, 5);
+    weekTwo = weeklyMenu.length >= 7 ? weeklyMenu.slice(5) : [];
   });
 
-  const weekOne = weeklyMenu.slice(0, 5);
-  const weekTwo = weeklyMenu.length >= 7 ? weeklyMenu.slice(5) : [];
+  // console.log(weekOne);
+  // console.log(weekTwo);
 
   return {
     weekOne,

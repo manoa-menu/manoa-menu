@@ -13,7 +13,7 @@ const LanguageDropdown = () => {
   return (
     <DropdownButton id="dropdown-basic-button" title="Dropdown button">
       {languages.map((language) => (
-        <Dropdown.Item key={language.code} href={`/${language.code}`}>
+        <Dropdown.Item key={language.name} href={`/${language.code}`}>
           {language.name}
         </Dropdown.Item>
       ))}

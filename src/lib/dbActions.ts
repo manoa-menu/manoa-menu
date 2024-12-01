@@ -20,7 +20,7 @@ function getCurrentWeekOf(): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-export function getNextWeekOf(): string {
+function getNextWeekOf(): string {
   const today = new Date();
   // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
   const dayOfWeek = today.getDay();
@@ -130,9 +130,6 @@ export async function getLatestMenu(language: string) {
         {
           week_of: 'desc',
         },
-        {
-          id: 'desc',
-        },
       ],
     });
   } catch (error) {
@@ -162,12 +159,12 @@ export async function getUserLanguage(email: string): Promise<string> {
   return user?.language || 'English';
 }
 
-export async function getUserFavorites(email: string): Promise<string> {
+export async function getUserFavorites(email: string): Promise<string[]> {
   const user = await prisma.user.findUnique({
     where: { email },
     select: { favorites: true },
   });
-  return user?.favorties || [];
+  return user?.favorites || [];
 }
 
 /**
