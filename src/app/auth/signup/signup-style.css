@@ -1,7 +1,6 @@
 .auth-container {
     display: flex;
     justify-content: center;
-    align-items: center;
     min-height: 100vh;
     background-color: #f8f9fa; 
   }
@@ -10,6 +9,7 @@
     border: none;
     border-radius: 10px;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    margin-top: 160px;
   }
   
   .card-custom .card-body {
@@ -36,7 +36,7 @@
   }
   
   .input-group-text {
-    background-color: #e9ecef;
+    background-color: #d4dce5;
     border: none;
   }
   
