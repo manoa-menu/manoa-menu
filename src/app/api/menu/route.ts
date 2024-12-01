@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
     const menu = await getCheckCCMenu(language);
     return NextResponse.json(menu);
   } catch (error) {
+    console.error('Error fetching menu:', error);
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }
