@@ -125,12 +125,8 @@ export async function getLatestMenu(language: string) {
     return await prisma.menus.findFirst({
       where: {
         language,
+        week_of: getCurrentWeekOf(),
       },
-      orderBy: [
-        {
-          week_of: 'desc',
-        },
-      ],
     });
   } catch (error) {
     console.error('Error fetching latest menu:', error);

@@ -3,7 +3,7 @@
 import '@/styles/Menu.css';
 
 import MenuList from '@/components/MenuList';
-import { Container, Dropdown, DropdownButton, Row } from 'react-bootstrap';
+import { Container, Dropdown, DropdownButton } from 'react-bootstrap';
 import { DayMenu } from '@/types/menuTypes';
 import { useSession } from 'next-auth/react';
 import { getUserLanguage } from '@/lib/dbActions';
@@ -66,7 +66,6 @@ const Page = () => {
     fetchMenu();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]);
-
   return (
     menu !== null && menu !== undefined ? (
       <Container fluid className="my-5 menu-container">
