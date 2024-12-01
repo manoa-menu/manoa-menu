@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Container, Card, Col, Row, Form } from 'react-bootstrap';
 import { useSession } from 'next-auth/react';
+import axios from 'axios';
 import StarButton from './StarButton';
 
 const CampusCravings: React.FC = () => {
   const { data: session } = useSession();
   const currentUser = session?.user?.email;
   const [starredItems, setStarredItems] = useState<{ [key: string]: boolean }>({});
+  const [favoriteCounts, setFavoriteCounts] = useState<{ [key: string]: number }>({});
   const [selectedOption, setSelectedOption] = useState<string>('All');
 
   const foodItems = [
@@ -17,6 +19,13 @@ const CampusCravings: React.FC = () => {
     { id: 'item3', name: 'Food Item 3', description: 'Food Item 3 Description', location: 'Hale Aloha Café' },
     { id: 'item4', name: 'Food Item 4', description: 'Food Item 4 Description', location: 'Campus Center Food Court' },
   ];
+
+  useEffect(() => {
+    foodItems.forEach(async (item) => {
+      const response = await axios.get(`/api/likes/${item.id}`);
+      setFavoriteCounts((prev) => ({ ...prev, [item.id]: response.data.likes }));
+    });
+  }, []);
 
   // Handle dropdown selection change
   const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -29,7 +38,9 @@ const CampusCravings: React.FC = () => {
     return foodItem.location === selectedOption;
   });
 
-  const toggleStar = (item: string) => {
+  const toggleStar = async (item: string) => {
+    const response = await axios.post('/api/likes/toggle', { foodItemId: item });
+    setFavoriteCounts((prev) => ({ ...prev, [item]: response.data.likes }));
     setStarredItems((prev) => ({
       ...prev,
       [item]: !prev[item],
@@ -72,13 +83,19 @@ const CampusCravings: React.FC = () => {
               <Card.Body>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Card.Title>{foodItem.name}</Card.Title>
+                  {session && (
                   <StarButton
                     item={foodItem.id}
                     isStarred={starredItems[foodItem.id] || false}
                     onToggle={toggleStar}
                   />
+                  )}
                 </div>
                 <Card.Text>{foodItem.description}</Card.Text>
+                <Card.Text>
+                  Likes:
+                  {favoriteCounts[foodItem.id] || 0}
+                </Card.Text>
                 {session && (
                   <div>
                     <Card.Text>

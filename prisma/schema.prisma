@@ -53,6 +53,7 @@ model FoodTable {
   url          String   
   label        String[]
   translation  String[]
+  likes        Int      @default(0)
 }
 
 model AIStatus {
