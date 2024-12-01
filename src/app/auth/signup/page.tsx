@@ -50,11 +50,11 @@ const SignUp = () => {
           <Col xs={12} md={6} lg={4}>
             <Card className="card-custom">
               <Card.Body>
-                <div className="text-center">
+                <div className="text-center mb-4">
                   <div className="auth-header-icon">
                     <i className="bi bi-person-plus-fill fs-3" />
                   </div>
-                  <h2>Sign Up</h2>
+                  <h2 className="mt-2">Sign Up</h2>
                 </div>
                 <Form onSubmit={handleSubmit(onSubmit)}>
                   <Form.Group className="form-group mb-3">
