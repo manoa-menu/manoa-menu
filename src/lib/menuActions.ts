@@ -33,7 +33,7 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
       // Insert the parsed menu for week one into the database
       await insertMenu(parsedMenu.weekOne, Location.CAMPUS_CENTER, 'English', 'USA');
       await populateFoodTableFromMenu(parsedMenu.weekOne);
-      
+
       // If week two menu exists, insert it into the database
       if (parsedMenu.weekTwo) {
         await insertMenu(parsedMenu.weekTwo, Location.CAMPUS_CENTER, 'English', 'USA', 2);
