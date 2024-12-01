@@ -5,6 +5,7 @@ import fetch from 'node-fetch';
 import { DayMenu, PDFData, MenuResponse } from '@/types/menuTypes';
 
 // Resolve the absolute path
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const pdfFilePath = path.resolve('./test/data/05-versions-space.pdf');
 
 export default async function parseCampusCenterMenu(fileURL: string): Promise<MenuResponse> {
