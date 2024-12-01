@@ -1,5 +1,11 @@
 import { PrismaClient } from '@prisma/client';
+import { config } from 'dotenv';
 
+config();
+
+const SerpApi = require('google-search-results-nodejs');
+
+const search = new SerpApi.GoogleSearch(process.env.SERP_API_KEY);
 const prisma = new PrismaClient();
 
 interface FoodItem {
@@ -19,6 +25,29 @@ interface DayMenu {
   plateLunch: string[];
   grabAndGo: string[];
   specialMessage: string;
+}
+
+async function fetchImageUrl(foodName: string) {
+  return new Promise((resolve, reject) => {
+    try {
+      search.json(
+        {
+          q: foodName,
+          tbm: 'isch',
+          num: 1,
+        },
+        (result: any) => {
+          if (result.images_results && result.images_results.length > 0) {
+            resolve(result.images_results[0].original || null);
+          } else {
+            resolve(null);
+          }
+        },
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
 }
 
 export default async function populateFoodTableFromMenu(parsedMenu: DayMenu[]): Promise<void> {
@@ -57,6 +86,7 @@ export default async function populateFoodTableFromMenu(parsedMenu: DayMenu[]): 
       url: '',
       label,
       translation: [],
+      likes: 0,
     }));
 
     // Check existing records in the database
@@ -66,15 +96,42 @@ export default async function populateFoodTableFromMenu(parsedMenu: DayMenu[]): 
           in: uniqueFoodData.map((item) => item.name),
         },
       },
-      select: { name: true },
+      select: { name: true, url: true },
     });
 
-    const existingNames = new Set(existingFoodItems.map((item) => item.name));
-    const newFoodData = uniqueFoodData.filter((item) => !existingNames.has(item.name));
+    // Determine which items are new or need an image URL update
+    const existingNamesWithUrls = new Map(existingFoodItems.map((item) => [item.name, item.url]));
 
-    if (newFoodData.length > 0) {
-      await prisma.foodTable.createMany({ data: newFoodData });
-      console.log(`Inserted ${newFoodData.length} new items into FoodTable.`);
+    const itemsToUpdate = uniqueFoodData.filter((item) => {
+      const existingUrl = existingNamesWithUrls.get(item.name);
+      return !existingUrl; // Update only items with an empty URL
+    });
+
+    if (itemsToUpdate.length > 0) {
+      // Fetch image URLs concurrently
+      const updatedFoodData = await Promise.all(
+        itemsToUpdate.map(async (item) => {
+          const imageUrl = await fetchImageUrl(item.name);
+          return { ...item, url: typeof imageUrl === 'string' ? imageUrl : '' };
+        }),
+      );
+
+      // Insert or update food items in the database
+      await Promise.all(
+        updatedFoodData.map(async (item) => {
+          await prisma.foodTable.upsert({
+            where: { name: item.name },
+            update: { url: item.url },
+            create: {
+              name: item.name,
+              url: item.url,
+              label: item.label,
+              translation: item.translation,
+            },
+          });
+        }),
+      );
+      console.log(`Inserted or updated ${updatedFoodData.length} items in FoodTable with image URLs.`);
     } else {
       console.log('No new items to insert into FoodTable.');
     }
@@ -149,16 +206,42 @@ export async function populateFoodTableFromMenuId(menuId: number) {
           in: uniqueFoodData.map((item) => item.name),
         },
       },
-      select: { name: true },
+      select: { name: true, url: true },
     });
 
-    const existingNames = new Set(existingFoodItems.map((item) => item.name));
-    const newFoodData = uniqueFoodData.filter((item) => !existingNames.has(item.name));
+    // Determine which items are new or need an image URL update
+    const existingNamesWithUrls = new Map(existingFoodItems.map((item) => [item.name, item.url]));
 
-    if (newFoodData.length > 0) {
-      // Insert only new items into FoodTable
-      await prisma.foodTable.createMany({ data: newFoodData });
-      console.log(`Inserted ${newFoodData.length} new items into FoodTable for menu ID ${menuId}.`);
+    const itemsToUpdate = uniqueFoodData.filter((item) => {
+      const existingUrl = existingNamesWithUrls.get(item.name);
+      return !existingUrl; // Update only items with an empty URL
+    });
+
+    if (itemsToUpdate.length > 0) {
+      // Fetch image URLs concurrently
+      const updatedFoodData = await Promise.all(
+        itemsToUpdate.map(async (item) => {
+          const imageUrl = await fetchImageUrl(item.name);
+          return { ...item, url: typeof imageUrl === 'string' ? imageUrl : '' };
+        }),
+      );
+
+      // Insert or update food items in the database
+      await Promise.all(
+        updatedFoodData.map(async (item) => {
+          await prisma.foodTable.upsert({
+            where: { name: item.name },
+            update: { url: item.url },
+            create: {
+              name: item.name,
+              url: item.url,
+              label: item.label,
+              translation: item.translation,
+            },
+          });
+        }),
+      );
+      console.log(`Inserted or updated ${updatedFoodData.length} items in FoodTable with image URLs.`);
     } else {
       console.log(`No new items to insert for menu ID ${menuId}.`);
     }
