@@ -28,6 +28,7 @@
     "next-auth": "^4.24.7",
     "node-fetch": "^3.3.2",
     "openai": "^4.72.0",
+    "path": "^0.12.7",
     "pdf-parse": "^1.1.1",
     "puppeteer": "^23.9.0",
     "puppeteer-core": "^23.9.0",

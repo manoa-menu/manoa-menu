@@ -1,92 +1,95 @@
-/* Main container fills the whole page and centers the content */
 .main-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh; /* Full viewport height */
-    width: 100%; /* Full width */
-    margin: 0; /* Remove default margin */
-    background-color: #f8f9fa; /* Optional: Light background */
-  }
-  
-  /* Card styles for vertical rectangle */
-  .card-custom {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    border: 0;
-    border-radius: 8px;
-    width: 350px; /* Fixed width for a vertical rectangle */
-    min-height: 600px; /* Minimum height to achieve a rectangle shape */
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
-  
-  .card-custom .card-body {
-    padding: 1.5rem;
-  }
-  
-  .card-custom .card-footer {
-    text-align: center;
-    background-color: #f8f9fa;
-  }
-  
-  /* Rounded icon at the top */
-  .icon-container {
-    width: 60px;
-    height: 60px;
-    background-color: #4c6ef5; /* Custom blue */
-    color: white;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border-radius: 50%;
-    margin: 0 auto;
-  }
-  
-  .icon-container i {
-    font-size: 1.5rem;
-    color: #ffffff;
-  }
-  
-  /* Title styling */
-  .card-custom h2 {
-    margin-top: 0.5rem;
-    margin-bottom: 0;
-    font-size: 1.5rem;
-    text-align: center;
-  }
-  
-  /* Input group styling */
-  .input-group-text {
-    background-color: #f8f9fa;
-    border: none;
-  }
-  
-  .form-control {
-    border-radius: 0;
-  }
-  
-  /* Button styles */
-  .btn-primary {
-    width: 100%;
-    margin-top: 1rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .btn-primary i {
-    margin-left: 0.5rem;
-  }
-  
-  /* Link in the footer */
-  .card-custom .card-footer a {
-    color: #4c6ef5;
-    text-decoration: none;
-    font-weight: bold;
-  }
-  
-  .card-custom .card-footer a:hover {
-    text-decoration: underline;
-  }
-  
+  display: flex;
+  justify-content: center;
+  min-height: 100vh; 
+  width: 100%; 
+  background-color: #f8f9fa; 
+}
+
+.card-custom {
+  width: 100%;
+  max-width: 400px; 
+  min-height: 500px; 
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin-top: 160px;
+}
+
+.card-custom .card-body {
+  padding: 2rem;
+}
+
+.card-custom .card-footer {
+  text-align: center;
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.icon-container {
+  width: 60px;
+  height: 60px;
+  background-color: #4c6ef5; 
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  margin: 0 auto;
+  margin-bottom: 1rem;
+}
+
+.icon-container i {
+  font-size: 1.5rem;
+}
+
+.card-custom h2 {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.input-group {
+  margin-bottom: 1.5rem;
+}
+
+.input-group-text {
+  background-color: #d4dce5;
+  border: none;
+}
+
+.form-control {
+  border-radius: 0;
+}
+
+.form-control:focus {
+  border-color: #4c6ef5;
+  box-shadow: none;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #4c6ef5;
+  border: none;
+  transition: background-color 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: #3b5ec3;
+}
+
+.card-footer a {
+  color: #4c6ef5;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.card-footer a:hover {
+  text-decoration: underline;
+}

@@ -1,11 +1,15 @@
-import { JSDOM, VirtualConsole } from 'jsdom';
-
 export default async function scrapeCCUrl(url: string): Promise<string> {
-  // Fetch the most current data, bypassing caches
+  if (typeof window !== 'undefined') {
+    throw new Error('scrapeCCUrl can only be run in a Node.js environment');
+  }
+
+  const { JSDOM, VirtualConsole } = await import('jsdom');
+  const fetch = (await import('node-fetch')).default;
+
   const response = await fetch(url, {
     method: 'GET',
     headers: {
-      'Cache-Control': 'no-cache, no-store, must-revalidate', // Forces a fresh response
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
       Pragma: 'no-cache',
       Expires: '0',
     },
@@ -17,7 +21,6 @@ export default async function scrapeCCUrl(url: string): Promise<string> {
 
   const html = await response.text();
 
-  // Set up a VirtualConsole to handle and suppress specific errors
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('error', (error) => {
     if (error.message.includes('Could not parse CSS stylesheet')) {
@@ -27,14 +30,12 @@ export default async function scrapeCCUrl(url: string): Promise<string> {
     }
   });
 
-  // Create the JSDOM instance
   const dom = new JSDOM(html, {
-    resources: 'usable', // Loads resources like images or scripts
-    runScripts: 'dangerously', // Executes inline scripts
+    resources: 'usable',
+    runScripts: 'dangerously',
     virtualConsole,
   });
 
-  // Extract the desired <a> tag inside the specific <div>
   const doc = dom.window.document;
   const div = doc.querySelector('div.MenuAppstyles__MenuLinkContainer-sc-hftaq1-1');
   const anchor = div?.querySelector('a');
