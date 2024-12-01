@@ -75,11 +75,10 @@ const CampusCravings: React.FC = () => {
       </Row>
 
       {/* Displaying filtered food items */}
-      <div className="overflow-auto" style={{ maxHeight: '500px', border: '3px solid', borderRadius: '5px' }}>
+      <div className="overflow-auto" style={{ maxHeight: '500px', border: '2px solid', borderRadius: '6px' }}>
         <Col>
           {filteredFoodItems.map((foodItem) => (
-            <Card className="my-3" key={foodItem.id}>
-              <Card.Header>{foodItem.name}</Card.Header>
+            <Card className="my-3" style={{ border: '1px solid' }} key={foodItem.id}>
               <Card.Body>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Card.Title>{foodItem.name}</Card.Title>
@@ -96,14 +95,6 @@ const CampusCravings: React.FC = () => {
                   Likes:
                   {favoriteCounts[foodItem.id] || 0}
                 </Card.Text>
-                {session && (
-                  <div>
-                    <Card.Text>
-                      Additional info for&nbsp;
-                      {foodItem.name}
-                    </Card.Text>
-                  </div>
-                )}
               </Card.Body>
             </Card>
           ))}
