@@ -1,7 +1,11 @@
 // import fs from 'fs';
+import path from 'path';
 import pdf from 'pdf-parse';
 import fetch from 'node-fetch';
 import { DayMenu, PDFData, MenuResponse } from '@/types/menuTypes';
+
+// Resolve the absolute path
+const pdfFilePath = path.resolve('./test/data/05-versions-space.pdf');
 
 export default async function parseCampusCenterMenu(fileURL: string): Promise<MenuResponse> {
   const response = await fetch(fileURL);
