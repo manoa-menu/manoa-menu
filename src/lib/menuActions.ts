@@ -8,6 +8,9 @@ import fetchOpenAI from '../app/utils/api/openai';
 
 async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
   try {
+    // Log the language parameter
+    console.log(`Fetching menu for language: ${language}`);
+
     const menuURL: string = 'https://uhm.sodexomyway.com/en-us/locations/campus-center-food-court';
     const menuPdf: string | null = await scrapeCCUrl(menuURL);
     if (menuPdf === null) {
@@ -75,11 +78,15 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
     }
 
     // Log an error if fetching the parsed menu from the database fails
-    console.error('Failed to fetch parsedMenu from database');
-    throw new Error('Failed to load parsedMenu. Please try again later.');
+    throw new Error(`Failed to load parsedMenu for language: ${language}. Please try again later.`);
   } catch (error) {
-    console.error(`Failed to fetch menu. ERROR: ${error}`);
-    throw new Error(`Failed to load menu. ERROR: ${error}`);
+    if (error instanceof Error) {
+      console.error(`Failed to fetch menu for language: ${language}. ERROR: ${error.message}`);
+      throw new Error(`Failed to load menu for language: ${language}. ERROR: ${error.message}`);
+    } else {
+      console.error(`Failed to fetch menu for language: ${language}. Unknown error: ${error}`);
+      throw new Error(`Failed to load menu for language: ${language}. Unknown error: ${error}`);
+    }
   }
 }
 
