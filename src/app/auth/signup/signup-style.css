@@ -1,0 +1,81 @@
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f8f9fa; 
+  }
+  
+  .card-custom {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .card-custom .card-body {
+    padding: 2rem;
+  }
+  
+  .card-custom .card-footer {
+    background-color: #f8f9fa;
+    text-align: center;
+    padding: 1rem;
+    border-top: none;
+  }
+  
+  .auth-header-icon {
+    width: 60px;
+    height: 60px;
+    background-color: #4c6ef5; 
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto 1rem auto;
+  }
+  
+  .input-group-text {
+    background-color: #e9ecef;
+    border: none;
+  }
+  
+  .form-control {
+    border-left: none;
+  }
+  
+  .form-control:focus {
+    box-shadow: none;
+    border-color: #4c6ef5;
+  }
+  
+  /* Button styling */
+  .btn-primary {
+    background-color: #4c6ef5;
+    border: none;
+    transition: background-color 0.3s ease;
+  }
+  
+  .btn-primary:hover {
+    background-color: #3b5ec3;
+  }
+  
+  .btn-warning {
+    border: none;
+    transition: background-color 0.3s ease;
+  }
+  
+  .btn-warning:hover {
+    background-color: #e0a800;
+  }
+  
+  .card-footer a {
+    color: #4c6ef5;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  
+  .card-footer a:hover {
+    text-decoration: underline;
+  }
+  
