@@ -7,8 +7,7 @@ import { Location, DayMenu, MenuResponse, Option } from '@/types/menuTypes';
 import fetchOpenAI from '../app/utils/api/openai';
 // import { parse } from 'path';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function getCheckCCMenu(language: string, country: string): Promise<DayMenu[]> {
+async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
   const menuURL: string = 'https://uhm.sodexomyway.com/en-us/locations/campus-center-food-court';
   const menuPdf: string | null = await scrapeCCUrl(menuURL);
   if (menuPdf === null) {
