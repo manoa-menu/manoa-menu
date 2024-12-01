@@ -3,7 +3,7 @@ import scrapeCCUrl from '@/lib/scrapeCCUrl';
 import parseCampusCenterMenu from '@/lib/menuParse';
 import { getLatestMenu, insertMenu } from '@/lib/dbActions';
 import { Location, DayMenu, MenuResponse, Option } from '@/types/menuTypes';
-
+import populateFoodTableFromMenu from './foodTable';
 import fetchOpenAI from '../app/utils/api/openai';
 
 async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
@@ -32,10 +32,12 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
       // console.log(parsedMenu.weekOne);
       // Insert the parsed menu for week one into the database
       await insertMenu(parsedMenu.weekOne, Location.CAMPUS_CENTER, 'English', 'USA');
-
+      await populateFoodTableFromMenu(parsedMenu.weekOne);
+      
       // If week two menu exists, insert it into the database
       if (parsedMenu.weekTwo) {
         await insertMenu(parsedMenu.weekTwo, Location.CAMPUS_CENTER, 'English', 'USA', 2);
+        await populateFoodTableFromMenu(parsedMenu.weekTwo);
         // console.log(parsedMenu.weekTwo);
       }
 

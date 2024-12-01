@@ -17,7 +17,6 @@ const NavBar: React.FC = () => {
   return (
     <Navbar bg="light" expand="lg">
       <Container fluid className="px-5">
-
         <div className="d-flex align-items-center">
           <Navbar.Brand>
             <Image
@@ -39,7 +38,13 @@ const NavBar: React.FC = () => {
         <Navbar.Collapse id="basic-navbar-nav">
 
           <Nav className="me-auto justify-content-start px-2">
-            <Nav.Link id="menu-nav" className="mx-2" href="/menu" key="menu" active={pathName === '/menu'}>
+            <Nav.Link
+              id="menu-nav"
+              className="mx-2"
+              href="/menu"
+              key="menu"
+              active={pathName === '/menu'}
+            >
               Menu
             </Nav.Link>
 
@@ -51,6 +56,16 @@ const NavBar: React.FC = () => {
               active={pathName === '/campus-cravings'}
             >
               Campus Cravings
+            </Nav.Link>
+
+            <Nav.Link
+              id="maps-nav"
+              className="mx-2"
+              href="/maps"
+              key="maps"
+              active={pathName === '/maps'}
+            >
+              Find a Location
             </Nav.Link>
             {currentUser
               ? [
