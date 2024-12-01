@@ -46,6 +46,9 @@ const Page = () => {
       try {
         setLoading(true);
         const response = await fetch(`/api/menu?language=${language}`);
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status} ${response.statusText}`);
+        }
         const data = await response.json();
         const fixedMenu = (language === 'English') ? data.map((day: DayMenu, index: number) => ({
           name: weekDays[index % 5],
@@ -62,7 +65,6 @@ const Page = () => {
         setLoading(false);
       }
     };
-
     fetchMenu();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]);
