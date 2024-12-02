@@ -6,6 +6,11 @@ import Calendar from '@/components/Calendar';
 import FoodItemSlider from '@/components/FoodItemSlider';
 import type { FoodItemType } from '@/components/FoodItemSlider';
 
+interface MenuItem {
+  grabAndGo: string[];
+  plateLunch: string[];
+}
+
 const testFoodItem: FoodItemType[] = [
   {
     name: 'Chicken Sandwich',
@@ -54,8 +59,10 @@ const DashboardPage = () => {
   const userId: number = 1;
   const language: string = 'English';
   const [userFavoriteItems, setUserFavoriteItems] = useState<string[]>([]);
-  const [latestMenu, setLatestMenu] = useState<string[]>([]);
+  const [latestMenu, setLatestMenu] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
+  // Fetch user's favorite food items
   useEffect(() => {
     const fetchFavoriteItems = async () => {
       try {
@@ -72,6 +79,7 @@ const DashboardPage = () => {
     fetchFavoriteItems();
   }, [userId]);
 
+  // Fetch the latest menu for comparison
   useEffect(() => {
     const fetchLatestMenu = async () => {
       try {
@@ -80,18 +88,28 @@ const DashboardPage = () => {
           throw new Error('Failed to fetch latest menu');
         }
         const data = await response.json();
-        setLatestMenu(data);
+        setLatestMenu(data.menu);
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching latest menu:', error);
+        setLoading(false);
       }
     };
     fetchLatestMenu();
   }, [language]);
+  // Render a loading state while fetching data
+  if (loading) {
+    return <Container className="loading">Loading...</Container>;
+  }
 
-  console.log(userFavoriteItems);
-  console.log(latestMenu);
-
-  const testString: string[][] = [userFavoriteItems, [], [], [], [], [], []];
+  // Filter the latest menu based on the user's favorite items
+  const flattenedMenu = latestMenu.map((day) => [...day.grabAndGo, ...day.plateLunch]);
+  const filteredMenu = flattenedMenu.map((day) => day.filter((item) => userFavoriteItems.includes(item)));
+  console.log(flattenedMenu);
+  // REMINDER
+  // For locations that aren't avaiable on the weekends, the logic will need to be adjusted
+  // REMINDER
+  const fullFilteredMenu: string[][] = [[], ...filteredMenu, []];
 
   return (
     <Container>
@@ -106,7 +124,7 @@ const DashboardPage = () => {
         </Container>
       </Row>
       <Row className="py-2 mb-4">
-        <Calendar weeklyItems={testString} />
+        <Calendar weeklyItems={fullFilteredMenu} />
       </Row>
       <Row>
         <h1>Recommended:</h1>

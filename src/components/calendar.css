@@ -1,4 +1,33 @@
+.calendar-scroll::-webkit-scrollbar {
+  width: 0px;
+}
+
 .calendar-scroll {
   height: 150px;
   overflow-y: auto;
+}
+
+.flex-fill {
+  flex: 1 1 auto;
+}
+
+.backg-light {
+  background-color: #f8f9fa;
+}
+
+.backg-dark {
+  background-color: #e9ecef;
+}
+
+.calendar-card {
+  cursor: pointer;
+}
+
+.calendar-card-expanded {
+  width: 100%;
+  height: 100%;
+}
+
+.modal-custom {
+  top: 25% !important;
 }
