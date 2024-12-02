@@ -74,7 +74,6 @@
 
 .btn-primary {
   width: 100%;
-  padding: 0.75rem;
   background-color: #4c6ef5;
   border: none;
   transition: background-color 0.3s ease;
@@ -87,7 +86,7 @@
 .card-footer a {
   color: #4c6ef5;
   text-decoration: none;
-  font-weight: bold;
+  font-weight: 500;
 }
 
 .card-footer a:hover {
