@@ -104,7 +104,6 @@ const Page = () => {
   const [loading, setLoading] = useState(true);
   const [language, setLanguage] = useState<string>('English');
   const dropdownRef = useRef(null);
-
   const langItemClick = (lang: string) => {
     setLanguage(lang);
   };

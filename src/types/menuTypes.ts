@@ -14,6 +14,55 @@ export interface DayMenu {
   specialMessage: string;
 }
 
+export interface SodexoMenuItem {
+  course: string | null;
+  courseSortOrder: number;
+  meal: string;
+  menuItemId: number;
+  formalName: string;
+  description: string;
+  price: number;
+  allergens: { allergen: number; name: string }[];
+  sizes: [];
+  addons: [];
+  isVegan: boolean;
+  isVegetarian: boolean;
+  isMindful: boolean;
+  isSwell: boolean;
+  calories: string;
+  caloriesFromFat: string;
+  fat: string;
+  saturatedFat: string;
+  transFat: string;
+  polyunsaturatedFat: string;
+  cholesterol: string;
+  sodium: string;
+  carbohydrates: string;
+  dietaryFiber: string;
+  sugar: string;
+  protein: string;
+  potassium: string;
+  iron: string;
+  calcium: string;
+  vitaminA: string;
+  vitaminC: string;
+}
+
+export interface SodexoGroup {
+  name: string | null;
+  sortOrder: number;
+  items: SodexoMenuItem[];
+}
+
+export interface SodexoMeal {
+  name: string;
+  groups: SodexoGroup[];
+}
+
+export interface SodexoRootObject {
+  meals: SodexoMeal[];
+}
+
 export interface MenuResponse {
   weekOne: DayMenu[];
   weekTwo: DayMenu[];
