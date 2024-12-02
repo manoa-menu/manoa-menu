@@ -3,6 +3,7 @@
 import '@/styles/Menu.css';
 
 import MenuList from '@/components/MenuList';
+import { Translate } from 'react-bootstrap-icons';
 import { Container, Dropdown, DropdownButton } from 'react-bootstrap';
 import { DayMenu } from '@/types/menuTypes';
 import { useSession } from 'next-auth/react';
@@ -85,11 +86,18 @@ const fixDayNames = (menu: DayMenu[], language: string) => {
 
 const Page = () => {
   const languages = [
-    { name: 'English', code: 'en' },
-    { name: 'Japanese', code: 'jp' },
-    { name: 'Korean', code: 'kr' },
-    { name: 'Spanish', code: 'es' },
+    { name: 'English', displayName: 'English' },
+    { name: 'Japanese', displayName: '日本語' },
+    { name: 'Korean', displayName: '한국어' },
+    { name: 'Spanish', displayName: 'Español' },
   ];
+
+  const displayLanguages = new Map<string, string>([
+    ['English', 'English'],
+    ['Japanese', '日本語'],
+    ['Korean', '한국어'],
+    ['Spanish', 'Español'],
+  ]);
 
   const { data: session } = useSession();
   const [menu, setMenu] = useState<DayMenu[]>([]);
@@ -141,14 +149,25 @@ const Page = () => {
       <Container fluid className="my-5 menu-container">
         <div className="d-flex justify-content-center">
           <h1 className="text-center">Campus Center Menu</h1>
-          <DropdownButton className="mx-3 p-1" ref={dropdownRef} id="dropdown-basic-button" title={language}>
+          <DropdownButton
+            className="mx-3 p-1"
+            ref={dropdownRef}
+            id="dropdown-basic-button"
+            title={(
+              <span className="align-items-center">
+                <Translate className="me-1 mb-1" />
+                {' '}
+                {displayLanguages.get(language)}
+              </span>
+            )}
+          >
             {languages.map((lang) => (
               <Dropdown.Item
                 key={lang.name}
                 onClick={() => langItemClick(lang.name)}
                 disabled={lang.name === 'Korean' || lang.name === 'Spanish'}
               >
-                {lang.name}
+                {lang.displayName}
               </Dropdown.Item>
             ))}
           </DropdownButton>
@@ -166,14 +185,25 @@ const Page = () => {
       <Container fluid className="my-5 menu-container">
         <div className="justify-content-center">
           <h1 className="text-center">Campus Center Menu</h1>
-          <DropdownButton className="mx-3 p-1" ref={dropdownRef} id="dropdown-basic-button" title={language}>
+          <DropdownButton
+            className="mx-3 p-1"
+            ref={dropdownRef}
+            id="dropdown-basic-button"
+            title={(
+              <span className="align-items-center">
+                <Translate className="me-1 mb-1" />
+                {' '}
+                {displayLanguages.get(language)}
+              </span>
+            )}
+          >
             {languages.map((lang) => (
               <Dropdown.Item
                 key={lang.name}
                 onClick={() => langItemClick(lang.name)}
                 disabled={lang.name === 'Korean' || lang.name === 'Spanish'}
               >
-                {lang.name}
+                {lang.displayName}
               </Dropdown.Item>
             ))}
           </DropdownButton>
