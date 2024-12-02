@@ -54,7 +54,7 @@ const SignUp = () => {
                   <div className="auth-header-icon">
                     <i className="bi bi-person-plus-fill fs-3" />
                   </div>
-                  <h2 className="mt-2">Sign Up</h2>
+                  <h4 className="font-weight-bold">Sign Up</h4>
                 </div>
                 <Form onSubmit={handleSubmit(onSubmit)}>
                   <Form.Group className="form-group mb-3">
