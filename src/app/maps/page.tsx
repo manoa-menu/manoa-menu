@@ -6,7 +6,6 @@ import './maps.css';
 const Maps = () => (
   <Container className="my-5">
     <h1>Find the location of a restaurant</h1>
-    <p>Refer to the maps below for directions to a restaurant</p>
 
     <h2 className="header-text">
       <a
