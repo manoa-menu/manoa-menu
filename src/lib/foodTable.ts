@@ -1,7 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-import { config } from 'dotenv';
-
-config();
 
 const SerpApi = require('google-search-results-nodejs');
 
