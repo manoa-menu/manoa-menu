@@ -68,7 +68,7 @@ const SignIn = () => {
                   </Form.Group>
                   <Button
                     type="submit"
-                    className="btn btn-primary d-flex align-items-center justify-content-center"
+                    className="btn btn-primary w-100"
                   >
                     Login
                     {' '}
