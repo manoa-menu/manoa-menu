@@ -6,9 +6,10 @@ import { DayMenu } from '@/types/menuTypes';
 
 interface MenuListProps {
   menu: DayMenu[];
+  language: string;
 }
 
-const MenuList: React.FC<MenuListProps> = ({ menu }) => (
+const MenuList: React.FC<MenuListProps> = ({ menu, language }) => (
   <div className="container">
     <div className="row d-flex justify-content-center">
       {menu.map((day: DayMenu) => (
@@ -18,6 +19,7 @@ const MenuList: React.FC<MenuListProps> = ({ menu }) => (
             plateLunch={day.plateLunch}
             grabAndGo={day.grabAndGo}
             message={day.specialMessage}
+            language={language}
           />
         </div>
       ))}

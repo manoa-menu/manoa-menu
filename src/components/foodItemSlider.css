@@ -8,14 +8,13 @@
 }
 /* FoodItem styling */
 .card-container {
-  padding: 10px;
   gap: 0.5rem;
   align-items: center;
 }
 
 .hover-card {
-  width: 300px;
-  height: 100px;
+  width: 350px;
+  min-height: 350px;
   transition: transform 200ms ease-in-out;
   transform-origin: center;
 }
@@ -45,4 +44,8 @@
 
 .arrow-btn:hover {
   background-color: rgb(0, 0, 0, 0.6);
+}
+
+.card-title-responsive {
+  font-size: clamp(0.5rem, 1vw, 1.5rem);
 }

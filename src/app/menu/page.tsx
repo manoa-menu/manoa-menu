@@ -3,20 +3,101 @@
 import '@/styles/Menu.css';
 
 import MenuList from '@/components/MenuList';
+import { Translate } from 'react-bootstrap-icons';
 import { Container, Dropdown, DropdownButton } from 'react-bootstrap';
 import { DayMenu } from '@/types/menuTypes';
 import { useSession } from 'next-auth/react';
 import { getUserLanguage } from '@/lib/dbActions';
 import { useState, useEffect, useRef } from 'react';
 
+const getWeekdayDates = (language: string): string[] => {
+  const weekdays = [];
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - dayOfWeek + 1); // Monday
+
+  for (let i = 0; i < 5; i++) {
+    const weekday = new Date(startOfWeek);
+    weekday.setDate(startOfWeek.getDate() + i);
+    weekdays.push({ month: weekday.getMonth() + 1, day: weekday.getDate() });
+  }
+  let monthSymbol = '';
+  let daySymbol = '';
+
+  switch (language) {
+    case 'Japanese':
+      monthSymbol = '月';
+      daySymbol = '日';
+      break;
+    case 'Korean':
+      monthSymbol = '월';
+      daySymbol = '일';
+      break;
+    case 'Spanish':
+      monthSymbol = '/';
+      daySymbol = '';
+      break;
+    default:
+      monthSymbol = '/';
+      daySymbol = '';
+      break;
+  }
+
+  const weekdayDates = weekdays.map((day) => `${day.month}${monthSymbol}${day.day}${daySymbol}`);
+
+  return weekdayDates;
+};
+
+const fixDayNames = (menu: DayMenu[], language: string) => {
+  const weekdayDates = getWeekdayDates(language);
+
+  const englishWeekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  const japaneseWeekDays = ['月曜日', '火曜日', '水曜日', '木曜日', '金曜日'];
+  const koreanWeekDays = ['월요일', '화요일', '수요일', '목요일', '금요일'];
+  const spanishWeekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+
+  if (language === 'English') {
+    return menu.map((day: DayMenu, index: number) => ({
+      ...day,
+      name: `${englishWeekDays[index % 5]} (${weekdayDates[index % 5]})`,
+    }));
+  }
+  if (language === 'Japanese') {
+    return menu.map((day: DayMenu, index: number) => ({
+      ...day,
+      name: `${japaneseWeekDays[index % 5]} (${weekdayDates[index % 5]})`,
+    }));
+  }
+  if (language === 'Korean') {
+    return menu.map((day: DayMenu, index: number) => ({
+      ...day,
+      name: koreanWeekDays[index % 5],
+    }));
+  }
+  if (language === 'Spanish') {
+    return menu.map((day: DayMenu, index: number) => ({
+      ...day,
+      name: spanishWeekDays[index % 5],
+    }));
+  }
+  return menu;
+};
+
 const Page = () => {
   const languages = [
-    { name: 'English', code: 'en' },
-    { name: 'Japanese', code: 'jp' },
-    { name: 'Korean', code: 'kr' },
-    { name: 'Spanish', code: 'es' },
+    { name: 'English', displayName: 'English' },
+    { name: 'Japanese', displayName: '日本語' },
+    { name: 'Korean', displayName: '한국어' },
+    { name: 'Spanish', displayName: 'Español' },
   ];
-  const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+  const displayLanguages = new Map<string, string>([
+    ['English', 'English'],
+    ['Japanese', '日本語'],
+    ['Korean', '한국어'],
+    ['Spanish', 'Español'],
+  ]);
 
   const { data: session } = useSession();
   const [menu, setMenu] = useState<DayMenu[]>([]);
@@ -50,15 +131,10 @@ const Page = () => {
           throw new Error(`Error: ${response.status} ${response.statusText}`);
         }
         const data = await response.json();
-        const fixedMenu = (language === 'English') ? data.map((day: DayMenu, index: number) => ({
-          name: weekDays[index % 5],
-          grabAndGo: day.grabAndGo,
-          plateLunch: day.plateLunch,
-          specialMessage: day.specialMessage,
-        })) : data;
+        const fixedMenu = fixDayNames(data, language);
 
         setMenu(fixedMenu);
-        console.log(`Menu: ${JSON.stringify(fixedMenu)}`);
+        // console.log(`Menu: ${JSON.stringify(fixedMenu)}`);
       } catch (error) {
         console.error('Failed to fetch menu:', error);
       } finally {
@@ -73,14 +149,25 @@ const Page = () => {
       <Container fluid className="my-5 menu-container" style={{ paddingTop: '120px' }}>
         <div className="d-flex justify-content-center">
           <h1 className="text-center">Campus Center Menu</h1>
-          <DropdownButton className="mx-3 p-1" ref={dropdownRef} id="dropdown-basic-button" title={language}>
+          <DropdownButton
+            className="mx-3 p-1"
+            ref={dropdownRef}
+            id="dropdown-basic-button"
+            title={(
+              <span className="align-items-center">
+                <Translate className="me-1 mb-1" />
+                {' '}
+                {displayLanguages.get(language)}
+              </span>
+            )}
+          >
             {languages.map((lang) => (
               <Dropdown.Item
                 key={lang.name}
                 onClick={() => langItemClick(lang.name)}
                 disabled={lang.name === 'Korean' || lang.name === 'Spanish'}
               >
-                {lang.name}
+                {lang.displayName}
               </Dropdown.Item>
             ))}
           </DropdownButton>
@@ -92,20 +179,31 @@ const Page = () => {
               <span className="visually-hidden">Loading...</span>
             </div>
           </div>
-        ) : <MenuList menu={menu} />}
+        ) : <MenuList menu={menu} language={language} />}
       </Container>
     ) : (
       <Container fluid className="my-5 menu-container">
         <div className="justify-content-center">
           <h1 className="text-center">Campus Center Menu</h1>
-          <DropdownButton className="mx-3 p-1" ref={dropdownRef} id="dropdown-basic-button" title={language}>
+          <DropdownButton
+            className="mx-3 p-1"
+            ref={dropdownRef}
+            id="dropdown-basic-button"
+            title={(
+              <span className="align-items-center">
+                <Translate className="me-1 mb-1" />
+                {' '}
+                {displayLanguages.get(language)}
+              </span>
+            )}
+          >
             {languages.map((lang) => (
               <Dropdown.Item
                 key={lang.name}
                 onClick={() => langItemClick(lang.name)}
                 disabled={lang.name === 'Korean' || lang.name === 'Spanish'}
               >
-                {lang.name}
+                {lang.displayName}
               </Dropdown.Item>
             ))}
           </DropdownButton>

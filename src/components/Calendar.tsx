@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Card, Col, Container, ListGroup, Row, Modal } from 'react-bootstrap';
+import { XLg } from 'react-bootstrap-icons';
 import './calendar.css';
 
 const daysOfTheWeek: string[] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -48,7 +49,10 @@ const Calendar = ({ weeklyItems }: { weeklyItems: string[][] }) => {
       <Modal dialogClassName="modal-custom" show={show} onHide={handleClose} top>
         {selectedDay !== null && (
           <Card className="calendar-card-expanded">
-            <Card.Header style={{ fontWeight: 'bold', fontSize: '18px' }}>{daysOfTheWeek[selectedDay]}</Card.Header>
+            <Card.Header className="d-flex justify-content-between" style={{ fontWeight: 'bold', fontSize: '18px' }}>
+              {daysOfTheWeek[selectedDay]}
+              <XLg className="pt-2" onClick={handleClose} />
+            </Card.Header>
             <Card.Body className="calendar-scroll p-0">
               <ListGroup className="list-group-flush d-flex flex-column h-100">
                 {weeklyItems[selectedDay]

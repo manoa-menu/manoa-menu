@@ -25,9 +25,9 @@
 
 .calendar-card-expanded {
   width: 100%;
-  height: 100%;
+  height: 300px;
 }
 
 .modal-custom {
-  top: 25% !important;
+  top: 11.8% !important;
 }
