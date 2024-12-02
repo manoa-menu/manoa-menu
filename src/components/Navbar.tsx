@@ -25,7 +25,7 @@ const NavBar: React.FC = () => {
               alt="Manoa Menu Logo"
               width={50}
               height={50}
-              className="d-inline-block align-top"
+              className="rounded border border-secondary d-inline-block align-top"
             />
           </Navbar.Brand>
 
