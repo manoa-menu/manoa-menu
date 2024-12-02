@@ -4,7 +4,7 @@ import { Container } from 'react-bootstrap';
 import './maps.css';
 
 const Maps = () => (
-  <Container className="my-5">
+  <Container className="my-5" style={{ paddingTop: '120px' }}>
     <h1>Find the location of a restaurant</h1>
 
     <h2 className="header-text">

@@ -1,0 +1,19 @@
+.custom-navbar {
+    background-color: black; 
+  }
+
+  .custom-navbar .nav-link {
+    color: #fff; 
+    font-family: Georgia, 'Times New Roman', Times, serif;
+  }
+
+  #manoa-menu {
+    font-family: Georgia, 'Times New Roman', Times, serif;
+  }
+
+.custom-navbar .nav-link:hover,
+.custom-navbar .nav-link:focus,
+.custom-navbar .nav-link:active {
+  color: #ccc; 
+  background-color: transparent; 
+}
