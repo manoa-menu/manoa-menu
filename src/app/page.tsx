@@ -43,7 +43,7 @@ const Home = () => (
         <Col>
           <Card className="language-card">
             <h5>See what&apos;s popular</h5>
-            <p>See what food is currently popular on campus</p>
+            <p>See what foods are currently popular on campus</p>
           </Card>
         </Col>
       </Row>
