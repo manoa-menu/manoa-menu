@@ -21,7 +21,7 @@ interface FoodTableEntry {
 }
 
 const DashboardPage = () => {
-  const userId: number = 1;
+  // const userId: number = 1;
   const language: string = 'English';
   const [userFavoriteItems, setUserFavoriteItems] = useState<string[]>([]);
   const [latestMenu, setLatestMenu] = useState<MenuItem[]>([]);
@@ -29,21 +29,21 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState<boolean>(true);
 
   // Fetch user's favorite food items
-  useEffect(() => {
-    const fetchFavoriteItems = async () => {
-      try {
-        const response = await fetch(`/api/userFavorites?userId=${userId}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch user favorite items');
-        }
-        const data = await response.json();
-        setUserFavoriteItems(data);
-      } catch (error) {
-        console.error('Error fetching favorite items:', error);
-      }
-    };
-    fetchFavoriteItems();
-  }, [userId]);
+  // useEffect(() => {
+  //   const fetchFavoriteItems = async () => {
+  //     try {
+  //       const response = await fetch(`/api/userFavorites?userId=${userId}`);
+  //       if (!response.ok) {
+  //         throw new Error('Failed to fetch user favorite items');
+  //       }
+  //       const data = await response.json();
+  //       setUserFavoriteItems(data);
+  //     } catch (error) {
+  //       console.error('Error fetching favorite items:', error);
+  //     }
+  //   };
+  //   fetchFavoriteItems();
+  // }, [userId]);
 
   // Fetch the latest menu for comparison
   useEffect(() => {
@@ -88,11 +88,11 @@ const DashboardPage = () => {
 
   // For Calendar component
   const flattenedMenu = latestMenu.map((day) => [...day.grabAndGo, ...day.plateLunch]);
-  const filteredMenu = flattenedMenu.map((day) => day.filter((item) => userFavoriteItems.includes(item)));
+  // const filteredMenu = flattenedMenu.map((day) => day.filter((item) => userFavoriteItems.includes(item)));
   // REMINDER
   // For locations that aren't avaiable on the weekends, the logic will need to be adjusted
   // REMINDER
-  const fullFilteredMenu: string[][] = [[], ...filteredMenu, []];
+  // const fullFilteredMenu: string[][] = [[], ...filteredMenu, []];
 
   // For Recommended FoodItemSlider
   const nonFavoriteMenu = flattenedMenu.flatMap((day) => day.filter((item) => !userFavoriteItems.includes(item)));
@@ -102,9 +102,9 @@ const DashboardPage = () => {
     label: entry.label,
   }));
 
-  const testFoodItem = combinedFoodTable.filter((entry) => nonFavoriteMenu.includes(entry.name));
-  console.log(nonFavoriteMenu);
+  const recommendedFoodItems = combinedFoodTable.filter((entry) => nonFavoriteMenu.includes(entry.name));
 
+  const fullFilteredMenu: string[][] = [[], ...flattenedMenu, []];
   return (
     <Container>
       <Row className="mt-4">
@@ -124,7 +124,7 @@ const DashboardPage = () => {
         <h1>Recommended:</h1>
       </Row>
       <Row className="mb-4">
-        <FoodItemSlider foodItem={testFoodItem} />
+        <FoodItemSlider foodItem={recommendedFoodItems} />
       </Row>
     </Container>
   );
