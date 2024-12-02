@@ -34,11 +34,17 @@ async function fetchImageUrl(foodName: string) {
         {
           q: foodName,
           tbm: 'isch',
-          num: 1,
+          num: 10,
         },
         (result: any) => {
           if (result.images_results && result.images_results.length > 0) {
-            resolve(result.images_results[0].original || null);
+            const filterHttps = result.images_results.filter((image: any) => image.original.startsWith('https://'));
+
+            if (filterHttps.length > 0) {
+              resolve(result.images_results[0].original || null);
+            } else {
+              resolve(null);
+            }
           } else {
             resolve(null);
           }
@@ -152,6 +158,17 @@ export async function favoriteItems(userId: number): Promise<string[]> {
     return user?.favorites ?? []; // Return the favorite array or an empty array if not found
   } catch (error) {
     console.error('Error fetching favorite items:', error);
+    return [];
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+export async function getFoodTable() {
+  try {
+    return await prisma.foodTable.findMany({});
+  } catch (error) {
+    console.error('Error fetching FoodTable:', error);
     return [];
   } finally {
     await prisma.$disconnect();
