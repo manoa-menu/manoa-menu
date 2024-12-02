@@ -14,7 +14,7 @@ body {
   position: relative;
   margin: 0;
   padding: 0;
-  background: url('/milad-fakurian-unsplash.jpg') no-repeat center center fixed; /*Photo by Milad Fakurian (https://unsplash.com/@fakurian?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash) on Unsplash (https://unsplash.com/photos/a-close-up-of-a-fish-seA-FPPXL-M?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash)*/
+  background: url('/campus-center.jpg') no-repeat center center fixed;
   background-size: cover;
   animation: moveBackground 100s ease-in-out infinite;
   font-family: Arial, sans-serif;
@@ -92,7 +92,6 @@ body {
   background-color: #212529;
   color: white;
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.6);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   transition:
     transform 200ms ease-in-out,
@@ -108,12 +107,14 @@ body {
 
 .language-card h5 {
   margin: 0 0 20px 0;
+  color: #178754;
 }
 
 .language-card p {
   margin: 0;
   flex-grow: 1;
   display: flex;
+  color: #f5f5f5;
 }
 
 /* Title Border */
