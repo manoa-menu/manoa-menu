@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Container, Row, Form } from 'react-bootstrap';
 import Calendar from '@/components/Calendar';
 import FoodItemSlider from '@/components/FoodItemSlider';
+import './dashboard.css';
 
 interface MenuItem {
   grabAndGo: string[];
@@ -86,8 +87,8 @@ const DashboardPage = () => {
   const recommendedFoodItems = combinedFoodTable.filter((entry) => nonFavoriteMenu.includes(entry.name));
   // const fullFilteredMenu: string[][] = [[], ...flattenedMenu, []];
   return (
-    <Container>
-      <Row className="mt-4">
+    <Container className="body">
+      <Row className="my-4">
         <Container>
           <Form.Select className="d-flex ms-auto" style={{ width: '260px' }}>
             <option>All</option>
@@ -100,7 +101,7 @@ const DashboardPage = () => {
       <Row className="py-2 mb-4">
         <Calendar weeklyItems={fullFilteredMenu} />
       </Row>
-      <Row className="mt-4">
+      <Row className="pt-4 mt-4">
         <h1>Recommended:</h1>
       </Row>
       <Row className="mb-4">
