@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { Container, Nav, Navbar, NavDropdown } from 'react-bootstrap';
 import { BoxArrowRight, Lock, PersonFill, PersonPlusFill } from 'react-bootstrap-icons';
 import Image from 'next/image';
+import '../app/navbar.css';
 
 const NavBar: React.FC = () => {
   const { data: session } = useSession();
@@ -15,7 +16,7 @@ const NavBar: React.FC = () => {
   const role = userWithRole?.randomKey;
   const pathName = usePathname();
   return (
-    <Navbar bg="light" expand="lg">
+    <Navbar className="custom-navbar fixed-top" expand="lg" style={{ height: '100px' }}>
       <Container fluid className="px-5">
         <div className="d-flex align-items-center">
           <Navbar.Brand>
@@ -28,7 +29,7 @@ const NavBar: React.FC = () => {
             />
           </Navbar.Brand>
 
-          <Navbar.Brand className="me-auto justify-content-start px-2" href="/">
+          <Navbar.Brand id="manoa-menu" className="me-auto justify-content-start px-2 text-light" href="/">
             Manoa Menu
           </Navbar.Brand>
         </div>
@@ -40,7 +41,7 @@ const NavBar: React.FC = () => {
           <Nav className="me-auto justify-content-start px-2">
             <Nav.Link
               id="menu-nav"
-              className="mx-2"
+              className="mx-2 text-light"
               href="/menu"
               key="menu"
               active={pathName === '/menu'}
@@ -50,7 +51,7 @@ const NavBar: React.FC = () => {
 
             <Nav.Link
               id="campus-cravings-nav"
-              className="mx-2"
+              className="mx-2 text-light"
               href="/campus-cravings"
               key="favs"
               active={pathName === '/campus-cravings'}
@@ -60,7 +61,7 @@ const NavBar: React.FC = () => {
 
             <Nav.Link
               id="maps-nav"
-              className="mx-2"
+              className="mx-2 text-light"
               href="/maps"
               key="maps"
               active={pathName === '/maps'}
@@ -69,13 +70,19 @@ const NavBar: React.FC = () => {
             </Nav.Link>
             {currentUser
               ? [
-                  <Nav.Link id="dashboard" href="/dashboard" key="dashboard" active={pathName === '/dashboard'}>
+                  <Nav.Link
+                    id="dashboard"
+                    className="text-light"
+                    href="/dashboard"
+                    key="dashboard"
+                    active={pathName === '/dashboard'}
+                  >
                     Dashboard
                   </Nav.Link>,
                 ]
               : ''}
             {currentUser && role === 'ADMIN' ? (
-              <Nav.Link id="admin-nav" href="/admin" key="admin" active={pathName === '/admin'}>
+              <Nav.Link className="text-light" id="admin-nav" href="/admin" key="admin" active={pathName === '/admin'}>
                 Admin
               </Nav.Link>
             ) : (

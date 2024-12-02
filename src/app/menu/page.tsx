@@ -70,7 +70,7 @@ const Page = () => {
   }, [language]);
   return (
     menu !== null && menu !== undefined ? (
-      <Container fluid className="my-5 menu-container">
+      <Container fluid className="my-5 menu-container" style={{ paddingTop: '120px' }}>
         <div className="d-flex justify-content-center">
           <h1 className="text-center">Campus Center Menu</h1>
           <DropdownButton className="mx-3 p-1" ref={dropdownRef} id="dropdown-basic-button" title={language}>

@@ -37,7 +37,7 @@ const CampusCravings: React.FC = () => {
   };
 
   return (
-    <Container className="my-5">
+    <Container className="my-5" style={{ paddingTop: '120px' }}>
       <Row>
         <h1>Popular Food Choices</h1>
         <Container>
