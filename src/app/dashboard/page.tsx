@@ -23,7 +23,7 @@ interface FoodTableEntry {
 const DashboardPage = () => {
   // const userId: number = 1;
   const language: string = 'English';
-  const [userFavoriteItems, setUserFavoriteItems] = useState<string[]>([]);
+  const [userFavoriteItems] = useState<string[]>([]);
   const [latestMenu, setLatestMenu] = useState<MenuItem[]>([]);
   const [foodTable, setFoodTable] = useState<FoodTableEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
