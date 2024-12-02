@@ -2,11 +2,10 @@
 
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Container, Form, Row } from 'react-bootstrap';
 import Calendar from '@/components/Calendar';
 import FoodItemSlider from '@/components/FoodItemSlider';
-import type { FoodItemType } from '@/components/FoodItemSlider';
 
 interface MenuItem {
   grabAndGo: string[];

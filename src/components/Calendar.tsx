@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, Col, Container, ListGroup, Row, Modal, Button } from 'react-bootstrap';
+import { Card, Col, Container, ListGroup, Row, Modal } from 'react-bootstrap';
 import { XLg } from 'react-bootstrap-icons';
 import './calendar.css';
 
