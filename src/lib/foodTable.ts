@@ -137,11 +137,28 @@ export default async function populateFoodTableFromMenu(parsedMenu: DayMenu[]): 
     }
   } catch (error) {
     console.error('Error populating FoodTable:', error);
+    throw new Error('Error populating FoodTable');
   } finally {
     await prisma.$disconnect();
   }
 }
 
+export async function favoriteItems(userId: number): Promise<string[]> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { favorites: true },
+    });
+    return user?.favorites ?? []; // Return the favorite array or an empty array if not found
+  } catch (error) {
+    console.error('Error fetching favorite items:', error);
+    return [];
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+// ONLY FOR TESTING PURPOSES
 export async function populateFoodTableFromMenuId(menuId: number) {
   try {
     // Fetch the specific menu row by ID
@@ -160,7 +177,7 @@ export async function populateFoodTableFromMenuId(menuId: number) {
       menuItems = typeof menu.menu === 'string' ? JSON.parse(menu.menu) : menu.menu;
     } catch (error) {
       console.error('Invalid menu data:', menu.menu);
-      throw error;
+      return;
     }
 
     const phrasesToRemove = ['Value Bowl:'];
@@ -247,6 +264,7 @@ export async function populateFoodTableFromMenuId(menuId: number) {
     }
   } catch (error) {
     console.error('Error populating FoodTable:', error);
+    throw new Error('Error populating FoodTable');
   } finally {
     await prisma.$disconnect();
   }

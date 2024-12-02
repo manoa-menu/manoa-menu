@@ -14,25 +14,15 @@ body {
   position: relative;
   margin: 0;
   padding: 0;
-  background: url('/campuscenter.jpg') no-repeat center center fixed;
+  background: url('/milad-fakurian-unsplash.jpg') no-repeat center center fixed; /*Photo by Milad Fakurian (https://unsplash.com/@fakurian?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash) on Unsplash (https://unsplash.com/photos/a-close-up-of-a-fish-seA-FPPXL-M?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash)*/
   background-size: cover;
   animation: moveBackground 100s ease-in-out infinite;
   font-family: Arial, sans-serif;
 }
 
-body::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  min-height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: -1;
-}
-
 /* Title Container */
 .title-container {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -40,33 +30,52 @@ body::before {
   height: 100vh;
   padding: 0 20px;
   text-align: center;
+  overflow: hidden;
+}
+
+.title-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7));
+  z-index: -1;
 }
 
 /* Title */
 .title {
   font-family: Georgia, 'Times New Roman', Times, serif;
   font-size: 80px;
+  font-weight: bold;
+  letter-spacing: 2px;
   color: #ffffff;
   width: 100%;
   margin: 0;
-  animation: 1.1s ease-out 0s 1 slideInFromLeft;
+  animation: 3s slideInFromLeft;
+  white-space: nowrap;
 }
 
 /* Subheader */
 .title-subheader {
   font-family: Verdana, Tahoma, sans-serif;
   font-size: 25px;
+  letter-spacing: 1px;
   text-align: center;
   margin-top: 20px;
   margin-bottom: 20px;
   color: #f5f5f5;
-  animation: 1.1s ease-out 0s 1 slideInFromRight;
+  animation: 3s slideInFromRight;
+  white-space: nowrap;
+  position: relative;
 }
 
 /* Features Section Title */
 #features-title {
   font-family: Verdana, Geneva, Tahoma, sans-serif;
   font-size: 50px;
+  font-weight: 600;
   color: #f5f5f5;
   margin: 0 0 40px 0;
   text-align: center;
@@ -83,10 +92,18 @@ body::before {
   background-color: #212529;
   color: white;
   border-radius: 10px;
+  background: rgba(0, 0, 0, 0.6);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 200ms ease-in-out;
+  transition:
+    transform 200ms ease-in-out,
+    box-shadow 300ms ease;
   transform-origin: center;
   overflow: hidden;
+}
+
+.language-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
 .language-card h5 {
@@ -103,16 +120,7 @@ body::before {
 #title-border {
   border: none;
   border-bottom: 3px solid rgb(255, 255, 255);
-  animation: fadeIn 3s ease;
-}
-
-@keyframes fadeIn {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
+  animation: fadeInBorder 3s ease-out forwards;
 }
 
 .language-content {
@@ -121,6 +129,52 @@ body::before {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  padding: 0 20px;
+  padding: 80px 20px;
   text-align: center;
+}
+
+@keyframes slideInFromLeft {
+  from {
+    margin-left: -100%;
+  }
+  to {
+    margin-left: 0%;
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    margin-left: 100%;
+  }
+  to {
+    margin-left: 0%;
+  }
+}
+
+@keyframes fadeInBorder {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 700px) {
+  .language-card {
+    width: 100%;
+    max-width: none;
+    padding: 15px;
+  }
+  .title {
+    font-size: 60px;
+  }
+
+  .title-subheader {
+    font-size: 18px;
+  }
+
+  #features-title {
+    font-size: 40px;
+  }
 }
