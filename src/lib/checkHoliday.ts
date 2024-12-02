@@ -8,7 +8,9 @@ const checkHoliday = (input: string): string => {
     'Labor Day': '⚒️',
     // 'Veterans Day': '🇺🇸',
     Thanksgiving: '🦃',
+    感謝祭: '🦃',
     Christmas: '🎄',
+    クリスマス: '🎄',
     'Prince Kuhio Day': '🌺',
     'Kamehameha Day': '🌺',
     'Statehood Day': '🌺',
@@ -20,6 +22,7 @@ const checkHoliday = (input: string): string => {
     "Valentine's Day": '❤️',
     "St. Patrick's Day": '☘️',
     Easter: '🐰',
+    イースター: '🐰',
     "Mother's Day": '🌸',
     "Father's Day": '👔',
   };

@@ -1,24 +1,14 @@
 // import fs from 'fs';
+import path from 'path';
 import pdf from 'pdf-parse';
 import fetch from 'node-fetch';
+import { DayMenu, PDFData, MenuResponse } from '@/types/menuTypes';
 
-interface PDFData {
-  numpages: number;
-  numrender: number;
-  info: any;
-  metadata: any;
-  version: string;
-  text: string;
-}
+// Resolve the absolute path
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const pdfFilePath = path.resolve('./test/data/05-versions-space.pdf');
 
-interface DayMenu {
-  name: string;
-  plateLunch: string[];
-  grabAndGo: string[];
-  specialMessage: string;
-}
-
-export default async function parseCampusCenterMenu(fileURL: string): Promise<DayMenu[]> {
+export default async function parseCampusCenterMenu(fileURL: string): Promise<MenuResponse> {
   const response = await fetch(fileURL);
   if (!response.ok) {
     throw new Error(`Failed to fetch data from ${fileURL}: ${response.statusText}`);
@@ -31,7 +21,10 @@ export default async function parseCampusCenterMenu(fileURL: string): Promise<Da
   const weekdays = ['Mon \n', 'Tue \n', 'Wed \n', 'Thurs \n', 'Fri \n', 'Thu\nrs\n'];
   const messageArr: string[] = [];
 
-  pdf(dataBuffer).then(function (data: PDFData) {
+  let weekOne: DayMenu[] = [];
+  let weekTwo: DayMenu[] = [];
+
+  await pdf(dataBuffer).then(function (data: PDFData) {
     const parsedText = data.text;
     // Create a regular expression to match any of the weekdays
     const regex = new RegExp(weekdays.join('|'), 'g');
@@ -152,8 +145,16 @@ export default async function parseCampusCenterMenu(fileURL: string): Promise<Da
         holidays[index].specialMessage = message;
       });
     }
-    // console.log(weeklyMenu);
+
+    weekOne = weeklyMenu.slice(0, 5);
+    weekTwo = weeklyMenu.length >= 7 ? weeklyMenu.slice(5) : [];
   });
 
-  return weeklyMenu;
+  // console.log(weekOne);
+  // console.log(weekTwo);
+
+  return {
+    weekOne,
+    weekTwo,
+  };
 }

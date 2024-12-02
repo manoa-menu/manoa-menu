@@ -2,23 +2,11 @@
 
 import { hash } from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
+import { DayMenu, Location } from '@/types/menuTypes';
 
 const prisma = new PrismaClient();
 
-interface DayMenu {
-  name: string;
-  plateLunch: string[];
-  grabAndGo: string[];
-  specialMessage: string;
-}
-
-enum Location {
-  CAMPUS_CENTER = 'CAMPUS_CENTER',
-  GATEWAY = 'GATEWAY',
-  HALE_ALOHA = 'HALE_ALOHA',
-}
-
-function getCurrentWeek(): string {
+function getCurrentWeekOf(): string {
   const today = new Date();
   // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
   const dayOfWeek = today.getDay();
@@ -32,13 +20,33 @@ function getCurrentWeek(): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+function getNextWeekOf(): string {
+  const today = new Date();
+  // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+  const dayOfWeek = today.getDay();
+  // Calculate the start of the week (Sunday)
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - dayOfWeek + 7);
+  // Format the date as yyyy-mm-dd
+  const yyyy = startOfWeek.getFullYear();
+  const mm = String(startOfWeek.getMonth() + 1).padStart(2, '0');
+  const dd = String(startOfWeek.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 /**
  * Creates a new menu in the database.
  * @param menuRow, an object with the following properties: email, password.
  */
-export async function insertMenu(menuInfo: DayMenu[], location: Location, language: string, country: string) {
+export async function insertMenu(
+  menuInfo: DayMenu[],
+  location: Location,
+  language: string,
+  country: string,
+  weekNumber: number = 1,
+) {
   try {
-    const weekOf = getCurrentWeek();
+    const weekOf = (weekNumber === 1) ? getCurrentWeekOf() : getNextWeekOf();
     const weekMenu = JSON.parse(JSON.stringify(menuInfo));
     await prisma.menus.create({
       data: {
@@ -117,15 +125,8 @@ export async function getLatestMenu(language: string) {
     return await prisma.menus.findFirst({
       where: {
         language,
+        week_of: getCurrentWeekOf(),
       },
-      orderBy: [
-        {
-          week_of: 'desc',
-        },
-        {
-          id: 'desc',
-        },
-      ],
     });
   } catch (error) {
     console.error('Error fetching latest menu:', error);
@@ -144,6 +145,22 @@ export async function getAllMenus() {
     console.error('Error fetching all menus:', error);
     throw error;
   }
+}
+
+export async function getUserLanguage(email: string): Promise<string> {
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { language: true },
+  });
+  return user?.language || 'English';
+}
+
+export async function getUserFavorites(email: string): Promise<string[]> {
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { favorites: true },
+  });
+  return user?.favorites || [];
 }
 
 /**

@@ -1,3 +1,5 @@
+/* eslint-disable max-len */
+
 'use client';
 
 import { Container, Form, Row } from 'react-bootstrap';
@@ -18,7 +20,8 @@ const testSample: string[][] = [
 const testFoodItem: FoodItemType[] = [
   {
     name: 'Chicken Sandwich',
-    image: '/images/gettyimages-1442136071-612x612.jpg',
+    image:
+      'https://www.simplyrecipes.com/thmb/eNeZK5vnEFJhq3fqk8HJhxltowg=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/Simply-Recipes-One-Pot-Mac-Cheese-LEAD-4-b54f2372ddcc49ab9ad09a193df66f20.jpg',
     label: ['Chicken', 'Bread'],
   },
   {
@@ -38,23 +41,24 @@ const testFoodItem: FoodItemType[] = [
   },
   {
     name: 'Loco Moco',
-    image: '/images/gettyimages-1386914868-612x612.jpg',
+    image: 'https://www.billyparisi.com/wp-content/uploads/2020/03/loco-moco-3-1.jpg',
     label: ['Beef', 'Rice', 'Egg'],
   },
   {
     name: 'Loco Moco',
-    image: '/images/gettyimages-1386914868-612x612.jpg',
+    image:
+      'https://cdn.apartmenttherapy.info/image/upload/f_auto,q_auto:eco,c_fill,g_auto,w_1456,h_1092/k%2FPhoto%2FRecipes%2F2024-03-loco-moco%2Floco-moco-342',
     label: ['Beef', 'Rice', 'Egg'],
   },
   {
     name: 'Loco Moco',
-    image: '/images/gettyimages-1386914868-612x612.jpg',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Loco_Moco.jpg/500px-Loco_Moco.jpg',
     label: ['Beef', 'Rice', 'Egg'],
   },
 
   {
     name: 'Loco Moco',
-    image: '/images/gettyimages-1386914868-612x612.jpg',
+    image: 'https://i0.wp.com/www.farmgirlgourmet.com/wp-content/uploads/2012/08/DSC_0367.jpg?w=2236&ssl=1',
     label: ['Beef', 'Rice', 'Egg'],
   },
 ];
