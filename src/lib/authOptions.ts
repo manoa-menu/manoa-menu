@@ -60,6 +60,7 @@ const authOptions: NextAuthOptions = {
         user: {
           ...session.user,
           id: token.id,
+          randomKey: token.randomKey,
         },
       };
     },
@@ -70,6 +71,7 @@ const authOptions: NextAuthOptions = {
         return {
           ...token,
           id: u.id,
+          randomKey: u.randomKey,
         };
       }
       return token;
