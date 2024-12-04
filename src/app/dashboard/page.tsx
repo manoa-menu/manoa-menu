@@ -81,7 +81,9 @@ function DashboardPage() {
       }
     };
 
-    fetchData();
+    if (userId) {
+      fetchData();
+    }
   }, [userId, language]);
 
   const flattenedMenu = latestMenu.map((day) => [...day.grabAndGo, ...day.plateLunch]);
