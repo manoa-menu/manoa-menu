@@ -14,6 +14,36 @@ export interface DayMenu {
   specialMessage: string;
 }
 
+export interface FilteredSodexoMenuItem {
+  course: string | null;
+  courseSortOrder: number;
+  meal: string;
+  menuItemId: number;
+  formalName: string;
+  description: string;
+  price: number;
+  allergens: { allergen: number; name: string }[];
+  sizes: [];
+  addons: [];
+  isVegan: boolean;
+  isVegetarian: boolean;
+}
+
+export interface FilteredSodexoGroup {
+  name: string | null;
+  sortOrder: number;
+  items: FilteredSodexoMenuItem[];
+}
+
+export interface FilteredSodexoMeal {
+  name: string;
+  groups: FilteredSodexoGroup[];
+}
+
+export interface FilteredSodexoRootObject {
+  meals: FilteredSodexoMeal[];
+}
+
 export interface SodexoMenuItem {
   course: string | null;
   courseSortOrder: number;

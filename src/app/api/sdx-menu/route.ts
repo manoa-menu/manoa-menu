@@ -1,18 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
-import { SodexoRootObject } from '@/types/menuTypes';
+import { SodexoMeal, FilteredSodexoMeal } from '@/types/menuTypes';
 
 const now = new Date();
 const formattedDate = now.toISOString().split('T')[0];
+
+const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => ({
+  name: rootObject.name,
+  groups: rootObject.groups.map(group => ({
+    ...group,
+    items: group.items.map(item => {
+      const {
+        isMindful, isSwell, calories, caloriesFromFat, fat,
+        saturatedFat, transFat, polyunsaturatedFat, cholesterol,
+        sodium, carbohydrates, dietaryFiber, sugar, protein,
+        potassium, iron, calcium, vitaminA, vitaminC,
+        ...rest
+      } = item;
+      return rest;
+    }),
+  })),
+});
 
 // eslint-disable-next-line import/prefer-default-export
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
   const date = searchParams.get('date') || formattedDate;
-  const language = searchParams.get('language') || 'English';
-  const location = searchParams.get('location') || '';
+  // const language = searchParams.get('language') || 'English';
+  // const location = searchParams.get('location') || '';
 
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
   if (!dateRegex.test(date)) {
@@ -36,8 +53,9 @@ export async function GET(req: NextRequest) {
   try {
     const response = await axios.get(queryUrl, { headers });
     // eslint-disable-next-line prefer-destructuring
-    const data: SodexoRootObject = response.data;
-    return NextResponse.json(data);
+    const data: SodexoMeal = response.data[0];
+    const filteredData: FilteredSodexoMeal = removeNutritionalFacts(data);
+    return NextResponse.json(filteredData);
   } catch (error) {
     if (axios.isAxiosError(error)) {
       return NextResponse.json(

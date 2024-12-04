@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
@@ -8,6 +8,11 @@ interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
+}
+
+interface GatewayMenuProps {
+  menu: any;
+  language: string;
 }
 
 function CustomTabPanel(props: TabPanelProps) {
@@ -33,7 +38,7 @@ function a11yProps(index: number) {
   };
 }
 
-const GatewayMenu = () => {
+const GatewayMenu: React.FC<GatewayMenuProps> = ({ menu, language }) => {
   const [value, setValue] = useState(0);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
