@@ -2,9 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { Container, Row, Form } from 'react-bootstrap';
+import { useSession } from 'next-auth/react';
 import Calendar from '@/components/Calendar';
 import FoodItemSlider from '@/components/FoodItemSlider';
 import './dashboard.css';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface MenuItem {
   grabAndGo: string[];
@@ -19,8 +21,9 @@ interface FoodTableEntry {
   translation: string[];
 }
 
-const DashboardPage = () => {
-  const userId: number = 1;
+function DashboardPage() {
+  const { data: session } = useSession();
+  const userId: number = (session?.user as { id: number })?.id;
   const language: string = 'English';
   const [userFavoriteItems, setUserFavoriteItems] = useState<string[]>([]);
   const [latestMenu, setLatestMenu] = useState<MenuItem[]>([]);
@@ -30,29 +33,47 @@ const DashboardPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [favoriteResponse, menuResponse, foodTableResponse] = await Promise.all([
+        const cachedFavoriteItems = localStorage.getItem('favoriteItems');
+        const cachedMenu = localStorage.getItem('latestMenu');
+        const cachedFoodTable = localStorage.getItem('foodTable');
+
+        if (cachedFavoriteItems && cachedMenu && cachedFoodTable) {
+          setUserFavoriteItems(JSON.parse(cachedFavoriteItems));
+          setLatestMenu(JSON.parse(cachedMenu));
+          setFoodTable(JSON.parse(cachedFoodTable));
+          setLoading(false);
+          return;
+        }
+
+        const [favoriteResponse, menuResponse, foodTableResponse] = await Promise.allSettled([
           fetch(`/api/userFavorites?userId=${userId}`),
           fetch(`/api/latestMenuCheck?language=${language}`),
           fetch('/api/getFoodTable'),
         ]);
 
-        if (!favoriteResponse.ok) {
-          throw new Error('Failed to fetch user favorite items');
-        }
-        if (!menuResponse.ok) {
-          throw new Error('Failed to fetch latest menu');
-        }
-        if (!foodTableResponse.ok) {
-          throw new Error('Failed to fetch food table');
+        if (favoriteResponse.status === 'fulfilled') {
+          const favoriteData = await favoriteResponse.value.json();
+          setUserFavoriteItems(favoriteData);
+          localStorage.setItem('favoriteItems', JSON.stringify(favoriteData));
+        } else {
+          console.error('Failed to fetch user favorite items:', favoriteResponse.reason);
         }
 
-        const favoriteData = await favoriteResponse.json();
-        const menuData = await menuResponse.json();
-        const foodTableData = await foodTableResponse.json();
+        if (menuResponse.status === 'fulfilled') {
+          const menuData = await menuResponse.value.json();
+          setLatestMenu(menuData.menu);
+          localStorage.setItem('latestMenu', JSON.stringify(menuData.menu));
+        } else {
+          console.error('Failed to fetch latest menu:', menuResponse.reason);
+        }
 
-        setUserFavoriteItems(favoriteData);
-        setLatestMenu(menuData.menu);
-        setFoodTable(foodTableData);
+        if (foodTableResponse.status === 'fulfilled') {
+          const foodTableData = await foodTableResponse.value.json();
+          setFoodTable(foodTableData);
+          localStorage.setItem('foodTable', JSON.stringify(foodTableData));
+        } else {
+          console.error('Failed to fetch food table:', foodTableResponse.reason);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -63,13 +84,9 @@ const DashboardPage = () => {
     fetchData();
   }, [userId, language]);
 
-  // Render a loading state while fetching data
-  if (loading) {
-    return <Container className="loading">Loading...</Container>;
-  }
+  const flattenedMenu = latestMenu.map((day) => [...day.grabAndGo, ...day.plateLunch]);
 
   // For Calendar component
-  const flattenedMenu = latestMenu.map((day) => [...day.grabAndGo, ...day.plateLunch]);
   const filteredMenu = flattenedMenu.map((day) => day.filter((item) => userFavoriteItems.includes(item)));
   // REMINDER
   // For locations that aren't avaiable on the weekends, the logic will need to be adjusted
@@ -77,15 +94,31 @@ const DashboardPage = () => {
   const fullFilteredMenu: string[][] = [[], ...filteredMenu, []];
 
   // For Recommended FoodItemSlider
-  const nonFavoriteMenu = flattenedMenu.flatMap((day) => day.filter((item) => !userFavoriteItems.includes(item)));
-  const combinedFoodTable = foodTable.map((entry) => ({
-    name: entry.name,
-    image: entry.url,
-    label: entry.label,
-  }));
+  const recommendedFoodItems = foodTable
+    .map((entry) => ({
+      name: entry.name,
+      image: entry.url,
+      label: entry.label,
+    }))
+    .filter(
+      (entry) =>
+        // eslint-disable-next-line implicit-arrow-linebreak
+        flattenedMenu
+          .flatMap((day) => day)
+          .filter((item) => !userFavoriteItems.includes(item))
+          .includes(entry.name),
+      // eslint-disable-next-line function-paren-newline
+    );
 
-  const recommendedFoodItems = combinedFoodTable.filter((entry) => nonFavoriteMenu.includes(entry.name));
-  // const fullFilteredMenu: string[][] = [[], ...flattenedMenu, []];
+  // Render a loading state while fetching data
+  if (loading) {
+    return (
+      <Container className="body-loading">
+        <LoadingSpinner />
+      </Container>
+    );
+  }
+
   return (
     <Container className="body">
       <Row className="my-4">
@@ -109,6 +142,6 @@ const DashboardPage = () => {
       </Row>
     </Container>
   );
-};
+}
 
 export default DashboardPage;

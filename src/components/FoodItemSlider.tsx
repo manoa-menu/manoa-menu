@@ -34,7 +34,7 @@ const FoodItemSlider = ({ foodItem }: { foodItem: FoodItemType[] }) => {
       <Row>
         <Col ref={sliderRef} className="d-flex card-container container overflow-scroll p-4">
           {foodItem.map((itemCard) => (
-            <FoodItem name={itemCard.name} picture={itemCard.image} label={itemCard.label} />
+            <FoodItem key={itemCard.name} name={itemCard.name} picture={itemCard.image} label={itemCard.label} />
           ))}
         </Col>
         <Button
