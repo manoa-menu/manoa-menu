@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Container, Row, Form } from 'react-bootstrap';
+import { useSession } from 'next-auth/react';
 import Calendar from '@/components/Calendar';
 import FoodItemSlider from '@/components/FoodItemSlider';
 import './dashboard.css';
@@ -19,8 +20,9 @@ interface FoodTableEntry {
   translation: string[];
 }
 
-const DashboardPage = () => {
-  const userId: number = 1;
+function DashboardPage() {
+  const { data: session } = useSession();
+  const userId: number = (session?.user as { id: number })?.id;
   const language: string = 'English';
   const [userFavoriteItems, setUserFavoriteItems] = useState<string[]>([]);
   const [latestMenu, setLatestMenu] = useState<MenuItem[]>([]);
@@ -77,14 +79,19 @@ const DashboardPage = () => {
   const fullFilteredMenu: string[][] = [[], ...filteredMenu, []];
 
   // For Recommended FoodItemSlider
-  const nonFavoriteMenu = flattenedMenu.flatMap((day) => day.filter((item) => !userFavoriteItems.includes(item)));
-  const combinedFoodTable = foodTable.map((entry) => ({
-    name: entry.name,
-    image: entry.url,
-    label: entry.label,
-  }));
+  const recommendedFoodItems = foodTable
+    .map((entry) => ({
+      name: entry.name,
+      image: entry.url,
+      label: entry.label,
+    }))
+    .filter((entry) =>
+      flattenedMenu
+        .flatMap((day) => day)
+        .filter((item) => !userFavoriteItems.includes(item))
+        .includes(entry.name),
+    );
 
-  const recommendedFoodItems = combinedFoodTable.filter((entry) => nonFavoriteMenu.includes(entry.name));
   // const fullFilteredMenu: string[][] = [[], ...flattenedMenu, []];
   return (
     <Container className="body">
@@ -109,6 +116,6 @@ const DashboardPage = () => {
       </Row>
     </Container>
   );
-};
+}
 
 export default DashboardPage;

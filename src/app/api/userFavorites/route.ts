@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const userId = url.searchParams.get('userId');
-
+  console.log('userId:', userId);
   if (!userId || Number.isNaN(Number(userId))) {
     return NextResponse.json({ message: 'Invalid user ID' }, { status: 400 });
   }
