@@ -8,7 +8,6 @@
   "rules": {
     "arrow-parens": "off",
     "func-names": "off",
-    "function-paren-newline": "off",
     "linebreak-style": "off",
     "max-len": ["error", 120],
     "no-console": "off",
@@ -17,10 +16,7 @@
     "no-return-assign": "off",
     "object-curly-newline": "off",
     "prefer-arrow-callback": "off",
-    "import/no-extraneous-dependencies": [
-      "error",
-      { "devDependencies": ["**/*.test.ts", "**/*.spec.ts"] }
-    ],
+    "import/no-extraneous-dependencies": ["error", { "devDependencies": ["**/*.test.ts", "**/*.spec.ts"] }],
     "react/function-component-definition": "off",
     "react/jsx-props-no-spreading": "off",
     "react/one-expression-per-line": "off",
