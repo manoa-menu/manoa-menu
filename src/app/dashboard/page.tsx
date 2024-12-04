@@ -5,8 +5,11 @@ import { Container, Row, Form } from 'react-bootstrap';
 import { useSession } from 'next-auth/react';
 import Calendar from '@/components/Calendar';
 import FoodItemSlider from '@/components/FoodItemSlider';
-import './dashboard.css';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import './dashboard.css';
+
+/* eslint-disable function-paren-newline */
+/* eslint-disable implicit-arrow-linebreak */
 
 interface MenuItem {
   grabAndGo: string[];
@@ -23,7 +26,7 @@ interface FoodTableEntry {
 
 function DashboardPage() {
   const { data: session } = useSession();
-  const userId: number = (session?.user as { id: number })?.id;
+  const userId = (session?.user as { id: number })?.id || null;
   const language: string = 'English';
   const [userFavoriteItems, setUserFavoriteItems] = useState<string[]>([]);
   const [latestMenu, setLatestMenu] = useState<MenuItem[]>([]);
@@ -33,46 +36,34 @@ function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const cachedFavoriteItems = localStorage.getItem('favoriteItems');
-        const cachedMenu = localStorage.getItem('latestMenu');
-        const cachedFoodTable = localStorage.getItem('foodTable');
-
-        if (cachedFavoriteItems && cachedMenu && cachedFoodTable) {
-          setUserFavoriteItems(JSON.parse(cachedFavoriteItems));
-          setLatestMenu(JSON.parse(cachedMenu));
-          setFoodTable(JSON.parse(cachedFoodTable));
-          setLoading(false);
-          return;
-        }
-
-        const [favoriteResponse, menuResponse, foodTableResponse] = await Promise.allSettled([
+        const [favoriteResult, menuResult, foodTableResult] = await Promise.allSettled([
           fetch(`/api/userFavorites?userId=${userId}`),
           fetch(`/api/latestMenuCheck?language=${language}`),
           fetch('/api/getFoodTable'),
         ]);
 
-        if (favoriteResponse.status === 'fulfilled') {
-          const favoriteData = await favoriteResponse.value.json();
+        if (favoriteResult.status === 'fulfilled' && favoriteResult.value.ok) {
+          const favoriteData = await favoriteResult.value.json();
+          localStorage.setItem('userFavoriteItems', JSON.stringify(favoriteData));
           setUserFavoriteItems(favoriteData);
-          localStorage.setItem('favoriteItems', JSON.stringify(favoriteData));
         } else {
-          console.error('Failed to fetch user favorite items:', favoriteResponse.reason);
+          console.error('Failed to fetch user favorite items');
         }
 
-        if (menuResponse.status === 'fulfilled') {
-          const menuData = await menuResponse.value.json();
-          setLatestMenu(menuData.menu);
+        if (menuResult.status === 'fulfilled' && menuResult.value.ok) {
+          const menuData = await menuResult.value.json();
           localStorage.setItem('latestMenu', JSON.stringify(menuData.menu));
+          setLatestMenu(menuData.menu);
         } else {
-          console.error('Failed to fetch latest menu:', menuResponse.reason);
+          console.error('Failed to fetch latest menu');
         }
 
-        if (foodTableResponse.status === 'fulfilled') {
-          const foodTableData = await foodTableResponse.value.json();
-          setFoodTable(foodTableData);
+        if (foodTableResult.status === 'fulfilled' && foodTableResult.value.ok) {
+          const foodTableData = await foodTableResult.value.json();
           localStorage.setItem('foodTable', JSON.stringify(foodTableData));
+          setFoodTable(foodTableData);
         } else {
-          console.error('Failed to fetch food table:', foodTableResponse.reason);
+          console.error('Failed to fetch food table');
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -81,7 +72,16 @@ function DashboardPage() {
       }
     };
 
-    if (userId) {
+    const storedUserFavoriteItems = localStorage.getItem('userFavoriteItems');
+    const storedLatestMenu = localStorage.getItem('latestMenu');
+    const storedFoodTable = localStorage.getItem('foodTable');
+
+    if (storedUserFavoriteItems && storedLatestMenu && storedFoodTable) {
+      setUserFavoriteItems(JSON.parse(storedUserFavoriteItems));
+      setLatestMenu(JSON.parse(storedLatestMenu));
+      setFoodTable(JSON.parse(storedFoodTable));
+      setLoading(false);
+    } else {
       fetchData();
     }
   }, [userId, language]);
@@ -102,14 +102,11 @@ function DashboardPage() {
       image: entry.url,
       label: entry.label,
     }))
-    .filter(
-      (entry) =>
-        // eslint-disable-next-line implicit-arrow-linebreak
-        flattenedMenu
-          .flatMap((day) => day)
-          .filter((item) => !userFavoriteItems.includes(item))
-          .includes(entry.name),
-      // eslint-disable-next-line function-paren-newline
+    .filter((entry) =>
+      flattenedMenu
+        .flatMap((day) => day)
+        .filter((item) => !userFavoriteItems.includes(item))
+        .includes(entry.name),
     );
 
   // Render a loading state while fetching data
