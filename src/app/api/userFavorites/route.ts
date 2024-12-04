@@ -4,9 +4,9 @@ import { prisma } from '@/lib/prisma';
 // eslint-disable-next-line import/prefer-default-export
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const userId = url.searchParams.get('userId');
+  const userId = Number(url.searchParams.get('userId'));
 
-  if (!userId || Number.isNaN(Number(userId))) {
+  if (Number.isNaN(userId)) {
     return NextResponse.json({ message: 'Invalid user ID' }, { status: 400 });
   }
 

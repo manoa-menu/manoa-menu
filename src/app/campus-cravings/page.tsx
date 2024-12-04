@@ -1,21 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import { Container, Card, Col, Row, Form } from 'react-bootstrap';
+import { Container, Col, Row, Form } from 'react-bootstrap';
 import { useSession } from 'next-auth/react';
-import StarButton from './StarButton';
+import CravingsFoodCard from '../../components/CravingsFoodCard';
 
 const CampusCravings: React.FC = () => {
   const { data: session } = useSession();
-  const currentUser = session?.user?.email;
+  const currentUser = session?.user?.email ?? null;
   const [starredItems, setStarredItems] = useState<{ [key: string]: boolean }>({});
   const [selectedOption, setSelectedOption] = useState<string>('All');
 
   const foodItems = [
-    { id: 'item1', name: 'Food Item 1', description: 'Food Item 1 Description', location: 'Campus Center Food Court' },
-    { id: 'item2', name: 'Food Item 2', description: 'Food Item 2 Description', location: 'Gateway Café' },
-    { id: 'item3', name: 'Food Item 3', description: 'Food Item 3 Description', location: 'Hale Aloha Café' },
-    { id: 'item4', name: 'Food Item 4', description: 'Food Item 4 Description', location: 'Campus Center Food Court' },
+    { id: 'item1', name: 'Food Item 1', description: 'Description', location: 'Campus Center Food Court', likes: 5 },
+    { id: 'item2', name: 'Food Item 2', description: 'Description', location: 'Gateway Café', likes: 0 },
+    { id: 'item3', name: 'Food Item 3', description: 'Description', location: 'Hale Aloha Café', likes: 2 },
+    { id: 'item4', name: 'Food Item 4', description: 'Description', location: 'Campus Center Food Court', likes: 3 },
   ];
 
   // Handle dropdown selection change
@@ -67,26 +67,17 @@ const CampusCravings: React.FC = () => {
       <div className="overflow-auto" style={{ maxHeight: '500px', border: '2px solid', borderRadius: '5px' }}>
         <Col>
           {filteredFoodItems.map((foodItem) => (
-            <Card className="my-3" style={{ border: '1px solid' }} key={foodItem.id}>
-              <Card.Body>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Card.Title>{foodItem.name}</Card.Title>
-                  <Card.Subtitle>{foodItem.location}</Card.Subtitle>
-                  <StarButton
-                    item={foodItem.id}
-                    isStarred={starredItems[foodItem.id] || false}
-                    onToggle={toggleStar}
-                  />
-                </div>
-                <Card.Text>{foodItem.description}</Card.Text>
-                <Card.Text>
-                  Likes: 0
-                  {/*
-                  {favoriteCounts[foodItem.id] || 0}
-                  */}
-                </Card.Text>
-              </Card.Body>
-            </Card>
+            <CravingsFoodCard
+              key={foodItem.id}
+              id={foodItem.id}
+              name={foodItem.name}
+              description={foodItem.description}
+              location={foodItem.location}
+              likes={foodItem.likes}
+              isStarred={starredItems[foodItem.id]}
+              onToggle={toggleStar}
+              currentUser={currentUser}
+            />
           ))}
         </Col>
       </div>
