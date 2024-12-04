@@ -1,15 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Container, Col, Row, Form } from 'react-bootstrap';
 import { useSession } from 'next-auth/react';
 import CravingsFoodCard from '../../components/CravingsFoodCard';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
-const CampusCravings: React.FC = () => {
+interface FoodTableEntry {
+  id: number;
+  name: string;
+  url: string;
+  likes: number;
+  label: string[];
+  translation: string[];
+}
+
+function CampusCravings() {
   const { data: session } = useSession();
   const currentUser = session?.user?.email ?? null;
   const [starredItems, setStarredItems] = useState<{ [key: string]: boolean }>({});
   const [selectedOption, setSelectedOption] = useState<string>('All');
+  const [foodTable, setFoodTable] = useState<FoodTableEntry[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   const foodItems = [
     { id: 'item1', name: 'Food Item 1', description: 'Description', location: 'Campus Center Food Court', likes: 5 },
@@ -17,6 +29,24 @@ const CampusCravings: React.FC = () => {
     { id: 'item3', name: 'Food Item 3', description: 'Description', location: 'Hale Aloha Café', likes: 2 },
     { id: 'item4', name: 'Food Item 4', description: 'Description', location: 'Campus Center Food Court', likes: 3 },
   ];
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const fetchFoodCard = fetch('/api/getFoodTable');
+        if (!fetchFoodCard) {
+          setFoodTable(fetchFoodCard);
+        } else {
+          console.error('Failed to fetch food table');
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   // Handle dropdown selection change
   const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -35,6 +65,21 @@ const CampusCravings: React.FC = () => {
       [item]: !prev[item],
     }));
   };
+
+  if (loading) {
+    return (
+      <Container className="body-loading">
+        <LoadingSpinner />
+      </Container>
+    );
+  }
+
+  const foodCard = foodTable
+    .map((entry) => ({
+      name: entry.name,
+      image: entry.url,
+      likes: entry.likes,
+    }));
 
   return (
     <Container className="my-5" style={{ paddingTop: '120px' }}>
@@ -68,6 +113,8 @@ const CampusCravings: React.FC = () => {
         <Col>
           {filteredFoodItems.map((foodItem) => (
             <CravingsFoodCard
+            foodItem={foodCard}
+             { /* 
               key={foodItem.id}
               id={foodItem.id}
               name={foodItem.name}
@@ -77,12 +124,14 @@ const CampusCravings: React.FC = () => {
               isStarred={starredItems[foodItem.id]}
               onToggle={toggleStar}
               currentUser={currentUser}
+              */ }
+
             />
           ))}
         </Col>
       </div>
     </Container>
   );
-};
+}
 
 export default CampusCravings;

@@ -1,44 +1,39 @@
 import React from 'react';
-import { Card } from 'react-bootstrap';
+import { Card, Container } from 'react-bootstrap';
 import StarButton from '../app/campus-cravings/StarButton'; // Adjust the import path as needed
 
-interface FoodCardProps {
-  id: string;
+interface FoodInfo {
   name: string;
-  description: string;
-  location: string;
   likes: number;
+  image: string;
   isStarred: boolean;
   onToggle: (id: string) => void;
   currentUser: string | null;
 }
 
-const FoodCard: React.FC<FoodCardProps> = ({
-  id,
-  name,
-  description,
-  location,
-  likes,
-  isStarred,
-  onToggle,
-  currentUser,
-}) => (
-  <Card className="my-1" style={{ border: '1px solid' }} key={id}>
-    <Card.Body>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Card.Title>{name}</Card.Title>
-        {currentUser && (
-        <StarButton item={id} isStarred={isStarred} onToggle={onToggle} />
+const CravingsFoodCard = ({ foodItem }: { foodItem: FoodInfo[], currentUser: string | null }) => {
+
+  return (
+    <Container>
+      {foodItem.map((itemCard) => (
+        <Card className="my-1" style={{ border: '1px solid' }}>
+          <Card.Body>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Card.Title>{itemCard.name}</Card.Title>
+              <Card.Img src={itemCard.image} style={{ width: '100px', height: '100px' }} />
+              {currentUser && (
+        <StarButton item={itemCard.name} isStarred={itemCard.isStarred} onToggle={itemCard.onToggle} />
         )}
       </div>
-      <Card.Text>{description}</Card.Text>
-      <Card.Text>{location}</Card.Text>
       <Card.Text>
         Likes:
-        {likes}
+        {itemCard.likes}
       </Card.Text>
     </Card.Body>
   </Card>
-);
+  ))}
+  </Container>
+  );
+};
 
-export default FoodCard;
+export default CravingsFoodCard;
