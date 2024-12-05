@@ -24,6 +24,7 @@ interface DayMenu {
   specialMessage: string;
 }
 
+// Fetch image URLs from the SERP API
 async function fetchImageUrl(foodName: string) {
   return new Promise((resolve, reject) => {
     try {
@@ -53,6 +54,7 @@ async function fetchImageUrl(foodName: string) {
   });
 }
 
+// Populate the FoodTable with items from the menu
 export default async function populateFoodTableFromMenu(parsedMenu: DayMenu[]): Promise<void> {
   try {
     const phrasesToRemove = ['Value Bowl:'];
@@ -146,6 +148,19 @@ export default async function populateFoodTableFromMenu(parsedMenu: DayMenu[]): 
   }
 }
 
+// Get the entire food table
+export async function getFoodTable() {
+  try {
+    return await prisma.foodTable.findMany({});
+  } catch (error) {
+    console.error('Error fetching FoodTable:', error);
+    return [];
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+// Get user's favorite items
 export async function favoriteItems(userId: number): Promise<string[]> {
   try {
     const user = await prisma.user.findUnique({
@@ -161,12 +176,72 @@ export async function favoriteItems(userId: number): Promise<string[]> {
   }
 }
 
-export async function getFoodTable() {
+// Add a new favorite item
+export async function addFavoriteItem(userId: number, foodName: string): Promise<boolean> {
   try {
-    return await prisma.foodTable.findMany({});
+    // Fetch the user's current favorites
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { favorites: true },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Check if the item already exists in the favorites
+    if (user.favorites.includes(foodName)) {
+      return false;
+    }
+
+    // Add the new item to the favorites
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        favorites: {
+          push: foodName,
+        },
+      },
+    });
+    return true;
   } catch (error) {
-    console.error('Error fetching FoodTable:', error);
-    return [];
+    console.error('Error adding favorite item:', error);
+    throw new Error('Error adding favorite item');
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+// Remove a favorite item
+export async function removeFavoriteItem(userId: number, foodName: string): Promise<boolean> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { favorites: true },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // If item is not in the favorites, return false
+    if (!user.favorites.includes(foodName)) {
+      return false;
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        favorites: {
+          set: user.favorites.filter((favorite) => favorite !== foodName),
+        },
+      },
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error removing favorite item:', error);
+    throw new Error('Error removing favorite item');
   } finally {
     await prisma.$disconnect();
   }

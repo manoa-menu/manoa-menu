@@ -12,7 +12,15 @@ export type FoodItemType = {
   label: string[];
 };
 
-const FoodItemSlider = ({ foodItem }: { foodItem: FoodItemType[] }) => {
+const FoodItemSlider = ({
+  foodItem,
+  userFavoriteItems,
+  onToggle,
+}: {
+  foodItem: FoodItemType[];
+  userFavoriteItems: string[];
+  onToggle: (item: string) => void;
+}) => {
   const sliderRef = useRef<HTMLDivElement | null>(null);
   const [isLeftHovered, setIsLeftHovered] = useState(false);
   const [isRightHovered, setIsRightHovered] = useState(false);
@@ -34,7 +42,14 @@ const FoodItemSlider = ({ foodItem }: { foodItem: FoodItemType[] }) => {
       <Row>
         <Col ref={sliderRef} className="d-flex card-container container overflow-scroll p-4">
           {foodItem.map((itemCard) => (
-            <FoodItem key={itemCard.name} name={itemCard.name} picture={itemCard.image} label={itemCard.label} />
+            <FoodItem
+              key={itemCard.name}
+              name={itemCard.name}
+              picture={itemCard.image}
+              label={itemCard.label}
+              userFavoriteItems={userFavoriteItems}
+              onToggle={onToggle}
+            />
           ))}
         </Col>
         <Button

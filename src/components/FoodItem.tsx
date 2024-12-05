@@ -2,9 +2,23 @@
 
 import Image from 'next/image';
 import { Badge, Card, Col } from 'react-bootstrap';
-import './foodItemSlider.css';
 
-const FoodItem = ({ name, picture, label }: { name: string; picture: string; label: string[] }) => (
+import './foodItemSlider.css';
+import StarButton from '@/app/campus-cravings/StarButton';
+
+const FoodItem = ({
+  name,
+  picture,
+  label,
+  userFavoriteItems,
+  onToggle,
+}: {
+  name: string;
+  picture: string;
+  label: string[];
+  userFavoriteItems: string[];
+  onToggle: (item: string) => void;
+}) => (
   <Col>
     <Card
       className="hover-card h-50"
@@ -22,6 +36,9 @@ const FoodItem = ({ name, picture, label }: { name: string; picture: string; lab
             <Badge key={category}>{category}</Badge>
           ))}
         </Card.Text>
+        <Card.Subtitle>
+          <StarButton item={name} isStarred={userFavoriteItems.includes(name)} onToggle={onToggle} />
+        </Card.Subtitle>
       </Card.Body>
       <Image
         src={picture}

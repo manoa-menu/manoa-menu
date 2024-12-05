@@ -33,45 +33,45 @@ function DashboardPage() {
   const [foodTable, setFoodTable] = useState<FoodTableEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [favoriteResult, menuResult, foodTableResult] = await Promise.allSettled([
-          fetch(`/api/userFavorites?userId=${userId}`),
-          fetch(`/api/latestMenuCheck?language=${language}`),
-          fetch('/api/getFoodTable'),
-        ]);
+  const fetchData = async () => {
+    try {
+      const [favoriteResult, menuResult, foodTableResult] = await Promise.allSettled([
+        fetch(`/api/userFavorites?userId=${userId}`),
+        fetch(`/api/latestMenuCheck?language=${language}`),
+        fetch('/api/getFoodTable'),
+      ]);
 
-        if (favoriteResult.status === 'fulfilled' && favoriteResult.value.ok) {
-          const favoriteData = await favoriteResult.value.json();
-          localStorage.setItem('userFavoriteItems', JSON.stringify(favoriteData));
-          setUserFavoriteItems(favoriteData);
-        } else {
-          console.error('Failed to fetch user favorite items');
-        }
-
-        if (menuResult.status === 'fulfilled' && menuResult.value.ok) {
-          const menuData = await menuResult.value.json();
-          localStorage.setItem('latestMenu', JSON.stringify(menuData.menu));
-          setLatestMenu(menuData.menu);
-        } else {
-          console.error('Failed to fetch latest menu');
-        }
-
-        if (foodTableResult.status === 'fulfilled' && foodTableResult.value.ok) {
-          const foodTableData = await foodTableResult.value.json();
-          localStorage.setItem('foodTable', JSON.stringify(foodTableData));
-          setFoodTable(foodTableData);
-        } else {
-          console.error('Failed to fetch food table');
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
+      if (favoriteResult.status === 'fulfilled' && favoriteResult.value.ok) {
+        const favoriteData = await favoriteResult.value.json();
+        localStorage.setItem('userFavoriteItems', JSON.stringify(favoriteData));
+        setUserFavoriteItems(favoriteData);
+      } else {
+        console.error('Failed to fetch user favorite items');
       }
-    };
 
+      if (menuResult.status === 'fulfilled' && menuResult.value.ok) {
+        const menuData = await menuResult.value.json();
+        localStorage.setItem('latestMenu', JSON.stringify(menuData.menu));
+        setLatestMenu(menuData.menu);
+      } else {
+        console.error('Failed to fetch latest menu');
+      }
+
+      if (foodTableResult.status === 'fulfilled' && foodTableResult.value.ok) {
+        const foodTableData = await foodTableResult.value.json();
+        localStorage.setItem('foodTable', JSON.stringify(foodTableData));
+        setFoodTable(foodTableData);
+      } else {
+        console.error('Failed to fetch food table');
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     const storedUserFavoriteItems = localStorage.getItem('userFavoriteItems');
     const storedLatestMenu = localStorage.getItem('latestMenu');
     const storedFoodTable = localStorage.getItem('foodTable');
@@ -84,7 +84,18 @@ function DashboardPage() {
     } else {
       fetchData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, language]);
+
+  const handleToggle = async (item: string) => {
+    setUserFavoriteItems((prevStarredItems) => {
+      if (prevStarredItems.includes(item)) {
+        return prevStarredItems.filter((starredItem) => starredItem !== item);
+      }
+      return [...prevStarredItems, item];
+    });
+    await fetchData();
+  };
 
   const flattenedMenu = latestMenu.map((day) => [...day.grabAndGo, ...day.plateLunch]);
 
@@ -131,13 +142,13 @@ function DashboardPage() {
         </Container>
       </Row>
       <Row className="py-2 mb-4">
-        <Calendar weeklyItems={fullFilteredMenu} />
+        <Calendar weeklyItems={fullFilteredMenu} userFavoriteItems={userFavoriteItems} onToggle={handleToggle} />
       </Row>
       <Row className="pt-4 mt-4">
         <h1>Recommended:</h1>
       </Row>
       <Row className="mb-4">
-        <FoodItemSlider foodItem={recommendedFoodItems} />
+        <FoodItemSlider foodItem={recommendedFoodItems} userFavoriteItems={userFavoriteItems} onToggle={handleToggle} />
       </Row>
     </Container>
   );
