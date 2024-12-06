@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 
 import jpManualReplace from '@/lib/manualTranslate';
 
-import { MenuResponse, Option } from '@/types/menuTypes';
+import { MenuResponse, Location, FilteredSodexoMeal } from '@/types/menuTypes';
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -320,20 +320,22 @@ const sdxJsonSchema = {
 
 async function fetchOpenAI(
   prompt: string,
-  option: Option,
+  option: Location,
   weeklyMenu: MenuResponse,
   language: string,
+  sdxoMenu: FilteredSodexoMeal[] = [],
 ): Promise<MenuResponse> {
-  const maxTokens = (option === Option.CC) ? 2000 : 3000;
+  const maxTokens = (option === Location.CAMPUS_CENTER) ? 2000 : 3000;
+  const menuToTranslate = ((weeklyMenu.weekOne.length === 0) && (sdxoMenu.length === 0)) ? weeklyMenu : sdxoMenu;
   const chatCompletion = await client.beta.chat.completions.parse({
     model: 'gpt-4o',
     messages: [
       { role: 'system', content: prompt },
-      { role: 'user', content: `This week's menu: ${JSON.stringify(weeklyMenu)}` },
+      { role: 'user', content: `This week's menu: ${JSON.stringify(menuToTranslate)}` },
     ],
     response_format: {
       type: 'json_schema',
-      json_schema: (option === Option.CC) ? ccJsonSchema : sdxJsonSchema,
+      json_schema: (option === Location.CAMPUS_CENTER) ? ccJsonSchema : sdxJsonSchema,
     },
     temperature: 0.1,
     max_tokens: maxTokens,

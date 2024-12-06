@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
-import { SodexoMeal, FilteredSodexoMeal, Location,
-  SodexoRootObject, FilteredSodexoRootObject } from '@/types/menuTypes';
+import { SodexoMeal, FilteredSodexoMeal, Location } from '@/types/menuTypes';
+import fetchOpenAI from '@/app/utils/api/openai';
 import { getLatestMenu } from '@/lib/dbActions';
 
 const now = new Date();
@@ -38,6 +38,17 @@ export async function GET(req: NextRequest) {
   const locationOption = (location === 'gw') ? Location.GATEWAY : Location.HALE_ALOHA;
   console.log(`Location Option: ${locationOption}`);
 
+  const prompt = `You will translate all menu items into ${language}. 
+  Translate and word in a way that is easy for native speakers of ${language} to understand.
+  In parenthesis provide a brief description of dish contents in ${language}
+  or foods that ${language} people may not be familiar with,
+  or Chinese food, Uncommon Mexican food, Hawaiian food,
+  or Chicken Parmesan, Cobb Salad, Huli Huli Chicken
+  or foods that are not self-explanatory.
+  Must describe pasta dishes, special salads, non-famous American dishes, and foreign asian dishes.
+  Do not add or create new items that are not on the menu.
+  If there is a special message, provide a translation in ${language}.`;
+
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
   if (!dateRegex.test(date)) {
     return NextResponse.json({ error: 'Invalid date format. Expected yyyy-mm-dd' }, { status: 400 });
@@ -70,7 +81,9 @@ export async function GET(req: NextRequest) {
     // eslint-disable-next-line max-len
     const filteredData: FilteredSodexoMeal[] = dataArr.map((data: SodexoMeal) => removeNutritionalFacts(data));
 
-    return NextResponse.json(filteredData);
+    const translatedFilteredData: FilteredSodexoMeal[] = fetchOpenAI(prompt, Location.GATEWAY, filteredData, language);
+
+    // return NextResponse.json(filteredData);
 
     // Gets latest English menu from database
     // const dbLatestMenu = await getLatestMenu('English', locationOption);

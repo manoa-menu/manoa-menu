@@ -2,7 +2,7 @@
 import scrapeCCUrl from '@/lib/scrapeCCUrl';
 import parseCampusCenterMenu from '@/lib/menuParse';
 import { getLatestMenu, insertMenu } from '@/lib/dbActions';
-import { Location, DayMenu, MenuResponse, Option } from '@/types/menuTypes';
+import { Location, DayMenu, MenuResponse } from '@/types/menuTypes';
 import populateFoodTableFromMenu from './foodTable';
 import fetchOpenAI from '../app/utils/api/openai';
 
@@ -58,7 +58,7 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
       Do not add or create new items that are not on the menu.
       If there is a special message, provide a translation in ${language}.`;
 
-      const translatedMenu: MenuResponse = await fetchOpenAI(prompt, Option.CC, parsedMenu, 'Japanese');
+      const translatedMenu: MenuResponse = await fetchOpenAI(prompt, Location.CAMPUS_CENTER, parsedMenu, 'Japanese');
 
       // Insert the translated menu for week one into the database
       await insertMenu(translatedMenu.weekOne, Location.CAMPUS_CENTER, 'Japanese', 'Japan');
