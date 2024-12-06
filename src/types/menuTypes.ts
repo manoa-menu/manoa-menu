@@ -16,9 +16,7 @@ export interface DayMenu {
 
 export interface FilteredSodexoMenuItem {
   course: string | null;
-  courseSortOrder: number;
   meal: string;
-  menuItemId: number;
   formalName: string;
   description: string;
   price: number;
@@ -31,7 +29,6 @@ export interface FilteredSodexoMenuItem {
 
 export interface FilteredSodexoGroup {
   name: string | null;
-  sortOrder: number;
   items: FilteredSodexoMenuItem[];
 }
 

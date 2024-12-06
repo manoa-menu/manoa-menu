@@ -120,12 +120,13 @@ export async function getMenu(week_of: string, language: string) {
  * Retrieves the latest menu from the database using the week_of field.
  * @returns the latest menu object.
  */
-export async function getLatestMenu(language: string) {
+export async function getLatestMenu(language: string, location: Location) {
   try {
     return await prisma.menus.findFirst({
       where: {
         language,
         week_of: getCurrentWeekOf(),
+        location,
       },
     });
   } catch (error) {
