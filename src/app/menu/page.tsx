@@ -5,7 +5,7 @@ import '@/styles/Menu.css';
 import CCMenuList from '@/components/CCMenuList';
 import { Translate } from 'react-bootstrap-icons';
 import { Container, Dropdown, DropdownButton } from 'react-bootstrap';
-import { DayMenu } from '@/types/menuTypes';
+import { DayMenu, FilteredSodexoMeal } from '@/types/menuTypes';
 import { useSession } from 'next-auth/react';
 import { getUserLanguage } from '@/lib/dbActions';
 import { useState, useEffect, useRef } from 'react';
@@ -31,8 +31,8 @@ const Page = () => {
   const { data: session } = useSession();
 
   const [ccMenu, setCCMenu] = useState<DayMenu[]>([]);
-  const [gwMenu, setGWMenu] = useState<DayMenu[]>([]);
-  // const [haMenu, setHAMenu] = useState<DayMenu[]>([]);
+  const [gwMenu, setGWMenu] = useState<FilteredSodexoMeal[]>([]);
+  // const [haMenu, setHAMenu] = useState<FilteredSodexoMeal[]>([]);
 
   const [isCCLoading, setCCLoading] = useState(true);
   const [isGWLoading, setGWLoading] = useState(true);

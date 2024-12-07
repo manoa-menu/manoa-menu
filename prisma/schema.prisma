@@ -32,13 +32,28 @@ model User {
   role     Role      @default(USER)
 }
 
-model Menus {
+model CampusCenterMenus {
   id         Int       @id @default(autoincrement())
   week_of    String    @default("1996-12-29")
   location   Location  @default(CAMPUS_CENTER)
   menu       Json      @default("[]")
   language   String    @default("English")
-  country    String    @default("USA")
+}
+
+model GatewayMenus {
+  id         Int       @id @default(autoincrement())
+  date    String       @default("1996-12-29")
+  location   Location  @default(GATEWAY)
+  menu       Json      @default("[]")
+  language   String    @default("English")
+}
+
+model HaleAlohaMenus {
+  id         Int       @id @default(autoincrement())
+  date       String    @default("1996-12-29")
+  location   Location  @default(HALE_ALOHA)
+  menu       Json      @default("[]")
+  language   String    @default("English")
 }
 
 enum Location {

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FilteredSodexoMeal } from '@/types/menuTypes';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
@@ -11,7 +12,7 @@ interface TabPanelProps {
 }
 
 interface GatewayMenuProps {
-  menu: any;
+  menu: FilteredSodexoMeal[];
   language: string;
 }
 

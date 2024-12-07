@@ -200,45 +200,45 @@ const sdxJsonSchema = {
     properties: {
       name: {
         type: 'string',
-        description: 'The name of the meal category.',
+        description: 'meal category',
       },
       groups: {
         type: 'array',
-        description: 'A collection of groups that contain meal items.',
+        description: 'groups with meal items',
         items: {
           type: 'object',
           properties: {
             name: {
               type: 'string',
               nullable: true,
-              description: 'The name of the group.',
+              description: 'group name',
             },
             items: {
               type: 'array',
-              description: 'List of menu items in this group.',
+              description: 'menu items in group',
               items: {
                 type: 'object',
                 properties: {
                   course: {
                     type: 'string',
                     nullable: true,
-                    description: 'Type or category of the meal.',
+                    description: 'Type or category of the meal',
                   },
                   meal: {
                     type: 'string',
-                    description: 'The meal type (e.g., BREAKFAST, LUNCH).',
+                    description: 'The meal type (e.g., BREAKFAST, BRUNCH, LUNCH, DINNER).',
                   },
                   formalName: {
                     type: 'string',
-                    description: 'The official name of the menu item.',
+                    description: 'item name',
                   },
                   description: {
                     type: 'string',
-                    description: 'A brief description of the menu item.',
+                    description: 'description of the item',
                   },
                   price: {
                     type: 'number',
-                    description: 'The price of the menu item.',
+                    description: 'price of the item (if applicable)',
                   },
                   allergens: {
                     type: 'array',
@@ -264,14 +264,14 @@ const sdxJsonSchema = {
                   },
                   sizes: {
                     type: 'array',
-                    description: 'Available sizes for the menu item.',
+                    description: 'Available sizes',
                     items: {
                       type: 'string',
                     },
                   },
                   addons: {
                     type: 'array',
-                    description: 'Available add-ons for the menu item.',
+                    description: 'Available add-ons',
                     items: {
                       type: 'string',
                     },
@@ -343,16 +343,19 @@ async function fetchOpenAI(
   if (chatCompletion.choices[0].message.parsed) {
     const response = chatCompletion.choices[0].message.parsed;
 
-    switch (language) {
-      case 'Japanese':
-        return jpManualReplace(response);
-      // case 'Korean':
-      //   return krManualReplace(response);
-      // case 'Spanish':
-      //   return esManualReplace(response);
-      default:
-        return JSON.parse(JSON.stringify(response));
+    if (option === Location.CAMPUS_CENTER) {
+      switch (language) {
+        case 'Japanese':
+          return jpManualReplace(response);
+          // case 'Korean':
+          //   return krManualReplace(response);
+          // case 'Spanish':
+          //   return esManualReplace(response);
+        default:
+          return JSON.parse(JSON.stringify(response));
+      }
     }
+    return JSON.parse(JSON.stringify(response));
   }
   if (chatCompletion.choices[0].message.content) {
     const response = chatCompletion.choices[0].message.content;

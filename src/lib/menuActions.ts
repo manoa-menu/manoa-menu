@@ -1,10 +1,11 @@
 /* eslint-disable eqeqeq */
 import scrapeCCUrl from '@/lib/scrapeCCUrl';
 import parseCampusCenterMenu from '@/lib/menuParse';
-import { getLatestMenu, insertMenu } from '@/lib/dbActions';
+import { getLatestMenu, insertCCMenu } from '@/lib/dbActions';
 import { Location, DayMenu, MenuResponse } from '@/types/menuTypes';
 import populateFoodTableFromMenu from './foodTable';
 import fetchOpenAI from '../app/utils/api/openai';
+import { getCurrentWeekOf, getNextWeekOf } from './dateFunctions';
 
 async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
   try {
@@ -34,12 +35,12 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
 
       // console.log(parsedMenu.weekOne);
       // Insert the parsed menu for week one into the database
-      await insertMenu(parsedMenu.weekOne, Location.CAMPUS_CENTER, 'English', 'USA');
+      await insertCCMenu(parsedMenu.weekOne, Location.CAMPUS_CENTER, 'English', getCurrentWeekOf());
       await populateFoodTableFromMenu(parsedMenu.weekOne);
 
       // If week two menu exists, insert it into the database
       if (parsedMenu.weekTwo) {
-        await insertMenu(parsedMenu.weekTwo, Location.CAMPUS_CENTER, 'English', 'USA', 2);
+        await insertCCMenu(parsedMenu.weekTwo, Location.CAMPUS_CENTER, 'English', getNextWeekOf());
         await populateFoodTableFromMenu(parsedMenu.weekTwo);
         // console.log(parsedMenu.weekTwo);
       }
@@ -58,14 +59,14 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
       Do not add or create new items that are not on the menu.
       If there is a special message, provide a translation in ${language}.`;
 
-      const translatedMenu: MenuResponse = await fetchOpenAI(prompt, Location.CAMPUS_CENTER, parsedMenu, 'Japanese');
+      const translatedMenu = await fetchOpenAI(prompt, Location.CAMPUS_CENTER, parsedMenu, 'Japanese') as MenuResponse;
 
       // Insert the translated menu for week one into the database
-      await insertMenu(translatedMenu.weekOne, Location.CAMPUS_CENTER, 'Japanese', 'Japan');
+      await insertCCMenu(translatedMenu.weekOne, Location.CAMPUS_CENTER, 'Japanese', getCurrentWeekOf());
 
       // If week two translated menu exists, insert it into the database
       if (translatedMenu.weekTwo) {
-        await insertMenu(translatedMenu.weekTwo, Location.CAMPUS_CENTER, 'Japanese', 'Japan', 2);
+        await insertCCMenu(translatedMenu.weekTwo, Location.CAMPUS_CENTER, 'Japanese', getNextWeekOf());
       }
 
       // If the latest menu is up to date, fetch the menu from the database

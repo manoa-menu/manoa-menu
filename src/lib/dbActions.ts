@@ -2,61 +2,66 @@
 
 import { hash } from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
-import { DayMenu, Location } from '@/types/menuTypes';
+import { DayMenu, Location, FilteredSodexoMeal } from '@/types/menuTypes';
+import { getCurrentWeekOf } from '@/lib/dateFunctions';
 
 const prisma = new PrismaClient();
-
-function getCurrentWeekOf(): string {
-  const today = new Date();
-  // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
-  const dayOfWeek = today.getDay();
-  // Calculate the start of the week (Sunday)
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - dayOfWeek);
-  // Format the date as yyyy-mm-dd
-  const yyyy = startOfWeek.getFullYear();
-  const mm = String(startOfWeek.getMonth() + 1).padStart(2, '0');
-  const dd = String(startOfWeek.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-function getNextWeekOf(): string {
-  const today = new Date();
-  // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
-  const dayOfWeek = today.getDay();
-  // Calculate the start of the week (Sunday)
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - dayOfWeek + 7);
-  // Format the date as yyyy-mm-dd
-  const yyyy = startOfWeek.getFullYear();
-  const mm = String(startOfWeek.getMonth() + 1).padStart(2, '0');
-  const dd = String(startOfWeek.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-}
 
 /**
  * Creates a new menu in the database.
  * @param menuRow, an object with the following properties: email, password.
  */
-export async function insertMenu(
+export async function insertCCMenu(
   menuInfo: DayMenu[],
   location: Location,
   language: string,
-  country: string,
-  weekNumber: number = 1,
+  date: string,
 ) {
   try {
-    const weekOf = (weekNumber === 1) ? getCurrentWeekOf() : getNextWeekOf();
     const weekMenu = JSON.parse(JSON.stringify(menuInfo));
-    await prisma.menus.create({
+    await prisma.campusCenterMenus.create({
       data: {
-        week_of: weekOf,
+        week_of: date,
         location,
         menu: weekMenu,
         language,
-        country,
       },
     });
+  } catch (error) {
+    console.error('Error inserting menu:', error);
+    throw error;
+  }
+}
+
+export async function insertSdxMenu(
+  menuInfo: FilteredSodexoMeal[],
+  location: Location,
+  language: string,
+  date: string,
+) {
+  try {
+    const weekMenu = JSON.parse(JSON.stringify(menuInfo));
+    if (location === Location.GATEWAY) {
+      await prisma.gatewayMenus.create({
+        data: {
+          date,
+          location,
+          menu: weekMenu,
+          language,
+        },
+      });
+    } else if (location === Location.HALE_ALOHA) {
+      await prisma.haleAlohaMenus.create({
+        data: {
+          date,
+          location,
+          menu: weekMenu,
+          language,
+        },
+      });
+    } else {
+      throw new Error('Invalid location');
+    }
   } catch (error) {
     console.error('Error inserting menu:', error);
     throw error;
@@ -71,7 +76,7 @@ export async function insertMenu(
  */
 export async function editMenu(id: number, data: any) {
   try {
-    return await prisma.menus.update({
+    return prisma.campusCenterMenus.update({
       where: { id },
       data,
     });
@@ -88,7 +93,7 @@ export async function editMenu(id: number, data: any) {
  */
 export async function deleteMenu(id: number) {
   try {
-    return await prisma.menus.delete({
+    return prisma.campusCenterMenus.delete({
       where: { id },
     });
   } catch (error) {
@@ -104,7 +109,7 @@ export async function deleteMenu(id: number) {
  */
 export async function getMenu(week_of: string, language: string) {
   try {
-    return await prisma.menus.findFirst({
+    return prisma.campusCenterMenus.findFirst({
       where: {
         week_of,
         language,
@@ -122,7 +127,7 @@ export async function getMenu(week_of: string, language: string) {
  */
 export async function getLatestMenu(language: string, location: Location) {
   try {
-    return await prisma.menus.findFirst({
+    return prisma.campusCenterMenus.findFirst({
       where: {
         language,
         week_of: getCurrentWeekOf(),
@@ -141,7 +146,7 @@ export async function getLatestMenu(language: string, location: Location) {
  */
 export async function getAllMenus() {
   try {
-    return await prisma.menus.findMany();
+    return prisma.campusCenterMenus.findMany();
   } catch (error) {
     console.error('Error fetching all menus:', error);
     throw error;
