@@ -3,7 +3,7 @@
 import { hash } from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
 import { DayMenu, Location, FilteredSodexoMeal } from '@/types/menuTypes';
-import { getCurrentWeekOf } from '@/lib/dateFunctions';
+import { getCurrentWeekOf, getCurrentDayOf } from '@/lib/dateFunctions';
 
 const prisma = new PrismaClient();
 
@@ -29,6 +29,91 @@ export async function insertCCMenu(
     });
   } catch (error) {
     console.error('Error inserting menu:', error);
+    throw error;
+  }
+}
+
+/**
+ * Edits a menu in the database.
+ * @param id - The ID of the menu to edit.
+ * @param data - The new data for the menu.
+ * @returns the updated menu object.
+ */
+export async function editCCMenu(id: number, data: any) {
+  try {
+    return await prisma.campusCenterMenus.update({
+      where: { id },
+      data,
+    });
+  } catch (error) {
+    console.error('Error editing menu:', error);
+    throw error;
+  }
+}
+
+/**
+ * Deletes a menu from the database.
+ * @param id - The ID of the menu to delete.
+ * @returns the deleted menu object.
+ */
+export async function deleteCCMenu(id: number) {
+  try {
+    return await prisma.campusCenterMenus.delete({
+      where: { id },
+    });
+  } catch (error) {
+    console.error('Error deleting menu:', error);
+    throw error;
+  }
+}
+
+/**
+ * Retrieves a menu from the database.
+ * @param id, the ID of the menu to retrieve.
+ * @returns the menu object.
+ */
+export async function getCCMenu(week_of: string, language: string) {
+  try {
+    return await prisma.campusCenterMenus.findFirst({
+      where: {
+        week_of,
+        language,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching menu:', error);
+    throw error;
+  }
+}
+
+/**
+ * Retrieves the latest menu from the database using the week_of field.
+ * @returns the latest menu object.
+ */
+export async function getLatestCCMenu(language: string, location: Location) {
+  try {
+    return await prisma.campusCenterMenus.findFirst({
+      where: {
+        language,
+        week_of: getCurrentWeekOf(),
+        location,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching latest menu:', error);
+    throw error;
+  }
+}
+
+/**
+ * Retrieves all menus from the database.
+ * @returns an array of menu objects.
+ */
+export async function getAllCCMenus() {
+  try {
+    return await prisma.campusCenterMenus.findMany();
+  } catch (error) {
+    console.error('Error fetching all menus:', error);
     throw error;
   }
 }
@@ -69,86 +154,31 @@ export async function insertSdxMenu(
 }
 
 /**
- * Edits a menu in the database.
- * @param id - The ID of the menu to edit.
- * @param data - The new data for the menu.
- * @returns the updated menu object.
- */
-export async function editMenu(id: number, data: any) {
-  try {
-    return prisma.campusCenterMenus.update({
-      where: { id },
-      data,
-    });
-  } catch (error) {
-    console.error('Error editing menu:', error);
-    throw error;
-  }
-}
-
-/**
- * Deletes a menu from the database.
- * @param id - The ID of the menu to delete.
- * @returns the deleted menu object.
- */
-export async function deleteMenu(id: number) {
-  try {
-    return prisma.campusCenterMenus.delete({
-      where: { id },
-    });
-  } catch (error) {
-    console.error('Error deleting menu:', error);
-    throw error;
-  }
-}
-
-/**
- * Retrieves a menu from the database.
- * @param id, the ID of the menu to retrieve.
- * @returns the menu object.
- */
-export async function getMenu(week_of: string, language: string) {
-  try {
-    return prisma.campusCenterMenus.findFirst({
-      where: {
-        week_of,
-        language,
-      },
-    });
-  } catch (error) {
-    console.error('Error fetching menu:', error);
-    throw error;
-  }
-}
-
-/**
  * Retrieves the latest menu from the database using the week_of field.
  * @returns the latest menu object.
  */
-export async function getLatestMenu(language: string, location: Location) {
+export async function getLatestSdxMenu(language: string, location: Location) {
   try {
-    return prisma.campusCenterMenus.findFirst({
-      where: {
-        language,
-        week_of: getCurrentWeekOf(),
-        location,
-      },
-    });
+    if (location === Location.GATEWAY) {
+      return await prisma.gatewayMenus.findFirst({
+        where: {
+          language,
+          date: getCurrentDayOf(),
+          location,
+        },
+      });
+    } if (location === Location.HALE_ALOHA) {
+      return await prisma.haleAlohaMenus.findFirst({
+        where: {
+          language,
+          date: getCurrentDayOf(),
+          location,
+        },
+      });
+    }
+    throw new Error('Invalid location');
   } catch (error) {
     console.error('Error fetching latest menu:', error);
-    throw error;
-  }
-}
-
-/**
- * Retrieves all menus from the database.
- * @returns an array of menu objects.
- */
-export async function getAllMenus() {
-  try {
-    return prisma.campusCenterMenus.findMany();
-  } catch (error) {
-    console.error('Error fetching all menus:', error);
     throw error;
   }
 }

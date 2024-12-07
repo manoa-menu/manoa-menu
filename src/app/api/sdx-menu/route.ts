@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
-import { SodexoMeal, FilteredSodexoMeal, Location, MenuResponse } from '@/types/menuTypes';
+import { SodexoMeal, FilteredSodexoMeal, Location, MenuResponse, SodexoMenuRow } from '@/types/menuTypes';
 import fetchOpenAI from '@/app/utils/api/openai';
-import { getLatestMenu, insertSdxMenu } from '@/lib/dbActions';
+import { getLatestSdxMenu, insertSdxMenu } from '@/lib/dbActions';
+import { getSevenDayDate } from '@/lib/dateFunctions';
 
 const now = new Date();
 const formattedDate = now.toISOString().split('T')[0];
@@ -24,24 +25,6 @@ const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => (
     }),
   })),
 });
-
-const getCurrentWeekDates = (): string[] => {
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - dayOfWeek);
-
-  const weekDates = [];
-  for (let i = 0; i < 7; i++) {
-    const currentDay = new Date(startOfWeek);
-    currentDay.setDate(startOfWeek.getDate() + i);
-    const yyyy = currentDay.getFullYear();
-    const mm = String(currentDay.getMonth() + 1).padStart(2, '0');
-    const dd = String(currentDay.getDate()).padStart(2, '0');
-    weekDates.push(`${yyyy}-${mm}-${dd}`);
-  }
-  return weekDates;
-};
 
 // eslint-disable-next-line import/prefer-default-export
 export async function GET(req: NextRequest) {
@@ -102,20 +85,36 @@ export async function GET(req: NextRequest) {
     // eslint-disable-next-line max-len
     const filteredData: FilteredSodexoMeal[] = dataArr.map((data: SodexoMeal) => removeNutritionalFacts(data));
 
-    const formattedMenu = {
+    const formattedMenu: SodexoMenuRow = {
       name: `${locationString} Menu for ${date}`,
       groups: filteredData,
     };
 
+    // Check if menu for next 7 days is available
+    const latestMenu = await getLatestSdxMenu('English', locationOption);
+
+    if (latestMenu) {
+      const latestMenuDate = latestMenu.date;
+      const latestMenuDates = getSevenDayDate();
+      if (latestMenuDates.includes(latestMenuDate)) {
+        return NextResponse.json(latestMenu.menu);
+      }
+    } else {
+      console.error('No latest menu found');
+    }
+
+    console.log(`Inserting English menu for ${locationString}...`);
     await insertSdxMenu(JSON.parse(JSON.stringify(formattedMenu)), locationOption, 'English', date);
 
-    console.log(`Translating menu to ${language}...`);
-    const translatedFilteredData: FilteredSodexoMeal[] | MenuResponse = await fetchOpenAI(
-      prompt,
-      Location.GATEWAY,
-      filteredData,
-      language,
-    );
+    if (filteredData.length > 0) console.log(`Translating menu to ${language}...`);
+
+    const translatedFilteredData: FilteredSodexoMeal[] | MenuResponse | SodexoMenuRow = (filteredData.length > 0)
+      ? await fetchOpenAI(
+        prompt,
+        Location.GATEWAY,
+        filteredData,
+        language,
+      ) : formattedMenu;
 
     await insertSdxMenu(translatedFilteredData as FilteredSodexoMeal[], locationOption, language, date);
 
@@ -133,21 +132,10 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     if (axios.isAxiosError(error)) {
       return NextResponse.json(
-        {
-          error: error.response?.data || error.message,
-          stack: error.stack,
-          line: error.response?.config?.url || 'N/A',
-        },
+        { error: error.response?.data || error.message },
         { status: error.response?.status || 500 },
       );
     }
-    return NextResponse.json(
-      {
-        error: (error as Error).message,
-        stack: (error as Error).stack,
-        line: 'N/A',
-      },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }

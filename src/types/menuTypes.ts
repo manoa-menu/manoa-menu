@@ -41,6 +41,11 @@ export interface FilteredSodexoRootObject {
   meals: FilteredSodexoMeal[];
 }
 
+export interface SodexoMenuRow {
+  name: string;
+  groups: FilteredSodexoMeal[];
+}
+
 export interface SodexoMenuItem {
   course: string | null;
   courseSortOrder: number;

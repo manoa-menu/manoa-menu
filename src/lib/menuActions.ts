@@ -1,7 +1,7 @@
 /* eslint-disable eqeqeq */
 import scrapeCCUrl from '@/lib/scrapeCCUrl';
 import parseCampusCenterMenu from '@/lib/menuParse';
-import { getLatestMenu, insertCCMenu } from '@/lib/dbActions';
+import { getLatestCCMenu, insertCCMenu } from '@/lib/dbActions';
 import { Location, DayMenu, MenuResponse } from '@/types/menuTypes';
 import populateFoodTableFromMenu from './foodTable';
 import fetchOpenAI from '../app/utils/api/openai';
@@ -20,7 +20,7 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
     const parsedMenu: MenuResponse = await parseCampusCenterMenu(menuPdf);
 
     // Gets latest English menu from database
-    const dbLatestMenu = await getLatestMenu('English', Location.CAMPUS_CENTER);
+    const dbLatestMenu = await getLatestCCMenu('English', Location.CAMPUS_CENTER);
 
     // Parse the latest menu from the database
     const dbMenuParsed: DayMenu[] = (dbLatestMenu) ? JSON.parse(JSON.stringify(dbLatestMenu?.menu)) : [];
@@ -71,7 +71,7 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
 
       // If the latest menu is up to date, fetch the menu from the database
       console.log(`Fetching parsedMenu from database in ${language}`);
-      const dbMenuLanguage = await getLatestMenu(language, Location.CAMPUS_CENTER);
+      const dbMenuLanguage = await getLatestCCMenu(language, Location.CAMPUS_CENTER);
       const dbMenuLanguageParsed: DayMenu[] = (dbMenuLanguage) ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
 
       // Return the parsed menu if it exists
@@ -81,7 +81,7 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
     } else {
       // If the latest menu is up to date, fetch the menu from the database
       console.log(`Fetching parsedMenu from database in ${language}`);
-      const dbMenuLanguage = await getLatestMenu(language, Location.CAMPUS_CENTER);
+      const dbMenuLanguage = await getLatestCCMenu(language, Location.CAMPUS_CENTER);
       const dbMenuLanguageParsed: DayMenu[] = (dbMenuLanguage) ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
 
       // Return the parsed menu if it exists
