@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
-import { SodexoMeal, FilteredSodexoMeal, Location } from '@/types/menuTypes';
+import { SodexoMeal, FilteredSodexoMeal, Location, MenuResponse } from '@/types/menuTypes';
 import fetchOpenAI from '@/app/utils/api/openai';
 import { getLatestMenu } from '@/lib/dbActions';
 
@@ -39,15 +39,16 @@ export async function GET(req: NextRequest) {
   console.log(`Location Option: ${locationOption}`);
 
   const prompt = `You will translate all menu items into ${language}. 
-  Translate and word in a way that is easy for native speakers of ${language} to understand.
-  In parenthesis provide a brief description of dish contents in ${language}
-  or foods that ${language} people may not be familiar with,
-  or Chinese food, Uncommon Mexican food, Hawaiian food,
-  or Chicken Parmesan, Cobb Salad, Huli Huli Chicken
+  For the group names, do not directly translate, but instead use similar meaning words in ${language}.
+  Keep the SAME number of groups and items in each group. Do not add additional groups or items.
+  Translate both menu items AND item description and word in a way 
+  that is easy for native speakers of ${language} to understand.
+  ONLY IF there is no description already,
+  Add descriptions to items that native speakers of ${language} may not understand
+  such as Portuegese Sausage, or Chicken Parmesan, Cobb Salad, Huli Huli Chicken,
+  pasta dishes, special salads, non-famous American dishes, and foreign asian dishes, etc
   or foods that are not self-explanatory.
-  Must describe pasta dishes, special salads, non-famous American dishes, and foreign asian dishes.
-  Do not add or create new items that are not on the menu.
-  If there is a special message, provide a translation in ${language}.`;
+  Do not add or create new items that are not on the menu.`;
 
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
   if (!dateRegex.test(date)) {
@@ -57,7 +58,7 @@ export async function GET(req: NextRequest) {
   const haURL = process.env.HA_API_URL;
 
   const url = (location === 'gw') ? gwURL : haURL;
-  console.log(`URL: ${url}`);
+  // console.log(`URL: ${url}`);
 
   const apiKey = process.env.MMR_API_KEY;
 
@@ -81,19 +82,26 @@ export async function GET(req: NextRequest) {
     // eslint-disable-next-line max-len
     const filteredData: FilteredSodexoMeal[] = dataArr.map((data: SodexoMeal) => removeNutritionalFacts(data));
 
-    const translatedFilteredData: FilteredSodexoMeal[] = fetchOpenAI(prompt, Location.GATEWAY, filteredData, language);
+    console.log(`Translating menu to ${language}...`);
+    const translatedFilteredData: FilteredSodexoMeal[] | MenuResponse = await fetchOpenAI(
+      prompt,
+      Location.GATEWAY,
+      filteredData,
+      language,
+    );
 
-    // return NextResponse.json(filteredData);
+    // Use translatedFilteredData or remove the variable if not needed
+    console.log(translatedFilteredData);
 
     // Gets latest English menu from database
-    // const dbLatestMenu = await getLatestMenu('English', locationOption);
+    const dbLatestMenu = await getLatestMenu('English', locationOption);
 
     // Parse the latest menu from the database
-    // const dbMenuParsed: FilteredSodexoMeal = (dbLatestMenu) ? JSON.parse(JSON.stringify(dbLatestMenu?.menu)) : [];
+    const dbMenuParsed: FilteredSodexoMeal = (dbLatestMenu) ? JSON.parse(JSON.stringify(dbLatestMenu?.menu)) : [];
 
-    // console.log(`dbMenuParsed: ${JSON.stringify(dbMenuParsed)}`);
+    console.log(`dbMenuParsed: ${JSON.stringify(dbMenuParsed)}`);
 
-    return NextResponse.json(filteredData);
+    return NextResponse.json(translatedFilteredData);
   } catch (error) {
     if (axios.isAxiosError(error)) {
       return NextResponse.json(
