@@ -10,11 +10,6 @@ import fetchOpenAI from '@/app/utils/api/openai';
 import { getSdxMenu, insertSdxMenu } from '@/lib/dbActions';
 import { getSevenDayDate, getCurrentWeekDates } from '@/lib/dateFunctions';
 
-interface SdxAPIError {
-  error: boolean;
-  day: string;
-}
-
 const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => ({
   name: rootObject.name,
   groups: rootObject.groups.map(group => ({
