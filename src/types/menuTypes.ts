@@ -37,9 +37,22 @@ export interface FilteredSodexoRootObject {
   meals: FilteredSodexoMeal[];
 }
 
-export interface SodexoMenuRow {
+export interface FilteredSodexoModRoot {
   name: string;
   meals: FilteredSodexoMeal[];
+}
+
+export interface SdxAPIResponse {
+  date: string;
+  meals: FilteredSodexoMeal[];
+}
+
+export interface FilteredSodexoMenuRow {
+  id: number;
+  name: string;
+  meals: FilteredSodexoModRoot[];
+  language: string;
+  location: Location;
 }
 
 export interface SodexoMenuItem {

@@ -3,17 +3,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
-import { SodexoMeal, FilteredSodexoMeal, Location, SodexoMenuRow } from '@/types/menuTypes';
+import { SodexoMeal, FilteredSodexoMeal, Location,
+  FilteredSodexoModRoot, FilteredSodexoMenuRow, SdxAPIResponse } from '@/types/menuTypes';
+
 import fetchOpenAI from '@/app/utils/api/openai';
 import { getSdxMenu, insertSdxMenu } from '@/lib/dbActions';
 import { getSevenDayDate, getCurrentWeekDates } from '@/lib/dateFunctions';
+
+interface SdxAPIError {
+  error: boolean;
+  day: string;
+}
 
 const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => ({
   name: rootObject.name,
   groups: rootObject.groups.map(group => ({
     name: group.name,
     items: group.items.filter(item => (
-      item.formalName.toLowerCase() !== 'have a nice day'
+      (item.formalName.toLowerCase() !== 'have a nice day')
     )).map(item => {
       const {
         price, addons, sizes, allergens, courseSortOrder, menuItemId,
@@ -75,19 +82,23 @@ export async function GET(req: NextRequest) {
 
   // Check if menu for next 7 days is available
   const currentWeekDates = getCurrentWeekDates();
-  const currentWeekOf = currentWeekDates[0];
 
-  const testDays = ['2024-12-07', '2024-12-08', '2024-12-09'];
+  const testDays = ['2024-12-06', '2024-12-08'];
 
-  const nextSevenDaysMenu: SodexoMenuRow[] = await Promise.all(
+  const nextSevenDaysMenu: SdxAPIResponse[] = await Promise.all(
     testDays.map(async (day) => {
       try {
         // Fetch the menu for the specific day
 
         console.log(`Attempting to get menu for ${day} from database`);
-        const dailyMenu = await getSdxMenu(day, 'English', locationOption);
-        console.log(`Menu for ${day} from database:`, dailyMenu);
-        if (!dailyMenu) {
+
+        const dayMenuRow = await getSdxMenu(day, 'English', locationOption);
+
+        const dayMenu: FilteredSodexoModRoot = dayMenuRow?.menu as unknown as FilteredSodexoModRoot || [];
+
+        console.log(`Menu for ${day} from database:`, dayMenuRow);
+
+        if (!dayMenuRow) {
           // If menu does not exist, call the API with axios
           const queryUrl = `${url}?date=${day}`;
 
@@ -99,7 +110,7 @@ export async function GET(req: NextRequest) {
           const filteredData: FilteredSodexoMeal[] = dataArr.map((data: SodexoMeal) => removeNutritionalFacts(data));
 
           // Insert the menu
-          const formattedMenu: SodexoMenuRow = {
+          const formattedMenu: FilteredSodexoModRoot = {
             name: `${locationString} Menu for ${day}`,
             meals: filteredData,
           };
@@ -108,41 +119,52 @@ export async function GET(req: NextRequest) {
           await insertSdxMenu(formattedMenu, locationOption, 'English', day);
 
           // Translate the menu
-          const translatedMenu: SodexoMenuRow = (filteredData.length > 0)
+
+          console.log(`Translating menu for ${day} into Japanese`);
+          const translatedMenu: FilteredSodexoModRoot = (filteredData.length > 0)
             ? await fetchOpenAI(
               prompt,
               locationOption,
               filteredData,
               'Japanese',
-            ) as SodexoMenuRow : formattedMenu;
+            ) as FilteredSodexoModRoot : formattedMenu;
 
           // Insert the translated menu
 
           console.log(`Inserting menu for ${day} in Japanese`);
           await insertSdxMenu(translatedMenu, locationOption, 'Japanese', day);
 
-          if (language === 'English') {
+          if (language.toLowerCase() === 'english') {
             console.log(`Adding English menu for ${day}`);
-            return {
+            const retVal: SdxAPIResponse = {
               date: day,
-              menu: filteredData,
-              location: locationString,
-              language: 'English',
+              meals: filteredData,
             };
-          } if (language === 'Japanese') {
+
+            return retVal;
+          } if (language.toLowerCase() === 'japanese') {
             console.log(`Adding Japanese menu for ${day}`);
-            return {
+            const retVal: SdxAPIResponse = {
               date: day,
-              menu: translatedMenu,
-              location: locationString,
-              language: 'Japanese',
+              meals: translatedMenu.meals,
             };
+
+            return retVal;
           }
         }
-        return dailyMenu;
+
+        const retVal: SdxAPIResponse = {
+          date: day,
+          meals: dayMenu.meals,
+        };
+
+        return retVal;
       } catch (error) {
         console.error(`Error fetching menu for ${day}:`, error);
-        return { error: true, day };
+        return {
+          date: day,
+          meals: [],
+        };
       }
     }),
   );

@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 'use server';
 
 import { hash } from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
-import { DayMenu, Location, FilteredSodexoMeal, SodexoMenuRow } from '@/types/menuTypes';
+import { DayMenu, Location, FilteredSodexoMeal, FilteredSodexoModRoot } from '@/types/menuTypes';
 import { getCurrentWeekOf, getCurrentDayOf } from '@/lib/dateFunctions';
 
 const prisma = new PrismaClient();
@@ -120,7 +122,7 @@ export async function getAllCCMenus() {
 }
 
 export async function insertSdxMenu(
-  menuInfo: SodexoMenuRow,
+  menuInfo: FilteredSodexoModRoot,
   location: Location,
   language: string,
   date: string,
