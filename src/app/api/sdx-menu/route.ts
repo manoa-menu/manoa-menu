@@ -1,21 +1,22 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
-import { SodexoMeal, FilteredSodexoMeal, Location, MenuResponse, SodexoMenuRow } from '@/types/menuTypes';
+import { SodexoMeal, FilteredSodexoMeal, Location, SodexoMenuRow } from '@/types/menuTypes';
 import fetchOpenAI from '@/app/utils/api/openai';
-import { getLatestSdxMenu, insertSdxMenu } from '@/lib/dbActions';
-import { getSevenDayDate } from '@/lib/dateFunctions';
-
-const now = new Date();
-const formattedDate = now.toISOString().split('T')[0];
+import { getSdxMenu, insertSdxMenu } from '@/lib/dbActions';
+import { getSevenDayDate, getCurrentWeekDates } from '@/lib/dateFunctions';
 
 const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => ({
   name: rootObject.name,
   groups: rootObject.groups.map(group => ({
     name: group.name,
-    items: group.items.map(item => {
+    items: group.items.filter(item => (
+      item.formalName.toLowerCase() !== 'have a nice day'
+    )).map(item => {
       const {
-        price, addons, sizes, allergens, courseSortOrder, menuItemId, 
+        price, addons, sizes, allergens, courseSortOrder, menuItemId,
         isMindful, isSwell, calories, caloriesFromFat, fat,
         saturatedFat, transFat, polyunsaturatedFat, cholesterol,
         sodium, carbohydrates, dietaryFiber, sugar, protein,
@@ -31,7 +32,6 @@ const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => (
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
-  const date = searchParams.get('date') || formattedDate;
   const language = searchParams.get('language') || 'Japanese';
   const location = searchParams.get('location')
     || NextResponse.json({ error: 'Missing Location Parameter' }, { status: 500 });
@@ -41,22 +41,20 @@ export async function GET(req: NextRequest) {
   const locationString = (location === 'gw') ? 'Gateway' : 'Hale Aloha';
   // console.log(`Location Option: ${locationOption}`);
 
-  const prompt = `You will translate all menu items into ${language}. 
-  For the group names, do not directly translate, but instead use similar meaning words in ${language}.
-  Keep the SAME number of groups and items in each group. Do not add additional groups or items.
+  const translateLanguage = 'Japanese';
+
+  const prompt = `You will translate all menu items into ${translateLanguage}. 
+  For the group names, do not directly translate, but instead use similar meaning words in ${translateLanguage}.
+  Do not add additional groups or items that are not in the original.
   Translate both menu items AND item description and word in a way 
-  that is easy for native speakers of ${language} to understand.
+  that is easy for native speakers of ${translateLanguage} to understand.
   ONLY IF there is no description already,
-  Add descriptions to items that native speakers of ${language} may not understand
+  Add descriptions to items that native speakers of ${translateLanguage} may not understand
   such as Portuegese Sausage, or Chicken Parmesan, Cobb Salad, Huli Huli Chicken,
   pasta dishes, special salads, non-famous American dishes, and foreign asian dishes, etc
   or foods that are not self-explanatory.
-  Do not add or create new items that are not on the menu.`;
+  Do not add or create new items that are not on the menu.\n`;
 
-  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-  if (!dateRegex.test(date)) {
-    return NextResponse.json({ error: 'Invalid date format. Expected yyyy-mm-dd' }, { status: 400 });
-  }
   const gwURL = process.env.GW_API_URL;
   const haURL = process.env.HA_API_URL;
 
@@ -69,74 +67,85 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Missing environment variables' }, { status: 500 });
   }
 
-  const queryUrl = `${url}?date=${date}`;
-  console.log(`Query URL: ${queryUrl}`);
-
   const headers = {
     'API-Key': apiKey,
     'Content-Type': 'application/json',
     Accept: 'application/json',
   };
 
-  try {
-    const response = await axios.get(queryUrl, { headers });
-    // eslint-disable-next-line prefer-destructuring
-    const dataArr: SodexoMeal[] | [] = response.data;
+  // Check if menu for next 7 days is available
+  const currentWeekDates = getCurrentWeekDates();
+  const currentWeekOf = currentWeekDates[0];
 
-    // eslint-disable-next-line max-len
-    const filteredData: FilteredSodexoMeal[] = dataArr.map((data: SodexoMeal) => removeNutritionalFacts(data));
+  const testDays = ['2024-12-07', '2024-12-08', '2024-12-09'];
 
-    const formattedMenu: SodexoMenuRow = {
-      name: `${locationString} Menu for ${date}`,
-      groups: filteredData,
-    };
+  const nextSevenDaysMenu: SodexoMenuRow[] = await Promise.all(
+    testDays.map(async (day) => {
+      try {
+        // Fetch the menu for the specific day
 
-    // Check if menu for next 7 days is available
-    const latestMenu = await getLatestSdxMenu('English', locationOption);
+        console.log(`Attempting to get menu for ${day} from database`);
+        const dailyMenu = await getSdxMenu(day, 'English', locationOption);
+        console.log(`Menu for ${day} from database:`, dailyMenu);
+        if (!dailyMenu) {
+          // If menu does not exist, call the API with axios
+          const queryUrl = `${url}?date=${day}`;
 
-    if (latestMenu) {
-      const latestMenuDate = latestMenu.date;
-      const latestMenuDates = getSevenDayDate();
-      if (latestMenuDates.includes(latestMenuDate)) {
-        return NextResponse.json(latestMenu.menu);
+          console.log(`Getting data for ${day} via API`);
+          const response = await axios.get(queryUrl, { headers });
+          const dataArr: SodexoMeal[] | [] = response.data;
+
+          // Filter the data
+          const filteredData: FilteredSodexoMeal[] = dataArr.map((data: SodexoMeal) => removeNutritionalFacts(data));
+
+          // Insert the menu
+          const formattedMenu: SodexoMenuRow = {
+            name: `${locationString} Menu for ${day}`,
+            meals: filteredData,
+          };
+
+          console.log(`Inserting menu for ${day} in English`);
+          await insertSdxMenu(formattedMenu, locationOption, 'English', day);
+
+          // Translate the menu
+          const translatedMenu: SodexoMenuRow = (filteredData.length > 0)
+            ? await fetchOpenAI(
+              prompt,
+              locationOption,
+              filteredData,
+              'Japanese',
+            ) as SodexoMenuRow : formattedMenu;
+
+          // Insert the translated menu
+
+          console.log(`Inserting menu for ${day} in Japanese`);
+          await insertSdxMenu(translatedMenu, locationOption, 'Japanese', day);
+
+          if (language === 'English') {
+            console.log(`Adding English menu for ${day}`);
+            return {
+              date: day,
+              menu: filteredData,
+              location: locationString,
+              language: 'English',
+            };
+          } if (language === 'Japanese') {
+            console.log(`Adding Japanese menu for ${day}`);
+            return {
+              date: day,
+              menu: translatedMenu,
+              location: locationString,
+              language: 'Japanese',
+            };
+          }
+        }
+        return dailyMenu;
+      } catch (error) {
+        console.error(`Error fetching menu for ${day}:`, error);
+        return { error: true, day };
       }
-    } else {
-      console.error('No latest menu found');
-    }
+    }),
+  );
 
-    console.log(`Inserting English menu for ${locationString}...`);
-    await insertSdxMenu(JSON.parse(JSON.stringify(formattedMenu)), locationOption, 'English', date);
-
-    if (filteredData.length > 0) console.log(`Translating menu to ${language}...`);
-
-    const translatedFilteredData: FilteredSodexoMeal[] | MenuResponse | SodexoMenuRow = (filteredData.length > 0)
-      ? await fetchOpenAI(
-        prompt,
-        Location.GATEWAY,
-        filteredData,
-        language,
-      ) : formattedMenu;
-
-    await insertSdxMenu(translatedFilteredData as FilteredSodexoMeal[], locationOption, language, date);
-
-    console.log(filteredData);
-
-    return (NextResponse.json(formattedMenu));
-
-    // Gets latest English menu from database
-    // const dbLatestMenu = await getLatestMenu('English', locationOption);
-
-    // Parse the latest menu from the database
-    // const dbMenuParsed: FilteredSodexoMeal = (dbLatestMenu) ? JSON.parse(JSON.stringify(dbLatestMenu?.menu)) : [];
-
-    // console.log(`dbMenuParsed: ${JSON.stringify(dbMenuParsed)}`);
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      return NextResponse.json(
-        { error: error.response?.data || error.message },
-        { status: error.response?.status || 500 },
-      );
-    }
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
-  }
+  return NextResponse.json(nextSevenDaysMenu);
 }

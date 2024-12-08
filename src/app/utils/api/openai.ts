@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 
 import jpManualReplace from '@/lib/manualTranslate';
 
-import { MenuResponse, Location, FilteredSodexoMeal } from '@/types/menuTypes';
+import { MenuResponse, Location, FilteredSodexoMeal, SodexoMenuRow } from '@/types/menuTypes';
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -76,124 +76,6 @@ const ccJsonSchema = {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const sdxJsonSchemaOld = {
-  name: 'sdx_menu',
-  schema: {
-    type: 'object',
-    properties: {
-      groups: {
-        type: 'array',
-        description: 'Array of groups',
-        items: {
-          type: 'object',
-          properties: {
-            name: {
-              type: 'string',
-              description: 'Name of group',
-            },
-            items: {
-              type: 'array',
-              description: 'Items in meal group.',
-              items: {
-                type: 'object',
-                properties: {
-                  course: {
-                    type: 'string',
-                    description: 'course name',
-                  },
-                  meal: {
-                    type: 'string',
-                    description: 'Meal Type',
-                  },
-                  formalName: {
-                    type: 'string',
-                    description: 'Formal Fame of Dish',
-                  },
-                  description: {
-                    type: 'string',
-                    description: 'Dish Description',
-                  },
-                  price: {
-                    type: 'number',
-                    description: 'Dish Price',
-                  },
-                  allergens: {
-                    type: 'array',
-                    description: 'Dish Allergens List',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        allergen: {
-                          type: 'integer',
-                          description: 'Allergen ID',
-                        },
-                        name: {
-                          type: 'string',
-                          description: 'Allergen Name',
-                        },
-                      },
-                      required: [
-                        'allergen',
-                        'name',
-                      ],
-                      additionalProperties: false,
-                    },
-                  },
-                  sizes: {
-                    type: 'array',
-                    description: 'Available sizes',
-                    items: {
-                      type: 'string',
-                    },
-                  },
-                  addons: {
-                    type: 'array',
-                    description: 'Add-ons available',
-                    items: {
-                      type: 'string',
-                    },
-                  },
-                  isVegan: {
-                    type: 'boolean',
-                    description: '',
-                  },
-                  isVegetarian: {
-                    type: 'boolean',
-                    description: '',
-                  },
-                },
-                required: [
-                  'course',
-                  'meal',
-                  'formalName',
-                  'description',
-                  'price',
-                  'allergens',
-                  'sizes',
-                  'addons',
-                  'isVegan',
-                  'isVegetarian',
-                ],
-                additionalProperties: false,
-              },
-            },
-          },
-          required: [
-            'name',
-            'items',
-          ],
-          additionalProperties: false,
-        },
-      },
-    },
-    required: [
-      'groups',
-    ],
-    additionalProperties: false,
-  },
-  strict: true,
-};
-
-const sdxJsonSchema = {
   name: 'menu',
   schema: {
     type: 'object',
@@ -236,46 +118,6 @@ const sdxJsonSchema = {
                     type: 'string',
                     description: 'description of the item',
                   },
-                  price: {
-                    type: 'number',
-                    description: 'price of the item (if applicable)',
-                  },
-                  allergens: {
-                    type: 'array',
-                    description: 'List of allergens associated with this item.',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        allergen: {
-                          type: 'number',
-                          description: 'The allergen identifier.',
-                        },
-                        name: {
-                          type: 'string',
-                          description: 'The name of the allergen.',
-                        },
-                      },
-                      required: [
-                        'allergen',
-                        'name',
-                      ],
-                      additionalProperties: false,
-                    },
-                  },
-                  sizes: {
-                    type: 'array',
-                    description: 'Available sizes',
-                    items: {
-                      type: 'string',
-                    },
-                  },
-                  addons: {
-                    type: 'array',
-                    description: 'Available add-ons',
-                    items: {
-                      type: 'string',
-                    },
-                  },
                   isVegan: {
                     type: 'boolean',
                     description: 'Indicates if the item is vegan.',
@@ -290,10 +132,6 @@ const sdxJsonSchema = {
                   'meal',
                   'formalName',
                   'description',
-                  'price',
-                  'allergens',
-                  'sizes',
-                  'addons',
                   'isVegan',
                   'isVegetarian',
                 ],
@@ -318,12 +156,87 @@ const sdxJsonSchema = {
   strict: true,
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const sdxJsonSchema = {
+  name: 'sdx_menu',
+  schema: {
+    type: 'object',
+    properties: {
+      groups: {
+        type: 'array',
+        description: 'Array of groups',
+        items: {
+          type: 'object',
+          properties: {
+            name: {
+              type: 'string',
+              description: 'Name of group',
+            },
+            items: {
+              type: 'array',
+              description: 'Items in meal group.',
+              items: {
+                type: 'object',
+                properties: {
+                  course: {
+                    type: 'string',
+                    description: 'course name (DO NOT TRANSLATE)',
+                  },
+                  meal: {
+                    type: 'string',
+                    description: 'Meal Type (DO NOT TRANSLATE)',
+                  },
+                  formalName: {
+                    type: 'string',
+                    description: 'Formal Name of Dish',
+                  },
+                  description: {
+                    type: 'string',
+                    description: 'Dish Description',
+                  },
+                  isVegan: {
+                    type: 'boolean',
+                    description: '',
+                  },
+                  isVegetarian: {
+                    type: 'boolean',
+                    description: '',
+                  },
+                },
+                required: [
+                  'course',
+                  'meal',
+                  'formalName',
+                  'description',
+                  'isVegan',
+                  'isVegetarian',
+                ],
+                additionalProperties: false,
+              },
+            },
+          },
+          required: [
+            'name',
+            'items',
+          ],
+          additionalProperties: false,
+        },
+      },
+    },
+    required: [
+      'groups',
+    ],
+    additionalProperties: false,
+  },
+  strict: true,
+};
+
 async function fetchOpenAI(
   prompt: string,
   option: Location,
   weeklyMenu: MenuResponse | FilteredSodexoMeal[],
   language: string,
-): Promise<MenuResponse | FilteredSodexoMeal[]> {
+): Promise<MenuResponse | SodexoMenuRow> {
   const maxTokens = (option === Location.CAMPUS_CENTER) ? 2000 : 4096;
   const chatCompletion = await client.beta.chat.completions.parse({
     model: 'gpt-4o',
@@ -344,17 +257,6 @@ async function fetchOpenAI(
     const response = chatCompletion.choices[0].message.parsed;
 
     if (option === Location.CAMPUS_CENTER) {
-      switch (language) {
-        case 'Japanese':
-          return jpManualReplace(response);
-          // case 'Korean':
-          //   return krManualReplace(response);
-          // case 'Spanish':
-          //   return esManualReplace(response);
-        default:
-          return JSON.parse(JSON.stringify(response));
-      }
-    } else {
       switch (language) {
         case 'Japanese':
           return jpManualReplace(response);

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 'use client';
 
 import '@/styles/Menu.css';
@@ -32,11 +34,11 @@ const Page = () => {
 
   const [ccMenu, setCCMenu] = useState<DayMenu[]>([]);
   const [gwMenu, setGWMenu] = useState<FilteredSodexoMeal[]>([]);
-  // const [haMenu, setHAMenu] = useState<FilteredSodexoMeal[]>([]);
+  const [haMenu, setHAMenu] = useState<FilteredSodexoMeal[]>([]);
 
   const [isCCLoading, setCCLoading] = useState(true);
   const [isGWLoading, setGWLoading] = useState(true);
-  // const [isHALoading, setHALoading] = useState(true);
+  const [isHALoading, setHALoading] = useState(true);
 
   const [language, setLanguage] = useState<string>('English');
   const dropdownRef = useRef(null);

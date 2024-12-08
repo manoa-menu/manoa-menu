@@ -39,7 +39,7 @@ export interface FilteredSodexoRootObject {
 
 export interface SodexoMenuRow {
   name: string;
-  groups: FilteredSodexoMeal[];
+  meals: FilteredSodexoMeal[];
 }
 
 export interface SodexoMenuItem {

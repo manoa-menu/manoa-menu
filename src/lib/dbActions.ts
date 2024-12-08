@@ -2,7 +2,7 @@
 
 import { hash } from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
-import { DayMenu, Location, FilteredSodexoMeal } from '@/types/menuTypes';
+import { DayMenu, Location, FilteredSodexoMeal, SodexoMenuRow } from '@/types/menuTypes';
 import { getCurrentWeekOf, getCurrentDayOf } from '@/lib/dateFunctions';
 
 const prisma = new PrismaClient();
@@ -120,7 +120,7 @@ export async function getAllCCMenus() {
 }
 
 export async function insertSdxMenu(
-  menuInfo: FilteredSodexoMeal[],
+  menuInfo: SodexoMenuRow,
   location: Location,
   language: string,
   date: string,
@@ -180,6 +180,36 @@ export async function getLatestSdxMenu(language: string, location: Location) {
     throw new Error('Invalid location');
   } catch (error) {
     console.error('Error fetching latest menu:', error);
+    throw error;
+  }
+}
+
+/**
+ * Retrieves a menu from the database.
+ * @param id, the ID of the menu to retrieve.
+ * @returns the menu object.
+ */
+export async function getSdxMenu(date: string, language: string, location: Location) {
+  try {
+    if (location === Location.GATEWAY) {
+      return await prisma.gatewayMenus.findFirst({
+        where: {
+          date,
+          language,
+        },
+      });
+    }
+    if (location === Location.HALE_ALOHA) {
+      return await prisma.haleAlohaMenus.findFirst({
+        where: {
+          date,
+          language,
+        },
+      });
+    }
+    throw new Error('Invalid location');
+  } catch (error) {
+    console.error('Error fetching menu:', error);
     throw error;
   }
 }
