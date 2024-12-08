@@ -1,5 +1,10 @@
 #list {
-    margin-top: 100px;
-    margin-left: 50px;
-    overflow: hidden;
+  margin-top: 100px;
+  margin-left: 40px;
+  max-width: 100vh;
+}
+
+body,
+html {
+  overflow-x: hidden;
 }

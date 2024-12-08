@@ -29,7 +29,7 @@ const AdminPage = async () => {
             <Table striped bordered hover>
               <thead>
                 <tr>
-                  <th>Location</th>
+                  <th>Locations</th>
                 </tr>
               </thead>
               <tbody>
