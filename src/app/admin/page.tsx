@@ -1,19 +1,17 @@
-import { getServerSession } from 'next-auth';
-import { Col, Container, Row, Table } from 'react-bootstrap';
 import { prisma } from '@/lib/prisma';
+import { Container, Row, Col, Table } from 'react-bootstrap';
+import { getServerSession } from 'next-auth';
 import { adminProtectedPage } from '@/lib/page-protection';
 import authOptions from '@/lib/authOptions';
-
-import './admin.css';
+import AdminFoodList from '@/components/AdminFoodList';
 
 const AdminPage = async () => {
   const session = await getServerSession(authOptions);
-  adminProtectedPage(
-    session as {
-      user: { email: string; id: string; randomKey: string };
-    } | null,
-  );
+  adminProtectedPage(session as { user: { email: string; id: string; randomKey: string } } | null);
+
+  // Fetching data from the database
   const users = await prisma.user.findMany({});
+  const foods = await prisma.foodTable.findMany({});
   const locations = Object.values({
     CAMPUS_CENTER: 'CAMPUS_CENTER',
     GATEWAY: 'GATEWAY',
@@ -42,6 +40,14 @@ const AdminPage = async () => {
             </Table>
           </Col>
         </Row>
+        {/* Pass the fetched food data to the Client Component */}
+        <Row>
+          <Col>
+            <h1>List Food Information</h1>
+            <AdminFoodList foods={foods} />
+          </Col>
+        </Row>
+
         <Row>
           <Col>
             <h1>List Users Admin</h1>
