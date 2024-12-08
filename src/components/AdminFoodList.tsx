@@ -36,7 +36,15 @@ const AdminFoodList = ({ foods }: AdminFoodListProps) => {
             <tr key={foodTable.id}>
               <td>{foodTable.name}</td>
               <td>{foodTable.likes}</td>
-              <td>{foodTable.url}</td>
+              <td>
+                <a
+                  href={foodTable.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {foodTable.url}
+                </a>
+              </td>
             </tr>
           ))}
         </tbody>
