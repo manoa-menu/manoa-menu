@@ -324,7 +324,7 @@ async function fetchOpenAI(
   weeklyMenu: MenuResponse | FilteredSodexoMeal[],
   language: string,
 ): Promise<MenuResponse | FilteredSodexoMeal[]> {
-  const maxTokens = (option === Location.CAMPUS_CENTER) ? 2000 : 3000;
+  const maxTokens = (option === Location.CAMPUS_CENTER) ? 2000 : 4096;
   const chatCompletion = await client.beta.chat.completions.parse({
     model: 'gpt-4o',
     messages: [
@@ -344,6 +344,17 @@ async function fetchOpenAI(
     const response = chatCompletion.choices[0].message.parsed;
 
     if (option === Location.CAMPUS_CENTER) {
+      switch (language) {
+        case 'Japanese':
+          return jpManualReplace(response);
+          // case 'Korean':
+          //   return krManualReplace(response);
+          // case 'Spanish':
+          //   return esManualReplace(response);
+        default:
+          return JSON.parse(JSON.stringify(response));
+      }
+    } else {
       switch (language) {
         case 'Japanese':
           return jpManualReplace(response);

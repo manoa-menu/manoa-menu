@@ -15,7 +15,8 @@ const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => (
     name: group.name,
     items: group.items.map(item => {
       const {
-        courseSortOrder, menuItemId, isMindful, isSwell, calories, caloriesFromFat, fat,
+        price, addons, sizes, allergens, courseSortOrder, menuItemId, 
+        isMindful, isSwell, calories, caloriesFromFat, fat,
         saturatedFat, transFat, polyunsaturatedFat, cholesterol,
         sodium, carbohydrates, dietaryFiber, sugar, protein,
         potassium, iron, calcium, vitaminA, vitaminC,

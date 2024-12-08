@@ -84,8 +84,8 @@ const Page = () => {
     };
 
     fetchMenu('cc', language, setCCMenu, setCCLoading);
-    fetchMenu('sdx', language, setGWMenu, setGWLoading, 'gw');
-    fetchMenu('sdx', language, setGWMenu, setGWLoading, 'ha');
+    // fetchMenu('sdx', 'Japanese', setGWMenu, setGWLoading, 'gw');
+    // fetchMenu('sdx', 'Japanese', setGWMenu, setGWLoading, 'ha');
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]);
@@ -126,13 +126,13 @@ const Page = () => {
               <CCMenuList menu={ccMenu} language={language} />
             </div>
           )}
-          {(isGWLoading) ? (
+          {/* {(isGWLoading) ? (
             <BlackSpinner />
           ) : (
             <div className="m-2">
               <GatewayMenu menu={gwMenu} language={language} />
             </div>
-          )}
+          )} */}
 
         </div>
 

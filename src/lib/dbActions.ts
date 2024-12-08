@@ -90,13 +90,14 @@ export async function getCCMenu(week_of: string, language: string) {
  * Retrieves the latest menu from the database using the week_of field.
  * @returns the latest menu object.
  */
-export async function getLatestCCMenu(language: string, location: Location) {
+export async function getLatestCCMenu(language: string) {
   try {
     return await prisma.campusCenterMenus.findFirst({
       where: {
         language,
-        week_of: getCurrentWeekOf(),
-        location,
+      },
+      orderBy: {
+        week_of: 'desc',
       },
     });
   } catch (error) {

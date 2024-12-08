@@ -20,7 +20,7 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
     const parsedMenu: MenuResponse = await parseCampusCenterMenu(menuPdf);
 
     // Gets latest English menu from database
-    const dbLatestMenu = await getLatestCCMenu('English', Location.CAMPUS_CENTER);
+    const dbLatestMenu = await getLatestCCMenu('English');
 
     // Parse the latest menu from the database
     const dbMenuParsed: DayMenu[] = (dbLatestMenu) ? JSON.parse(JSON.stringify(dbLatestMenu?.menu)) : [];
@@ -71,7 +71,8 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
 
       // If the latest menu is up to date, fetch the menu from the database
       console.log(`Fetching parsedMenu from database in ${language}`);
-      const dbMenuLanguage = await getLatestCCMenu(language, Location.CAMPUS_CENTER);
+      const dbMenuLanguage = await getLatestCCMenu(language);
+      console.log(`dbMenuLanguage: ${JSON.stringify(dbMenuLanguage)}`);
       const dbMenuLanguageParsed: DayMenu[] = (dbMenuLanguage) ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
 
       // Return the parsed menu if it exists
@@ -81,7 +82,7 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
     } else {
       // If the latest menu is up to date, fetch the menu from the database
       console.log(`Fetching parsedMenu from database in ${language}`);
-      const dbMenuLanguage = await getLatestCCMenu(language, Location.CAMPUS_CENTER);
+      const dbMenuLanguage = await getLatestCCMenu(language);
       const dbMenuLanguageParsed: DayMenu[] = (dbMenuLanguage) ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
 
       // Return the parsed menu if it exists

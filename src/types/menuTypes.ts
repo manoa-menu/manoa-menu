@@ -19,10 +19,6 @@ export interface FilteredSodexoMenuItem {
   meal: string;
   formalName: string;
   description: string;
-  price: number;
-  allergens: { allergen: number; name: string }[];
-  sizes: [];
-  addons: [];
   isVegan: boolean;
   isVegetarian: boolean;
 }
