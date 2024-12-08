@@ -18,17 +18,9 @@ interface FoodTableEntry {
 function CampusCravings() {
   const { data: session } = useSession();
   const currentUser = session?.user?.email ?? null;
-  const [starredItems, setStarredItems] = useState<{ [key: string]: boolean }>({});
   const [selectedOption, setSelectedOption] = useState<string>('All');
   const [foodTable, setFoodTable] = useState<FoodTableEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-
-  const foodItems = [
-    { id: 'item1', name: 'Food Item 1', description: 'Description', location: 'Campus Center Food Court', likes: 5 },
-    { id: 'item2', name: 'Food Item 2', description: 'Description', location: 'Gateway Café', likes: 0 },
-    { id: 'item3', name: 'Food Item 3', description: 'Description', location: 'Hale Aloha Café', likes: 2 },
-    { id: 'item4', name: 'Food Item 4', description: 'Description', location: 'Campus Center Food Court', likes: 3 },
-  ];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -54,17 +46,10 @@ function CampusCravings() {
   };
 
   // Filter the food items based on the selected option
-  const filteredFoodItems = foodItems.filter((foodItem) => {
+  const filteredFoodItems = foodTable.filter((foodItem) => {
     if (selectedOption === 'All') return true;
-    return foodItem.location === selectedOption;
+    return foodItem.label.includes(selectedOption);
   });
-
-  const toggleStar = (item: string) => {
-    setStarredItems((prev) => ({
-      ...prev,
-      [item]: !prev[item],
-    }));
-  };
 
   if (loading) {
     return (
@@ -79,6 +64,8 @@ function CampusCravings() {
       name: entry.name,
       image: entry.url,
       likes: entry.likes,
+      isStarred: false, // or any default value
+      onToggle: () => {}, // or any default function
     }));
 
   return (
@@ -113,19 +100,9 @@ function CampusCravings() {
         <Col>
           {filteredFoodItems.map((foodItem) => (
             <CravingsFoodCard
-            foodItem={foodCard}
-             { /* 
               key={foodItem.id}
-              id={foodItem.id}
-              name={foodItem.name}
-              description={foodItem.description}
-              location={foodItem.location}
-              likes={foodItem.likes}
-              isStarred={starredItems[foodItem.id]}
-              onToggle={toggleStar}
+              foodItems={foodCard}
               currentUser={currentUser}
-              */ }
-
             />
           ))}
         </Col>
