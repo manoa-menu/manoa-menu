@@ -3,11 +3,20 @@
 import { useState } from 'react';
 import { Card, Col, Container, ListGroup, Row, Modal } from 'react-bootstrap';
 import { XLg } from 'react-bootstrap-icons';
+import StarButton from '@/app/campus-cravings/StarButton';
 import './calendar.css';
 
 const daysOfTheWeek: string[] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const Calendar = ({ weeklyItems }: { weeklyItems: string[][] }) => {
+const Calendar = ({
+  weeklyItems,
+  userFavoriteItems,
+  onToggle,
+}: {
+  weeklyItems: string[][];
+  userFavoriteItems: string[];
+  onToggle: (item: string) => void;
+}) => {
   const [show, setShow] = useState(false);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
@@ -46,7 +55,7 @@ const Calendar = ({ weeklyItems }: { weeklyItems: string[][] }) => {
         ))}
       </Row>
 
-      <Modal dialogClassName="modal-custom" show={show} onHide={handleClose} top>
+      <Modal dialogClassName="modal-custom" show={show} onHide={handleClose} centered>
         {selectedDay !== null && (
           <Card className="calendar-card-expanded">
             <Card.Header className="d-flex justify-content-between" style={{ fontWeight: 'bold', fontSize: '18px' }}>
@@ -65,7 +74,18 @@ const Calendar = ({ weeklyItems }: { weeklyItems: string[][] }) => {
                           ${index === array.length - 1 ? 'flex-fill' : ''}
                           `}
                     >
-                      {foodInDay}
+                      <Container>
+                        <Row>
+                          {foodInDay}
+                          <Col className="star-button">
+                            <StarButton
+                              item={foodInDay}
+                              isStarred={userFavoriteItems.includes(foodInDay)}
+                              onToggle={onToggle}
+                            />
+                          </Col>
+                        </Row>
+                      </Container>
                     </ListGroup.Item>
                   ))}
               </ListGroup>
