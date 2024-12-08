@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import assignLabels from './assignLabel';
 
 const SerpApi = require('google-search-results-nodejs');
 
@@ -86,13 +87,17 @@ export default async function populateFoodTableFromMenu(parsedMenu: DayMenu[]): 
     // Deduplicate and prepare unique entries
     const uniqueFoodData = Array.from(
       new Map(foodData.map((item) => [JSON.stringify({ name: item.name, label: item.label }), item])).values(),
-    ).map(({ name, label }) => ({
-      name,
-      url: '',
-      label,
-      translation: [],
-      likes: 0,
-    }));
+    ).map(({ name, label }) => {
+      const assignedLabels = assignLabels(name);
+      const mergedLabels = { ...assignedLabels, ...label };
+      return {
+        name,
+        url: '',
+        label: mergedLabels,
+        translation: [],
+        likes: 0,
+      };
+    });
 
     // Check existing records in the database
     const existingFoodItems = await prisma.foodTable.findMany({
@@ -298,12 +303,17 @@ export async function populateFoodTableFromMenuId(menuId: number) {
     // Deduplicate by `name` and `label`
     const uniqueFoodData: FoodTableEntry[] = Array.from(
       new Map(foodData.map((item) => [JSON.stringify({ name: item.name, label: item.label }), item])).values(),
-    ).map(({ name, label }) => ({
-      name,
-      url: '',
-      label,
-      translation: [],
-    }));
+    ).map(({ name, label }) => {
+      const assignedLabels = assignLabels(name);
+      const mergedLabels = { ...assignedLabels, ...label };
+
+      return {
+        name,
+        url: '',
+        label: mergedLabels,
+        translation: [],
+      };
+    });
 
     // Filter out items already in the database
     const existingFoodItems = await prisma.foodTable.findMany({
