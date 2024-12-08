@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Table } from 'react-bootstrap';
+import Button from 'react-bootstrap/Button';
 
 interface FoodItem {
   id: number;
@@ -12,7 +13,6 @@ interface FoodItem {
   likes: number;
 }
 
-// Define props for the AdminFoodList component
 interface AdminFoodListProps {
   foods: FoodItem[];
 }
@@ -27,7 +27,7 @@ const AdminFoodList = ({ foods }: AdminFoodListProps) => {
         <thead>
           <tr>
             <th>Food</th>
-            <th>Total likes</th>
+            <th>Total user likes</th>
             <th>URL</th>
           </tr>
         </thead>
@@ -41,13 +41,14 @@ const AdminFoodList = ({ foods }: AdminFoodListProps) => {
           ))}
         </tbody>
       </Table>
-      <button
+      <Button
         className="btn"
+        variant="outline-secondary"
         type="button"
-        onClick={() => setShowMore(!showMore)} // Toggle show more
+        onClick={() => setShowMore(!showMore)}
       >
         {showMore ? 'Show less' : 'Show more'}
-      </button>
+      </Button>
     </>
   );
 };

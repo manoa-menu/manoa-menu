@@ -42,7 +42,6 @@ const AdminPage = async () => {
             </Table>
           </Col>
         </Row>
-        {/* Pass the fetched food data to the Client Component */}
         <Row>
           <Col>
             <h1>List Food Information</h1>
