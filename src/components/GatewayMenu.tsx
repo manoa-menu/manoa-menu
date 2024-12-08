@@ -39,6 +39,7 @@ function a11yProps(index: number) {
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const GatewayMenu: React.FC<GatewayMenuProps> = ({ menu, language }) => {
   const [value, setValue] = useState(0);
 
