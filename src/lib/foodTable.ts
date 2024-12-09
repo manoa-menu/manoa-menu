@@ -256,7 +256,7 @@ export async function removeFavoriteItem(userId: number, foodName: string): Prom
 export async function populateFoodTableFromMenuId(menuId: number) {
   try {
     // Fetch the specific menu row by ID
-    const menu = await prisma.menus.findUnique({
+    const menu = await prisma.campusCenterMenus.findUnique({
       where: { id: menuId },
     });
 

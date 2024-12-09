@@ -24,20 +24,37 @@ interface FoodTableEntry {
   translation: string[];
 }
 
-function DashboardPage() {
+interface RecommendedItem {
+  name: string;
+  image: string;
+  label: string[];
+}
+
+const DashboardPage = () => {
   const { data: session } = useSession();
   const userId = (session?.user as { id: number })?.id || null;
   const language: string = 'English';
+  // Fetching data
   const [userFavoriteItems, setUserFavoriteItems] = useState<string[]>([]);
   const [latestMenu, setLatestMenu] = useState<MenuItem[]>([]);
   const [foodTable, setFoodTable] = useState<FoodTableEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Location filter
+  const [selectedOption, setSelectedOption] = useState('All');
+
+  // Weekly Items
+  const gatewayCafeWeeklyItems: string[][] = [['1'], ['2'], ['3'], ['4'], ['5'], ['6'], ['7']];
+  const haleAlohaWeeklyItems: string[][] = [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']];
+  // Recommended Items
+  const gatewayCafeRecommendedItems: RecommendedItem[] = [];
+  const haleAlohaRecommendedItems: RecommendedItem[] = [];
+
   const fetchData = async () => {
     try {
       const [favoriteResult, menuResult, foodTableResult] = await Promise.allSettled([
         fetch(`/api/userFavorites?userId=${userId}`),
-        fetch(`/api/latestMenuCheck?language=${language}`),
+        fetch(`/api/latestMenuCheck?language=${language}`), // Campus Center Food Court
         fetch('/api/getFoodTable'),
       ]);
 
@@ -71,6 +88,7 @@ function DashboardPage() {
     }
   };
 
+  // Local storage
   useEffect(() => {
     const storedUserFavoriteItems = localStorage.getItem('userFavoriteItems');
     const storedLatestMenu = localStorage.getItem('latestMenu');
@@ -97,17 +115,11 @@ function DashboardPage() {
     await fetchData();
   };
 
+  // Weekly and Recommended
   const flattenedMenu = latestMenu.map((day) => [...day.grabAndGo, ...day.plateLunch]);
-
-  // For Calendar component
   const filteredMenu = flattenedMenu.map((day) => day.filter((item) => userFavoriteItems.includes(item)));
-  // REMINDER
-  // For locations that aren't avaiable on the weekends, the logic will need to be adjusted
-  // REMINDER
-  const fullFilteredMenu: string[][] = [[], ...filteredMenu, []];
-
-  // For Recommended FoodItemSlider
-  const recommendedFoodItems = foodTable
+  const campusCenterWeeklyItems: string[][] = [[], ...filteredMenu, []];
+  const campusCenterRecommendedItems: RecommendedItem[] = foodTable
     .map((entry) => ({
       name: entry.name,
       image: entry.url,
@@ -119,6 +131,58 @@ function DashboardPage() {
         .filter((item) => !userFavoriteItems.includes(item))
         .includes(entry.name),
     );
+
+  // Filter by location
+  const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedOption(event.target.value);
+  };
+
+  // Weekly Items
+  const combinedWeeklyItems = () => {
+    const combined = [];
+    for (let i = 0; i < 7; i++) {
+      combined.push([...campusCenterWeeklyItems[i], ...gatewayCafeWeeklyItems[i], ...haleAlohaWeeklyItems[i]]);
+    }
+    return combined;
+  };
+
+  const getFilteredWeeklyItems = () => {
+    if (selectedOption === 'All') {
+      return combinedWeeklyItems();
+    }
+    if (selectedOption === 'Campus Center Food Court') {
+      return campusCenterWeeklyItems;
+    }
+    if (selectedOption === 'Gateway Café') {
+      return gatewayCafeWeeklyItems;
+    }
+    if (selectedOption === 'Hale Aloha Café') {
+      return haleAlohaWeeklyItems;
+    }
+    return [];
+  };
+
+  // Recommended Items
+  const combinedRecommendedItems = () => {
+    const combined: RecommendedItem[] = [];
+    return combined.concat(campusCenterRecommendedItems, gatewayCafeRecommendedItems, haleAlohaRecommendedItems);
+  };
+
+  const getFilteredRecommendedItems = () => {
+    if (selectedOption === 'All') {
+      return combinedRecommendedItems();
+    }
+    if (selectedOption === 'Campus Center Food Court') {
+      return campusCenterRecommendedItems;
+    }
+    if (selectedOption === 'Gateway Café') {
+      return gatewayCafeRecommendedItems;
+    }
+    if (selectedOption === 'Hale Aloha Café') {
+      return haleAlohaRecommendedItems;
+    }
+    return [];
+  };
 
   // Render a loading state while fetching data
   if (loading) {
@@ -133,7 +197,7 @@ function DashboardPage() {
     <Container className="body">
       <Row className="my-4">
         <Container>
-          <Form.Select className="d-flex ms-auto" style={{ width: '260px' }}>
+          <Form.Select className="d-flex ms-auto" style={{ width: '260px' }} onChange={handleSelectChange}>
             <option>All</option>
             <option>Campus Center Food Court</option>
             <option>Gateway Café</option>
@@ -142,16 +206,24 @@ function DashboardPage() {
         </Container>
       </Row>
       <Row className="py-2 mb-4">
-        <Calendar weeklyItems={fullFilteredMenu} userFavoriteItems={userFavoriteItems} onToggle={handleToggle} />
+        <Calendar
+          weeklyItems={getFilteredWeeklyItems()}
+          userFavoriteItems={userFavoriteItems}
+          onToggle={handleToggle}
+        />
       </Row>
       <Row className="pt-4 mt-4">
         <h1>Recommended:</h1>
       </Row>
       <Row className="mb-4">
-        <FoodItemSlider foodItem={recommendedFoodItems} userFavoriteItems={userFavoriteItems} onToggle={handleToggle} />
+        <FoodItemSlider
+          foodItem={getFilteredRecommendedItems()}
+          userFavoriteItems={userFavoriteItems}
+          onToggle={handleToggle}
+        />
       </Row>
     </Container>
   );
-}
+};
 
 export default DashboardPage;

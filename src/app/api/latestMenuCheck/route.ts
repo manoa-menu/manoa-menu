@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getLatestMenu } from '@/lib/dbActions';
+import { getLatestCCMenu } from '@/lib/dbActions';
 
 // eslint-disable-next-line import/prefer-default-export
 export async function GET(request: NextRequest) {
@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   const language = searchParams.get('language') || 'English';
 
   try {
-    const latestMenu = await getLatestMenu(language);
+    const latestMenu = await getLatestCCMenu(language);
 
     if (!latestMenu) {
       return new Response('No menu found', { status: 404 });

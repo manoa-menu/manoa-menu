@@ -1,6 +1,6 @@
 import React from 'react';
 
-import MenuCard from '@/components/MenuCard';
+import CCMenuCard from '@/components/CCMenuCard';
 
 import { DayMenu } from '@/types/menuTypes';
 
@@ -9,12 +9,12 @@ interface MenuListProps {
   language: string;
 }
 
-const MenuList: React.FC<MenuListProps> = ({ menu, language }) => (
+const CCMenuList: React.FC<MenuListProps> = ({ menu, language }) => (
   <div className="container">
     <div className="row d-flex justify-content-center">
       {menu.map((day: DayMenu) => (
         <div key={day.name} className="my-2 col-12 col-sm-6 col-md-6 col-lg-4 flex-grow">
-          <MenuCard
+          <CCMenuCard
             name={day.name}
             plateLunch={day.plateLunch}
             grabAndGo={day.grabAndGo}
@@ -27,4 +27,4 @@ const MenuList: React.FC<MenuListProps> = ({ menu, language }) => (
   </div>
 );
 
-export default MenuList;
+export default CCMenuList;
