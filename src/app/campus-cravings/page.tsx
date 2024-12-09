@@ -25,11 +25,12 @@ function CampusCravings() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const fetchFoodCard = fetch('/api/getFoodTable');
-        if (!fetchFoodCard) {
-          setFoodTable(fetchFoodCard);
+        const response = await fetch('/api/getFoodTable');
+        if (response.ok) {
+          const data = await response.json();
+          setFoodTable(data);
         } else {
-          console.error('Failed to fetch food table');
+          console.error('Failed to fetch food table:', response.statusText);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -46,10 +47,18 @@ function CampusCravings() {
   };
 
   // Filter the food items based on the selected option
-  const filteredFoodItems = foodTable.filter((foodItem) => {
-    if (selectedOption === 'All') return true;
-    return foodItem.label.includes(selectedOption);
-  });
+  const filteredFoodItems = foodTable
+    .filter((foodItem) => {
+      if (selectedOption === 'All') return true;
+      return foodItem.label.includes(selectedOption);
+    })
+    .map((entry) => ({
+      name: entry.name,
+      image: entry.url,
+      likes: entry.likes,
+      isStarred: false, // Add logic for starring if needed
+      onToggle: () => {}, // Placeholder for toggle functionality
+    }));
 
   if (loading) {
     return (
@@ -58,15 +67,6 @@ function CampusCravings() {
       </Container>
     );
   }
-
-  const foodCard = foodTable
-    .map((entry) => ({
-      name: entry.name,
-      image: entry.url,
-      likes: entry.likes,
-      isStarred: false, // or any default value
-      onToggle: () => {}, // or any default function
-    }));
 
   return (
     <Container className="my-5" style={{ paddingTop: '120px' }}>
@@ -98,13 +98,10 @@ function CampusCravings() {
       {/* Displaying filtered food items */}
       <div className="overflow-auto" style={{ maxHeight: '500px', border: '2px solid', borderRadius: '5px' }}>
         <Col>
-          {filteredFoodItems.map((foodItem) => (
-            <CravingsFoodCard
-              key={foodItem.id}
-              foodItems={foodCard}
-              currentUser={currentUser}
-            />
-          ))}
+          <CravingsFoodCard
+            foodItems={filteredFoodItems}
+            currentUser={currentUser}
+          />
         </Col>
       </div>
     </Container>
