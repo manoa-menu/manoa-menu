@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/return-await */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 'use server';
@@ -13,12 +14,7 @@ const prisma = new PrismaClient();
  * Creates a new menu in the database.
  * @param menuRow, an object with the following properties: email, password.
  */
-export async function insertCCMenu(
-  menuInfo: DayMenu[],
-  location: Location,
-  language: string,
-  date: string,
-) {
+export async function insertCCMenu(menuInfo: DayMenu[], location: Location, language: string, date: string) {
   try {
     const weekMenu = JSON.parse(JSON.stringify(menuInfo));
     await prisma.campusCenterMenus.create({
@@ -170,7 +166,8 @@ export async function getLatestSdxMenu(language: string, location: Location) {
           location,
         },
       });
-    } if (location === Location.HALE_ALOHA) {
+    }
+    if (location === Location.HALE_ALOHA) {
       return await prisma.haleAlohaMenus.findFirst({
         where: {
           language,
