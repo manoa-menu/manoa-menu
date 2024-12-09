@@ -1,4 +1,6 @@
+/* eslint-disable operator-linebreak */
 import { PrismaClient } from '@prisma/client';
+import assignLabels from './assignLabel';
 
 const SerpApi = require('google-search-results-nodejs');
 
@@ -55,7 +57,7 @@ async function fetchImageUrl(foodName: string) {
 }
 
 // Populate the FoodTable with items from the menu
-export default async function populateFoodTableFromMenu(parsedMenu: DayMenu[]): Promise<void> {
+export default async function populateFoodTableFromCCMenu(parsedMenu: DayMenu[]): Promise<void> {
   try {
     const phrasesToRemove = ['Value Bowl:'];
     const phrasesToExclude = ['Mixed Plate:', 'Mini or Bowl:', 'Any Two (2) Choices', 'Any One (1) Entree'];
@@ -83,39 +85,70 @@ export default async function populateFoodTableFromMenu(parsedMenu: DayMenu[]): 
         .filter(({ name }) => !phrasesToExclude.some((phrase) => name.includes(phrase)));
     });
 
-    // Deduplicate and prepare unique entries
-    const uniqueFoodData = Array.from(
+    // Deduplicate by `name` and `label`
+    const uniqueFoodData: FoodTableEntry[] = Array.from(
       new Map(foodData.map((item) => [JSON.stringify({ name: item.name, label: item.label }), item])).values(),
-    ).map(({ name, label }) => ({
-      name,
-      url: '',
-      label,
-      translation: [],
-      likes: 0,
-    }));
+    ).map(({ name, label }) => {
+      const assignedLabels = assignLabels(name);
 
-    // Check existing records in the database
+      return {
+        name,
+        url: '',
+        label: [...assignedLabels, ...label],
+        translation: [],
+      };
+    });
+
+    // Filter out items already in the database
     const existingFoodItems = await prisma.foodTable.findMany({
       where: {
         name: {
           in: uniqueFoodData.map((item) => item.name),
         },
       },
-      select: { name: true, url: true },
+      select: { name: true, url: true, label: true, translation: true },
     });
+
+    // Determine which items need label or translation updates
+    const itemsToUpdateLabelsOrTranslations = uniqueFoodData.filter((item) => {
+      const existingItem = existingFoodItems.find((existing) => existing.name === item.name);
+      return (
+        existingItem &&
+        (JSON.stringify(existingItem.label) !== JSON.stringify(item.label) ||
+          JSON.stringify(existingItem.translation) !== JSON.stringify(item.translation))
+      );
+    });
+
+    // Update items with new labels or translations
+    if (itemsToUpdateLabelsOrTranslations.length > 0) {
+      await Promise.all(
+        itemsToUpdateLabelsOrTranslations.map(async (item) => {
+          await prisma.foodTable.update({
+            where: { name: item.name },
+            data: {
+              label: item.label,
+              translation: item.translation,
+            },
+          });
+        }),
+      );
+      console.log(
+        `Updated ${itemsToUpdateLabelsOrTranslations.length} items in FoodTable with new labels or translations.`,
+      );
+    }
 
     // Determine which items are new or need an image URL update
     const existingNamesWithUrls = new Map(existingFoodItems.map((item) => [item.name, item.url]));
 
-    const itemsToUpdate = uniqueFoodData.filter((item) => {
+    const itemsToUpdateUrls = uniqueFoodData.filter((item) => {
       const existingUrl = existingNamesWithUrls.get(item.name);
       return !existingUrl; // Update only items with an empty URL
     });
 
-    if (itemsToUpdate.length > 0) {
+    if (itemsToUpdateUrls.length > 0) {
       // Fetch image URLs concurrently
       const updatedFoodData = await Promise.all(
-        itemsToUpdate.map(async (item) => {
+        itemsToUpdateUrls.map(async (item) => {
           const imageUrl = await fetchImageUrl(item.name);
           return { ...item, url: typeof imageUrl === 'string' ? imageUrl : '' };
         }),
@@ -137,8 +170,6 @@ export default async function populateFoodTableFromMenu(parsedMenu: DayMenu[]): 
         }),
       );
       console.log(`Inserted or updated ${updatedFoodData.length} items in FoodTable with image URLs.`);
-    } else {
-      console.log('No new items to insert into FoodTable.');
     }
   } catch (error) {
     console.error('Error populating FoodTable:', error);
@@ -248,10 +279,10 @@ export async function removeFavoriteItem(userId: number, foodName: string): Prom
 }
 
 // ONLY FOR TESTING PURPOSES
-export async function populateFoodTableFromMenuId(menuId: number) {
+export async function populateFoodTableFromCCMenuId(menuId: number) {
   try {
     // Fetch the specific menu row by ID
-    const menu = await prisma.menus.findUnique({
+    const menu = await prisma.campusCenterMenus.findUnique({
       where: { id: menuId },
     });
 
@@ -298,12 +329,16 @@ export async function populateFoodTableFromMenuId(menuId: number) {
     // Deduplicate by `name` and `label`
     const uniqueFoodData: FoodTableEntry[] = Array.from(
       new Map(foodData.map((item) => [JSON.stringify({ name: item.name, label: item.label }), item])).values(),
-    ).map(({ name, label }) => ({
-      name,
-      url: '',
-      label,
-      translation: [],
-    }));
+    ).map(({ name, label }) => {
+      const assignedLabels = assignLabels(name);
+
+      return {
+        name,
+        url: '',
+        label: [...label, ...assignedLabels],
+        translation: [],
+      };
+    });
 
     // Filter out items already in the database
     const existingFoodItems = await prisma.foodTable.findMany({
@@ -312,9 +347,36 @@ export async function populateFoodTableFromMenuId(menuId: number) {
           in: uniqueFoodData.map((item) => item.name),
         },
       },
-      select: { name: true, url: true },
+      select: { name: true, url: true, label: true, translation: true },
     });
 
+    // Determine which items need label or translation updates
+    const itemsToUpdateLabelsOrTranslations = uniqueFoodData.filter((item) => {
+      const existingItem = existingFoodItems.find((existing) => existing.name === item.name);
+      return (
+        existingItem &&
+        (JSON.stringify(existingItem.label) !== JSON.stringify(item.label) ||
+          JSON.stringify(existingItem.translation) !== JSON.stringify(item.translation))
+      );
+    });
+
+    // Update items with new labels or translations
+    if (itemsToUpdateLabelsOrTranslations.length > 0) {
+      await Promise.all(
+        itemsToUpdateLabelsOrTranslations.map(async (item) => {
+          await prisma.foodTable.update({
+            where: { name: item.name },
+            data: {
+              label: item.label,
+              translation: item.translation,
+            },
+          });
+        }),
+      );
+      console.log(
+        `Updated ${itemsToUpdateLabelsOrTranslations.length} items in FoodTable with new labels or translations.`,
+      );
+    }
     // Determine which items are new or need an image URL update
     const existingNamesWithUrls = new Map(existingFoodItems.map((item) => [item.name, item.url]));
 

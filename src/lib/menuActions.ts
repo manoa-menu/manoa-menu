@@ -1,10 +1,12 @@
+/* eslint-disable operator-linebreak */
 /* eslint-disable eqeqeq */
 import scrapeCCUrl from '@/lib/scrapeCCUrl';
 import parseCampusCenterMenu from '@/lib/menuParse';
-import { getLatestMenu, insertMenu } from '@/lib/dbActions';
-import { Location, DayMenu, MenuResponse, Option } from '@/types/menuTypes';
-import populateFoodTableFromMenu from './foodTable';
+import { getLatestCCMenu, insertCCMenu } from '@/lib/dbActions';
+import { Location, DayMenu, MenuResponse } from '@/types/menuTypes';
+import populateFoodTableFromCCMenu from './foodTable';
 import fetchOpenAI from '../app/utils/api/openai';
+import { getCurrentWeekOf, getNextWeekOf } from './dateFunctions';
 
 async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
   try {
@@ -19,47 +21,67 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
     const parsedMenu: MenuResponse = await parseCampusCenterMenu(menuPdf);
 
     // Gets latest English menu from database
-    const dbLatestMenu = await getLatestMenu('English');
+    const dbLatestMenu = await getLatestCCMenu('English');
 
     // Parse the latest menu from the database
-    const dbMenuParsed: DayMenu[] = (dbLatestMenu) ? JSON.parse(JSON.stringify(dbLatestMenu?.menu)) : [];
+    const dbMenuParsed: DayMenu[] = dbLatestMenu ? JSON.parse(JSON.stringify(dbLatestMenu?.menu)) : [];
 
     // console.log(`dbMenuParsed: ${JSON.stringify(dbMenuParsed)}`);
 
     // Check if the latest menu is not up to date
-    if ((dbMenuParsed.length === 0)
-        || (JSON.stringify(dbMenuParsed[1].grabAndGo) !== JSON.stringify(parsedMenu.weekOne[1].grabAndGo)
-        && JSON.stringify(dbMenuParsed[2].plateLunch) !== JSON.stringify(parsedMenu.weekOne[2].plateLunch))) {
+    if (
+      dbMenuParsed.length === 0 ||
+      (JSON.stringify(dbMenuParsed[1].grabAndGo) !== JSON.stringify(parsedMenu.weekOne[1].grabAndGo) &&
+        JSON.stringify(dbMenuParsed[2].plateLunch) !== JSON.stringify(parsedMenu.weekOne[2].plateLunch))
+    ) {
       console.log('Inserting parsedMenu into database');
 
       // console.log(parsedMenu.weekOne);
       // Insert the parsed menu for week one into the database
-      await insertMenu(parsedMenu.weekOne, Location.CAMPUS_CENTER, 'English', 'USA');
-      await populateFoodTableFromMenu(parsedMenu.weekOne);
+      await insertCCMenu(parsedMenu.weekOne, Location.CAMPUS_CENTER, 'English', getCurrentWeekOf());
+      await populateFoodTableFromCCMenu(parsedMenu.weekOne);
 
       // If week two menu exists, insert it into the database
       if (parsedMenu.weekTwo) {
-        await insertMenu(parsedMenu.weekTwo, Location.CAMPUS_CENTER, 'English', 'USA', 2);
-        await populateFoodTableFromMenu(parsedMenu.weekTwo);
+        await insertCCMenu(parsedMenu.weekTwo, Location.CAMPUS_CENTER, 'English', getNextWeekOf());
+        await populateFoodTableFromCCMenu(parsedMenu.weekTwo);
         // console.log(parsedMenu.weekTwo);
       }
 
       // Fetch the translated menu using OpenAI
       console.log('Translating menu into Japanese');
-      const translatedMenu: MenuResponse = await fetchOpenAI(Option.CC, parsedMenu, 'Japanese');
+
+      const prompt = `You will translate all menu items into ${language}. 
+      Translate and word in a way that is easy for native speakers of ${language} to understand.
+      In parenthesis provide a brief description of dish contents in ${language}
+      or foods that ${language} people may not be familiar with,
+      or Chinese food, Uncommon Mexican food, Hawaiian food,
+      or Chicken Parmesan, Cobb Salad, Huli Huli Chicken
+      or foods that are not self-explanatory.
+      Must describe pasta dishes, special salads, non-famous American dishes, and foreign asian dishes.
+      Do not add or create new items that are not on the menu.
+      If there is a special message, provide a translation in ${language}.`;
+
+      const translatedMenu = (await fetchOpenAI(
+        prompt,
+        Location.CAMPUS_CENTER,
+        parsedMenu,
+        'Japanese',
+      )) as MenuResponse;
 
       // Insert the translated menu for week one into the database
-      await insertMenu(translatedMenu.weekOne, Location.CAMPUS_CENTER, 'Japanese', 'Japan');
+      await insertCCMenu(translatedMenu.weekOne, Location.CAMPUS_CENTER, 'Japanese', getCurrentWeekOf());
 
       // If week two translated menu exists, insert it into the database
       if (translatedMenu.weekTwo) {
-        await insertMenu(translatedMenu.weekTwo, Location.CAMPUS_CENTER, 'Japanese', 'Japan', 2);
+        await insertCCMenu(translatedMenu.weekTwo, Location.CAMPUS_CENTER, 'Japanese', getNextWeekOf());
       }
 
       // If the latest menu is up to date, fetch the menu from the database
       console.log(`Fetching parsedMenu from database in ${language}`);
-      const dbMenuLanguage = await getLatestMenu(language);
-      const dbMenuLanguageParsed: DayMenu[] = (dbMenuLanguage) ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
+      const dbMenuLanguage = await getLatestCCMenu(language);
+      console.log(`dbMenuLanguage: ${JSON.stringify(dbMenuLanguage)}`);
+      const dbMenuLanguageParsed: DayMenu[] = dbMenuLanguage ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
 
       // Return the parsed menu if it exists
       if (dbMenuLanguageParsed) {
@@ -68,8 +90,8 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
     } else {
       // If the latest menu is up to date, fetch the menu from the database
       console.log(`Fetching parsedMenu from database in ${language}`);
-      const dbMenuLanguage = await getLatestMenu(language);
-      const dbMenuLanguageParsed: DayMenu[] = (dbMenuLanguage) ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
+      const dbMenuLanguage = await getLatestCCMenu(language);
+      const dbMenuLanguageParsed: DayMenu[] = dbMenuLanguage ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
 
       // Return the parsed menu if it exists
       if (dbMenuLanguageParsed) {

@@ -1,3 +1,0 @@
--- AlterTable
-ALTER TABLE "Menus" ALTER COLUMN "week_of" SET DEFAULT '1996-12-29',
-ALTER COLUMN "week_of" SET DATA TYPE TEXT;

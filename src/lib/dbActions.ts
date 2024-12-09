@@ -1,60 +1,28 @@
+/* eslint-disable @typescript-eslint/return-await */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 'use server';
 
 import { hash } from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
-import { DayMenu, Location } from '@/types/menuTypes';
+import { DayMenu, Location, FilteredSodexoMeal, FilteredSodexoModRoot } from '@/types/menuTypes';
+import { getCurrentWeekOf, getCurrentDayOf } from '@/lib/dateFunctions';
 
 const prisma = new PrismaClient();
-
-function getCurrentWeekOf(): string {
-  const today = new Date();
-  // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
-  const dayOfWeek = today.getDay();
-  // Calculate the start of the week (Sunday)
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - dayOfWeek);
-  // Format the date as yyyy-mm-dd
-  const yyyy = startOfWeek.getFullYear();
-  const mm = String(startOfWeek.getMonth() + 1).padStart(2, '0');
-  const dd = String(startOfWeek.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-function getNextWeekOf(): string {
-  const today = new Date();
-  // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
-  const dayOfWeek = today.getDay();
-  // Calculate the start of the week (Sunday)
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - dayOfWeek + 7);
-  // Format the date as yyyy-mm-dd
-  const yyyy = startOfWeek.getFullYear();
-  const mm = String(startOfWeek.getMonth() + 1).padStart(2, '0');
-  const dd = String(startOfWeek.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-}
 
 /**
  * Creates a new menu in the database.
  * @param menuRow, an object with the following properties: email, password.
  */
-export async function insertMenu(
-  menuInfo: DayMenu[],
-  location: Location,
-  language: string,
-  country: string,
-  weekNumber: number = 1,
-) {
+export async function insertCCMenu(menuInfo: DayMenu[], location: Location, language: string, date: string) {
   try {
-    const weekOf = (weekNumber === 1) ? getCurrentWeekOf() : getNextWeekOf();
     const weekMenu = JSON.parse(JSON.stringify(menuInfo));
-    await prisma.menus.create({
+    await prisma.campusCenterMenus.create({
       data: {
-        week_of: weekOf,
+        week_of: date,
         location,
         menu: weekMenu,
         language,
-        country,
       },
     });
   } catch (error) {
@@ -69,9 +37,9 @@ export async function insertMenu(
  * @param data - The new data for the menu.
  * @returns the updated menu object.
  */
-export async function editMenu(id: number, data: any) {
+export async function editCCMenu(id: number, data: any) {
   try {
-    return await prisma.menus.update({
+    return await prisma.campusCenterMenus.update({
       where: { id },
       data,
     });
@@ -86,9 +54,9 @@ export async function editMenu(id: number, data: any) {
  * @param id - The ID of the menu to delete.
  * @returns the deleted menu object.
  */
-export async function deleteMenu(id: number) {
+export async function deleteCCMenu(id: number) {
   try {
-    return await prisma.menus.delete({
+    return await prisma.campusCenterMenus.delete({
       where: { id },
     });
   } catch (error) {
@@ -102,9 +70,9 @@ export async function deleteMenu(id: number) {
  * @param id, the ID of the menu to retrieve.
  * @returns the menu object.
  */
-export async function getMenu(week_of: string, language: string) {
+export async function getCCMenu(week_of: string, language: string) {
   try {
-    return await prisma.menus.findFirst({
+    return await prisma.campusCenterMenus.findFirst({
       where: {
         week_of,
         language,
@@ -120,12 +88,14 @@ export async function getMenu(week_of: string, language: string) {
  * Retrieves the latest menu from the database using the week_of field.
  * @returns the latest menu object.
  */
-export async function getLatestMenu(language: string) {
+export async function getLatestCCMenu(language: string) {
   try {
-    return await prisma.menus.findFirst({
+    return await prisma.campusCenterMenus.findFirst({
       where: {
         language,
-        week_of: getCurrentWeekOf(),
+      },
+      orderBy: {
+        week_of: 'desc',
       },
     });
   } catch (error) {
@@ -138,11 +108,107 @@ export async function getLatestMenu(language: string) {
  * Retrieves all menus from the database.
  * @returns an array of menu objects.
  */
-export async function getAllMenus() {
+export async function getAllCCMenus() {
   try {
-    return await prisma.menus.findMany();
+    return await prisma.campusCenterMenus.findMany();
   } catch (error) {
     console.error('Error fetching all menus:', error);
+    throw error;
+  }
+}
+
+export async function insertSdxMenu(
+  menuInfo: FilteredSodexoModRoot,
+  location: Location,
+  language: string,
+  date: string,
+) {
+  try {
+    const weekMenu = JSON.parse(JSON.stringify(menuInfo));
+    if (location === Location.GATEWAY) {
+      await prisma.gatewayMenus.create({
+        data: {
+          date,
+          location,
+          menu: weekMenu,
+          language,
+        },
+      });
+    } else if (location === Location.HALE_ALOHA) {
+      await prisma.haleAlohaMenus.create({
+        data: {
+          date,
+          location,
+          menu: weekMenu,
+          language,
+        },
+      });
+    } else {
+      throw new Error('Invalid location');
+    }
+  } catch (error) {
+    console.error('Error inserting menu:', error);
+    throw error;
+  }
+}
+
+/**
+ * Retrieves the latest menu from the database using the week_of field.
+ * @returns the latest menu object.
+ */
+export async function getLatestSdxMenu(language: string, location: Location) {
+  try {
+    if (location === Location.GATEWAY) {
+      return await prisma.gatewayMenus.findFirst({
+        where: {
+          language,
+          date: getCurrentDayOf(),
+          location,
+        },
+      });
+    }
+    if (location === Location.HALE_ALOHA) {
+      return await prisma.haleAlohaMenus.findFirst({
+        where: {
+          language,
+          date: getCurrentDayOf(),
+          location,
+        },
+      });
+    }
+    throw new Error('Invalid location');
+  } catch (error) {
+    console.error('Error fetching latest menu:', error);
+    throw error;
+  }
+}
+
+/**
+ * Retrieves a menu from the database.
+ * @param id, the ID of the menu to retrieve.
+ * @returns the menu object.
+ */
+export async function getSdxMenu(date: string, language: string, location: Location) {
+  try {
+    if (location === Location.GATEWAY) {
+      return await prisma.gatewayMenus.findFirst({
+        where: {
+          date,
+          language,
+        },
+      });
+    }
+    if (location === Location.HALE_ALOHA) {
+      return await prisma.haleAlohaMenus.findFirst({
+        where: {
+          date,
+          language,
+        },
+      });
+    }
+    throw new Error('Invalid location');
+  } catch (error) {
+    console.error('Error fetching menu:', error);
     throw error;
   }
 }

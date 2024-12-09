@@ -1,0 +1,14 @@
+#list {
+  margin-top: 100px;
+  margin-left: 40px;
+  max-width: 100vh;
+}
+
+.data-row {
+  margin: 40px 0 40px;
+}
+
+body,
+html {
+  overflow-x: hidden;
+}
