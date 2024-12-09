@@ -1,9 +1,10 @@
+/* eslint-disable operator-linebreak */
 /* eslint-disable eqeqeq */
 import scrapeCCUrl from '@/lib/scrapeCCUrl';
 import parseCampusCenterMenu from '@/lib/menuParse';
 import { getLatestCCMenu, insertCCMenu } from '@/lib/dbActions';
 import { Location, DayMenu, MenuResponse } from '@/types/menuTypes';
-import populateFoodTableFromMenu from './foodTable';
+import populateFoodTableFromCCMenu from './foodTable';
 import fetchOpenAI from '../app/utils/api/openai';
 import { getCurrentWeekOf, getNextWeekOf } from './dateFunctions';
 
@@ -23,25 +24,27 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
     const dbLatestMenu = await getLatestCCMenu('English');
 
     // Parse the latest menu from the database
-    const dbMenuParsed: DayMenu[] = (dbLatestMenu) ? JSON.parse(JSON.stringify(dbLatestMenu?.menu)) : [];
+    const dbMenuParsed: DayMenu[] = dbLatestMenu ? JSON.parse(JSON.stringify(dbLatestMenu?.menu)) : [];
 
     // console.log(`dbMenuParsed: ${JSON.stringify(dbMenuParsed)}`);
 
     // Check if the latest menu is not up to date
-    if ((dbMenuParsed.length === 0)
-        || (JSON.stringify(dbMenuParsed[1].grabAndGo) !== JSON.stringify(parsedMenu.weekOne[1].grabAndGo)
-        && JSON.stringify(dbMenuParsed[2].plateLunch) !== JSON.stringify(parsedMenu.weekOne[2].plateLunch))) {
+    if (
+      dbMenuParsed.length === 0 ||
+      (JSON.stringify(dbMenuParsed[1].grabAndGo) !== JSON.stringify(parsedMenu.weekOne[1].grabAndGo) &&
+        JSON.stringify(dbMenuParsed[2].plateLunch) !== JSON.stringify(parsedMenu.weekOne[2].plateLunch))
+    ) {
       console.log('Inserting parsedMenu into database');
 
       // console.log(parsedMenu.weekOne);
       // Insert the parsed menu for week one into the database
       await insertCCMenu(parsedMenu.weekOne, Location.CAMPUS_CENTER, 'English', getCurrentWeekOf());
-      await populateFoodTableFromMenu(parsedMenu.weekOne);
+      await populateFoodTableFromCCMenu(parsedMenu.weekOne);
 
       // If week two menu exists, insert it into the database
       if (parsedMenu.weekTwo) {
         await insertCCMenu(parsedMenu.weekTwo, Location.CAMPUS_CENTER, 'English', getNextWeekOf());
-        await populateFoodTableFromMenu(parsedMenu.weekTwo);
+        await populateFoodTableFromCCMenu(parsedMenu.weekTwo);
         // console.log(parsedMenu.weekTwo);
       }
 
@@ -59,7 +62,12 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
       Do not add or create new items that are not on the menu.
       If there is a special message, provide a translation in ${language}.`;
 
-      const translatedMenu = await fetchOpenAI(prompt, Location.CAMPUS_CENTER, parsedMenu, 'Japanese') as MenuResponse;
+      const translatedMenu = (await fetchOpenAI(
+        prompt,
+        Location.CAMPUS_CENTER,
+        parsedMenu,
+        'Japanese',
+      )) as MenuResponse;
 
       // Insert the translated menu for week one into the database
       await insertCCMenu(translatedMenu.weekOne, Location.CAMPUS_CENTER, 'Japanese', getCurrentWeekOf());
@@ -73,7 +81,7 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
       console.log(`Fetching parsedMenu from database in ${language}`);
       const dbMenuLanguage = await getLatestCCMenu(language);
       console.log(`dbMenuLanguage: ${JSON.stringify(dbMenuLanguage)}`);
-      const dbMenuLanguageParsed: DayMenu[] = (dbMenuLanguage) ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
+      const dbMenuLanguageParsed: DayMenu[] = dbMenuLanguage ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
 
       // Return the parsed menu if it exists
       if (dbMenuLanguageParsed) {
@@ -83,7 +91,7 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
       // If the latest menu is up to date, fetch the menu from the database
       console.log(`Fetching parsedMenu from database in ${language}`);
       const dbMenuLanguage = await getLatestCCMenu(language);
-      const dbMenuLanguageParsed: DayMenu[] = (dbMenuLanguage) ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
+      const dbMenuLanguageParsed: DayMenu[] = dbMenuLanguage ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
 
       // Return the parsed menu if it exists
       if (dbMenuLanguageParsed) {

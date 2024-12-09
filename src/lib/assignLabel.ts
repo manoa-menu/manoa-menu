@@ -43,16 +43,15 @@ const labelKeywords: Labels = {
 };
 
 // Function to assign labels based on keywords
-function assignLabels(itemName: string): Record<string, string[]> {
-  const assignedLabels: Record<string, string[]> = {};
+function assignLabels(itemName: string): string[] {
+  const assignedLabels: string[] = [];
 
-  for (const [category, mappings] of Object.entries(labelKeywords)) {
-    assignedLabels[category] = Object.keys(mappings).filter(
-      (label) =>
-        // eslint-disable-next-line implicit-arrow-linebreak
-        mappings[label].some((keyword) => itemName.toLowerCase().includes(keyword.toLowerCase())),
-      // eslint-disable-next-line function-paren-newline
-    );
+  for (const mappings of Object.values(labelKeywords)) {
+    for (const [label, keywords] of Object.entries(mappings)) {
+      if (keywords.some((keyword) => itemName.toLowerCase().includes(keyword.toLowerCase()))) {
+        assignedLabels.push(label);
+      }
+    }
   }
 
   return assignedLabels;
