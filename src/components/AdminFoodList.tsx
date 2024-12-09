@@ -28,7 +28,7 @@ const AdminFoodList = ({ foods }: AdminFoodListProps) => {
           <tr>
             <th>Food</th>
             <th>Total user likes</th>
-            <th>URL</th>
+            <th>Image URL</th>
           </tr>
         </thead>
         <tbody>
