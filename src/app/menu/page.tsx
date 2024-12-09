@@ -9,13 +9,13 @@ import { Translate, TypeH1 } from 'react-bootstrap-icons';
 import { FaUtensils } from 'react-icons/fa';
 
 import { Container, Dropdown, DropdownButton } from 'react-bootstrap';
-import { DayMenu, FilteredSodexoMeal } from '@/types/menuTypes';
+import { DayMenu, FilteredSodexoMeal, SdxAPIResponse } from '@/types/menuTypes';
 import { useSession } from 'next-auth/react';
 import { getUserLanguage } from '@/lib/dbActions';
 import { useState, useEffect, useRef } from 'react';
 import BlackSpinner from '@/components/BlackSpinner';
 import fixDayNames from '@/lib/menuHelper';
-import GatewayMenu from '@/components/GatewayMenu';
+import SdxMenu from '@/components/SdxMenu';
 
 const Page = () => {
   const languages = [
@@ -49,12 +49,12 @@ const Page = () => {
   const [menuState, setMenuState] = useState<string>('cc');
 
   const [ccMenu, setCCMenu] = useState<DayMenu[]>([]);
-  const [gwMenu, setGWMenu] = useState<FilteredSodexoMeal[]>([]);
-  const [haMenu, setHAMenu] = useState<FilteredSodexoMeal[]>([]);
+  const [gwMenu, setGWMenu] = useState<SdxAPIResponse[]>([]);
+  const [haMenu, setHAMenu] = useState<SdxAPIResponse[]>([]);
 
-  const [isCCLoading, setCCLoading] = useState(true);
-  const [isGWLoading, setGWLoading] = useState(true);
-  const [isHALoading, setHALoading] = useState(true);
+  const [isCCLoading, setCCLoading] = useState(false);
+  const [isGWLoading, setGWLoading] = useState(false);
+  const [isHALoading, setHALoading] = useState(false);
 
   const [language, setLanguage] = useState<string>('English');
 
@@ -116,12 +116,14 @@ const Page = () => {
       }
     };
 
-    fetchMenu('cc', language, setCCMenu, setCCLoading);
-    fetchMenu('sdx', 'Japanese', setGWMenu, setGWLoading, 'gw');
-    fetchMenu('sdx', 'Japanese', setGWMenu, setGWLoading, 'ha');
+    if (menuState === 'cc') {
+      fetchMenu(menuState, language, setCCMenu, setCCLoading);
+    } else {
+      fetchMenu('sdx', language, setGWMenu, setGWLoading, menuState);
+    }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [language]);
+  }, [language, menuState]);
 
   const renderMenu = () => {
     switch (menuState) {
@@ -130,9 +132,13 @@ const Page = () => {
           ? <h2>Menu Unavailable</h2>
           : <CCMenuList menu={ccMenu} language={language} />;
       case 'gw':
-        return (gwMenu === undefined || gwMenu. === 0);
+        return (gwMenu === undefined || gwMenu.length === 0)
+          ? <h2>Menu Unavailable</h2>
+          : <SdxMenu weekMenu={gwMenu} language={language} />;
       case 'ha':
-        return <GatewayMenu menu={haMenu} language={language} />;
+        return (haMenu === undefined || haMenu.length === 0)
+          ? <h2>Menu Unavailable</h2>
+          : <SdxMenu weekMenu={haMenu} language={language} />;
       default:
         return null;
     }
@@ -140,10 +146,13 @@ const Page = () => {
 
   return (
     <Container fluid className="my-5 menu-container" style={{ paddingTop: '120px' }}>
-      <div className="d-flex justify-content-center">
-        <h1 className="text-center">Campus Center Menu</h1>
+      <div className="d-flex justify-content-center flex-wrap">
+        <h1 className="text-center">
+          {displayMenuNames.get(menuState)}
+          {' Menu'}
+        </h1>
         <DropdownButton
-          className="mx-3 p-1"
+          className="mx-2 p-1"
           ref={langDropdownRef}
           id="dropdown-basic-button"
           title={(
@@ -165,7 +174,7 @@ const Page = () => {
           ))}
         </DropdownButton>
         <DropdownButton
-          className="mx-3 p-1"
+          className="mx-2 p-1"
           ref={menuDropdownRef}
           id="dropdown-basic-button"
           title={(

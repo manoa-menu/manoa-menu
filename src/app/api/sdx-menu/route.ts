@@ -103,7 +103,7 @@ export async function GET(req: NextRequest) {
 
         const dayMenuRow = await getSdxMenu(day, language, locationOption);
 
-        const dayMenu: FilteredSodexoModRoot = dayMenuRow?.menu as unknown as FilteredSodexoModRoot || [];
+        const dayMenu: FilteredSodexoMeal[] = dayMenuRow?.menu as unknown as FilteredSodexoMeal[] || [];
 
         console.log(`Menu for ${day} from database:`, dayMenuRow);
 
@@ -175,7 +175,7 @@ export async function GET(req: NextRequest) {
 
         const retVal: SdxAPIResponse = {
           date: day,
-          meals: dayMenu.meals,
+          meals: dayMenu,
         };
 
         return retVal;

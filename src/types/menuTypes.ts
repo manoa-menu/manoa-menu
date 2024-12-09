@@ -24,12 +24,12 @@ export interface FilteredSodexoMenuItem {
 }
 
 export interface FilteredSodexoGroup {
-  name: string | null;
+  name: string
   items: FilteredSodexoMenuItem[];
 }
 
 export interface FilteredSodexoMeal {
-  name: string | null;
+  name: string
   groups: FilteredSodexoGroup[];
 }
 
