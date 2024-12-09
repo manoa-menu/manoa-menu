@@ -17,7 +17,7 @@ const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => (
     // Filter out groups with no names or no items
     .filter(group => group.name && group.items.length > 0)
     .map(group => ({
-      name: group.name,
+      name: group.name || '',
       items: group.items.filter(item => (
         // Filter out items with the name 'Have a nice day'
         (item.formalName.toLowerCase() !== 'have a nice day')
