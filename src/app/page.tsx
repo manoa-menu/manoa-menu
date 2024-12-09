@@ -1,6 +1,7 @@
 'use client';
 
 import { Col, Container, Row, Card } from 'react-bootstrap';
+
 import './landingpage.css';
 
 /** The Home page. */
@@ -13,7 +14,9 @@ const Home = () => (
           <h1 className="title"><span>Manoa Menu</span></h1>
           <hr id="title-border" />
           <h5 className="title-subheader">
-            <span>Menu Translations for International Students at the University of Hawaiʻi at Mānoa</span>
+            <span id="subheader-styling">
+              Menu Translations for International Students at the University of Hawaiʻi at Mānoa
+            </span>
           </h5>
         </Col>
       </Row>
