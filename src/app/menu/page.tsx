@@ -6,6 +6,8 @@ import '@/styles/Menu.css';
 
 import CCMenuList from '@/components/CCMenuList';
 import { Translate } from 'react-bootstrap-icons';
+import { FaUtensils } from 'react-icons/fa';
+
 import { Container, Dropdown, DropdownButton } from 'react-bootstrap';
 import { DayMenu, FilteredSodexoMeal } from '@/types/menuTypes';
 import { useSession } from 'next-auth/react';
@@ -23,6 +25,12 @@ const Page = () => {
     { name: 'Spanish', displayName: 'Español' },
   ];
 
+  const menuNames = [
+    { name: 'cc', displayName: 'Campus Center Food Court' },
+    { name: 'gw', displayName: 'Gateway Cafe' },
+    { name: 'ha', displayName: 'Hale Aloha Cafe' },
+  ];
+
   const displayLanguages = new Map<string, string>([
     ['English', 'English'],
     ['Japanese', '日本語'],
@@ -30,7 +38,15 @@ const Page = () => {
     ['Spanish', 'Español'],
   ]);
 
+  const displayMenuNames = new Map<string, string>([
+    ['cc', 'Campus Center Food Court'],
+    ['gw', 'Gateway Cafe'],
+    ['ha', 'Hale Aloha Cafe'],
+  ]);
+
   const { data: session } = useSession();
+
+  const [menuState, setMenuState] = useState<string>('cc');
 
   const [ccMenu, setCCMenu] = useState<DayMenu[]>([]);
   const [gwMenu, setGWMenu] = useState<FilteredSodexoMeal[]>([]);
@@ -41,10 +57,23 @@ const Page = () => {
   const [isHALoading, setHALoading] = useState(true);
 
   const [language, setLanguage] = useState<string>('English');
-  const dropdownRef = useRef(null);
+
+  const langDropdownRef = useRef(null);
+  const menuDropdownRef = useRef(null);
+
   const langItemClick = (lang: string) => {
     setLanguage(lang);
   };
+
+  const menuNameItemClick = (menuName: string) => {
+    setMenuState(menuName);
+  };
+
+  const isBroken = (menuArr: FilteredSodexoMeal[] | DayMenu[]): boolean => (
+    (menuArr === null || menuArr === undefined || menuArr.length === 0
+      || (typeof menuArr[0] === 'object' && 'meals' in menuArr[0]
+        && Array.isArray(menuArr[0].meals) && menuArr[0].meals.length === 0))
+  );
 
   useEffect(() => {
     if (session?.user?.email) {
@@ -58,6 +87,10 @@ const Page = () => {
       fetchLanguage();
     }
   }, [session]);
+
+  useEffect(() => {
+
+  }, [menuState]);
 
   useEffect(() => {
     const fetchMenu = async (
@@ -86,19 +119,33 @@ const Page = () => {
     };
 
     fetchMenu('cc', language, setCCMenu, setCCLoading);
-    // fetchMenu('sdx', 'Japanese', setGWMenu, setGWLoading, 'gw');
-    // fetchMenu('sdx', 'Japanese', setGWMenu, setGWLoading, 'ha');
+    fetchMenu('sdx', 'Japanese', setGWMenu, setGWLoading, 'gw');
+    fetchMenu('sdx', 'Japanese', setGWMenu, setGWLoading, 'ha');
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]);
+
+  const renderMenu = () => {
+    switch (menuState) {
+      case 'cc':
+        return <CCMenuList menu={ccMenu} language={language} />;
+      case 'gw':
+        return <GatewayMenu menu={gwMenu} language={language} />;
+      case 'ha':
+        return <GatewayMenu menu={haMenu} language={language} />;
+      default:
+        return null;
+    }
+  };
+
   return (
-    ccMenu !== null && ccMenu !== undefined ? (
+    (ccMenu !== null && ccMenu !== undefined) ? (
       <Container fluid className="my-5 menu-container" style={{ paddingTop: '120px' }}>
         <div className="d-flex justify-content-center">
           <h1 className="text-center">Campus Center Menu</h1>
           <DropdownButton
             className="mx-3 p-1"
-            ref={dropdownRef}
+            ref={langDropdownRef}
             id="dropdown-basic-button"
             title={(
               <span className="align-items-center">
@@ -118,24 +165,38 @@ const Page = () => {
               </Dropdown.Item>
             ))}
           </DropdownButton>
+          <DropdownButton
+            className="mx-3 p-1"
+            ref={menuDropdownRef}
+            id="dropdown-basic-button"
+            title={(
+              <span className="align-items-center">
+                <FaUtensils className="" />
+                {' '}
+                {displayMenuNames.get(menuState)}
+              </span>
+            )}
+          >
+            {menuNames.map((menuName) => (
+              <Dropdown.Item
+                key={menuName.name}
+                onClick={() => menuNameItemClick(menuName.name)}
+                disabled={menuName.name === 'Korean' || menuName.name === 'Spanish'}
+              >
+                {menuName.displayName}
+              </Dropdown.Item>
+            ))}
+          </DropdownButton>
         </div>
 
         <div className="d-flex flex-column">
-          {(isCCLoading) ? (
+          {(isCCLoading || isGWLoading || isHALoading) ? (
             <BlackSpinner />
           ) : (
             <div className="m-2">
-              <CCMenuList menu={ccMenu} language={language} />
+              {renderMenu()}
             </div>
           )}
-          {/* {(isGWLoading) ? (
-            <BlackSpinner />
-          ) : (
-            <div className="m-2">
-              <GatewayMenu menu={gwMenu} language={language} />
-            </div>
-          )} */}
-
         </div>
 
       </Container>

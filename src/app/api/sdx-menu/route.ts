@@ -34,7 +34,15 @@ const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => (
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
-  const language = searchParams.get('language') || 'Japanese';
+  let language = searchParams.get('language');
+  language = language ? language.charAt(0).toUpperCase() + language.slice(1).toLowerCase() : null;
+
+  if (language?.toLowerCase() !== 'english' && language?.toLowerCase() !== 'japanese') {
+    return NextResponse.json({ error: 'Invalid Language Parameter' }, { status: 500 });
+  }
+  if (!language) {
+    return NextResponse.json({ error: 'Missing Language Parameter' }, { status: 500 });
+  }
   const location = searchParams.get('location')
     || NextResponse.json({ error: 'Missing Location Parameter' }, { status: 500 });
   console.log(`Location: ${location}`);
@@ -78,16 +86,16 @@ export async function GET(req: NextRequest) {
   // Check if menu for next 7 days is available
   const currentWeekDates = getCurrentWeekDates();
 
-  const testDays = ['2024-12-06', '2024-12-08'];
+  // const testDays = ['2024-12-06', '2024-12-08'];
 
   const nextSevenDaysMenu: SdxAPIResponse[] = await Promise.all(
-    testDays.map(async (day) => {
+    currentWeekDates.map(async (day) => {
       try {
         // Fetch the menu for the specific day
 
         console.log(`Attempting to get menu for ${day} from database`);
 
-        const dayMenuRow = await getSdxMenu(day, 'English', locationOption);
+        const dayMenuRow = await getSdxMenu(day, language, locationOption);
 
         const dayMenu: FilteredSodexoModRoot = dayMenuRow?.menu as unknown as FilteredSodexoModRoot || [];
 
