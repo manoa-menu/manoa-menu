@@ -1,0 +1,43 @@
+@keyframes moveBackground {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 50% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+@keyframes fadeInBorder {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+body {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    background: url('/campus-center.jpg') no-repeat center center fixed;
+    background-size: cover;
+    animation: moveBackground 100s ease-in-out infinite;
+    font-family: Arial, sans-serif;
+}
+
+h1 {
+    color: white;
+    font-family: Georgia, sans-serif;
+}
+
+.foodCardHolder {
+    max-height: 500px;
+    border: 2px solid black;
+    border-radius: 5px;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+}

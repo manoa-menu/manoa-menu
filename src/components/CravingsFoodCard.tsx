@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, Container } from 'react-bootstrap';
 import StarButton from '../app/campus-cravings/StarButton'; // Adjust the import path as needed
+import './CravingsFoodCard.css';
 
 interface FoodInfo {
   name: string;
@@ -18,7 +19,7 @@ interface CravingsFoodCardProps {
 const CravingsFoodCard: React.FC<CravingsFoodCardProps> = ({ foodItems, currentUser }) => (
   <Container>
     {foodItems.map((itemCard) => (
-      <Card key={itemCard.name} className="my-1" style={{ border: '1px solid' }}>
+      <Card key={itemCard.name} className="foodCard">
         <Card.Body>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Card.Title>{itemCard.name}</Card.Title>
