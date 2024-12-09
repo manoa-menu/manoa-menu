@@ -29,8 +29,12 @@ export interface FilteredSodexoGroup {
 }
 
 export interface FilteredSodexoMeal {
-  name: string;
+  name: string | null;
   groups: FilteredSodexoGroup[];
+}
+
+export interface SdxSchemaObject {
+  schemaObject: FilteredSodexoMeal[];
 }
 
 export interface FilteredSodexoRootObject {

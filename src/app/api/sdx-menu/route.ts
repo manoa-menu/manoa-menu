@@ -4,7 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
 import { SodexoMeal, FilteredSodexoMeal, Location,
-  FilteredSodexoModRoot, FilteredSodexoMenuRow, SdxAPIResponse } from '@/types/menuTypes';
+  FilteredSodexoModRoot, FilteredSodexoMenuRow, SdxAPIResponse,
+  SdxSchemaObject } from '@/types/menuTypes';
 
 import fetchOpenAI from '@/app/utils/api/openai';
 import { getSdxMenu, insertSdxMenu } from '@/lib/dbActions';
@@ -12,22 +13,27 @@ import { getSevenDayDate, getCurrentWeekDates } from '@/lib/dateFunctions';
 
 const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => ({
   name: rootObject.name,
-  groups: rootObject.groups.map(group => ({
-    name: group.name,
-    items: group.items.filter(item => (
-      (item.formalName.toLowerCase() !== 'have a nice day')
-    )).map(item => {
-      const {
-        price, addons, sizes, allergens, courseSortOrder, menuItemId,
-        isMindful, isSwell, calories, caloriesFromFat, fat,
-        saturatedFat, transFat, polyunsaturatedFat, cholesterol,
-        sodium, carbohydrates, dietaryFiber, sugar, protein,
-        potassium, iron, calcium, vitaminA, vitaminC,
-        ...rest
-      } = item;
-      return rest;
-    }),
-  })),
+  groups: rootObject.groups
+    // Filter out groups with no names or no items
+    .filter(group => group.name && group.items.length > 0)
+    .map(group => ({
+      name: group.name,
+      items: group.items.filter(item => (
+        // Filter out items with the name 'Have a nice day'
+        (item.formalName.toLowerCase() !== 'have a nice day')
+      )).map(item => {
+        // Remove nutritional facts from items
+        const {
+          price, addons, sizes, allergens, courseSortOrder, menuItemId,
+          isMindful, isSwell, calories, caloriesFromFat, fat,
+          saturatedFat, transFat, polyunsaturatedFat, cholesterol,
+          sodium, carbohydrates, dietaryFiber, sugar, protein,
+          potassium, iron, calcium, vitaminA, vitaminC,
+          ...rest
+        } = item;
+        return rest;
+      }),
+    })),
 });
 
 // eslint-disable-next-line import/prefer-default-export
@@ -113,29 +119,40 @@ export async function GET(req: NextRequest) {
           const filteredData: FilteredSodexoMeal[] = dataArr.map((data: SodexoMeal) => removeNutritionalFacts(data));
 
           // Insert the menu
-          const formattedMenu: FilteredSodexoModRoot = {
-            name: `${locationString} Menu for ${day}`,
+          const formattedMenu: SdxAPIResponse = {
+            date: day,
             meals: filteredData,
           };
 
-          console.log(`Inserting menu for ${day} in English`);
-          await insertSdxMenu(formattedMenu, locationOption, 'English', day);
+          if (filteredData.length > 0) {
+            console.log(`Inserting menu for ${day} in English`);
+          } else {
+            console.log(`Inserting blank menu for ${day} in English`);
+          }
+          await insertSdxMenu(filteredData, locationOption, 'English', day);
 
           // Translate the menu
 
-          console.log(`Translating menu for ${day} into Japanese`);
-          const translatedMenu: FilteredSodexoModRoot = (filteredData.length > 0)
-            ? await fetchOpenAI(
+          let translatedMenu: FilteredSodexoMeal[] = [];
+
+          if (filteredData.length > 0) {
+            console.log(`Translating menu for ${day} into Japanese`);
+            const translatedMenuSchemaObj: SdxSchemaObject = await fetchOpenAI(
               prompt,
               locationOption,
               filteredData,
               'Japanese',
-            ) as FilteredSodexoModRoot : formattedMenu;
+            ) as SdxSchemaObject;
 
-          // Insert the translated menu
+            translatedMenu = translatedMenuSchemaObj.schemaObject;
 
-          console.log(`Inserting menu for ${day} in Japanese`);
-          await insertSdxMenu(translatedMenu, locationOption, 'Japanese', day);
+            // Insert the translated menu
+            console.log(`Inserting menu for ${day} in Japanese`);
+            await insertSdxMenu(translatedMenu, locationOption, 'Japanese', day);
+          } else {
+            console.log(`Inserting blank menu for ${day} in Japanese`);
+            await insertSdxMenu([], locationOption, 'Japanese', day);
+          }
 
           if (language.toLowerCase() === 'english') {
             console.log(`Adding English menu for ${day}`);
@@ -149,7 +166,7 @@ export async function GET(req: NextRequest) {
             console.log(`Adding Japanese menu for ${day}`);
             const retVal: SdxAPIResponse = {
               date: day,
-              meals: translatedMenu.meals,
+              meals: translatedMenu,
             };
 
             return retVal;
