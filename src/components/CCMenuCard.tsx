@@ -14,7 +14,7 @@ interface MenuCardProps {
   language: string;
 }
 
-const MenuCard: React.FC<MenuCardProps> = ({ name, plateLunch, grabAndGo, message, language }) => {
+const CCMenuCard: React.FC<MenuCardProps> = ({ name, plateLunch, grabAndGo, message, language }) => {
   const getTableHeader = (lang: string): string[] => {
     switch (lang) {
       case 'English':
@@ -66,4 +66,4 @@ const MenuCard: React.FC<MenuCardProps> = ({ name, plateLunch, grabAndGo, messag
   );
 };
 
-export default MenuCard;
+export default CCMenuCard;

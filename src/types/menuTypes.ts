@@ -14,6 +14,96 @@ export interface DayMenu {
   specialMessage: string;
 }
 
+export interface FilteredSodexoMenuItem {
+  course: string | null;
+  meal: string;
+  formalName: string;
+  description: string;
+  isVegan: boolean;
+  isVegetarian: boolean;
+}
+
+export interface FilteredSodexoGroup {
+  name: string | null;
+  items: FilteredSodexoMenuItem[];
+}
+
+export interface FilteredSodexoMeal {
+  name: string;
+  groups: FilteredSodexoGroup[];
+}
+
+export interface FilteredSodexoRootObject {
+  meals: FilteredSodexoMeal[];
+}
+
+export interface FilteredSodexoModRoot {
+  name: string;
+  meals: FilteredSodexoMeal[];
+}
+
+export interface SdxAPIResponse {
+  date: string;
+  meals: FilteredSodexoMeal[];
+}
+
+export interface FilteredSodexoMenuRow {
+  id: number;
+  name: string;
+  meals: FilteredSodexoModRoot[];
+  language: string;
+  location: Location;
+}
+
+export interface SodexoMenuItem {
+  course: string | null;
+  courseSortOrder: number;
+  meal: string;
+  menuItemId: number;
+  formalName: string;
+  description: string;
+  price: number;
+  allergens: { allergen: number; name: string }[];
+  sizes: [];
+  addons: [];
+  isVegan: boolean;
+  isVegetarian: boolean;
+  isMindful: boolean;
+  isSwell: boolean;
+  calories: string;
+  caloriesFromFat: string;
+  fat: string;
+  saturatedFat: string;
+  transFat: string;
+  polyunsaturatedFat: string;
+  cholesterol: string;
+  sodium: string;
+  carbohydrates: string;
+  dietaryFiber: string;
+  sugar: string;
+  protein: string;
+  potassium: string;
+  iron: string;
+  calcium: string;
+  vitaminA: string;
+  vitaminC: string;
+}
+
+export interface SodexoGroup {
+  name: string | null;
+  sortOrder: number;
+  items: SodexoMenuItem[];
+}
+
+export interface SodexoMeal {
+  name: string;
+  groups: SodexoGroup[];
+}
+
+export interface SodexoRootObject {
+  meals: SodexoMeal[];
+}
+
 export interface MenuResponse {
   weekOne: DayMenu[];
   weekTwo: DayMenu[];
