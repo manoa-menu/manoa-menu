@@ -1,10 +1,10 @@
+import { JSDOM, VirtualConsole } from 'jsdom';
+import fetch from 'node-fetch';
+
 export default async function scrapeCCUrl(url: string): Promise<string> {
   if (typeof window !== 'undefined') {
     throw new Error('scrapeCCUrl can only be run in a Node.js environment');
   }
-
-  const { JSDOM, VirtualConsole } = await import('jsdom');
-  const fetch = (await import('node-fetch')).default;
 
   const response = await fetch(url, {
     method: 'GET',
@@ -41,6 +41,7 @@ export default async function scrapeCCUrl(url: string): Promise<string> {
   const anchor = div?.querySelector('a');
 
   if (anchor) {
+    console.log(`Found anchor element: ${anchor.href}`);
     return (anchor as HTMLAnchorElement).href;
   }
 

@@ -28,6 +28,7 @@
     "dotenv": "^16.4.5",
     "google-search-results-nodejs": "^2.1.0",
     "jsdom": "^25.0.1",
+    "lucide-react": "^0.468.0",
     "multiselect-react-dropdown": "^2.0.25",
     "next": "14.2.10",
     "next-auth": "^4.24.7",

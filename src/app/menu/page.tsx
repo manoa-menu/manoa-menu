@@ -3,17 +3,21 @@
 'use client';
 
 import '@/styles/Menu.css';
+import '@/styles/Scrollbar.css';
 
 import CCMenuList from '@/components/CCMenuList';
-import { Translate } from 'react-bootstrap-icons';
+import { Translate, TypeH1 } from 'react-bootstrap-icons';
+import { FaUtensils } from 'react-icons/fa';
+
 import { Container, Dropdown, DropdownButton } from 'react-bootstrap';
-import { DayMenu, FilteredSodexoMeal } from '@/types/menuTypes';
+import { DayMenu, FilteredSodexoMeal, SdxAPIResponse } from '@/types/menuTypes';
 import { useSession } from 'next-auth/react';
 import { getUserLanguage } from '@/lib/dbActions';
 import { useState, useEffect, useRef } from 'react';
 import BlackSpinner from '@/components/BlackSpinner';
-import fixDayNames from '@/lib/menuHelper';
-import GatewayMenu from '@/components/GatewayMenu';
+import { fixDayNames } from '@/lib/menuHelper';
+import SdxMenu from '@/components/SdxMenu';
+import { Box, Stack, Typography } from '@mui/material';
 
 const Page = () => {
   const languages = [
@@ -23,6 +27,12 @@ const Page = () => {
     { name: 'Spanish', displayName: 'Español' },
   ];
 
+  const menuNames = [
+    { name: 'cc', displayName: 'Campus Center Food Court' },
+    { name: 'gw', displayName: 'Gateway Cafe' },
+    { name: 'ha', displayName: 'Hale Aloha Cafe' },
+  ];
+
   const displayLanguages = new Map<string, string>([
     ['English', 'English'],
     ['Japanese', '日本語'],
@@ -30,21 +40,41 @@ const Page = () => {
     ['Spanish', 'Español'],
   ]);
 
+  const displayMenuNames = new Map<string, string>([
+    ['cc', 'Campus Center Food Court'],
+    ['gw', 'Gateway Cafe'],
+    ['ha', 'Hale Aloha Cafe'],
+  ]);
+
   const { data: session } = useSession();
+  const userId = (session?.user as { id: number })?.id;
+
+  const [menuState, setMenuState] = useState<string>('cc');
 
   const [ccMenu, setCCMenu] = useState<DayMenu[]>([]);
-  const [gwMenu, setGWMenu] = useState<FilteredSodexoMeal[]>([]);
-  const [haMenu, setHAMenu] = useState<FilteredSodexoMeal[]>([]);
+  const [gwMenu, setGWMenu] = useState<SdxAPIResponse[]>([]);
+  const [haMenu, setHAMenu] = useState<SdxAPIResponse[]>([]);
 
-  const [isCCLoading, setCCLoading] = useState(true);
-  const [isGWLoading, setGWLoading] = useState(true);
-  const [isHALoading, setHALoading] = useState(true);
+  const [isCCLoading, setCCLoading] = useState(false);
+  const [isGWLoading, setGWLoading] = useState(false);
+  const [isHALoading, setHALoading] = useState(false);
 
   const [language, setLanguage] = useState<string>('English');
-  const dropdownRef = useRef(null);
+
+  const langDropdownRef = useRef(null);
+  const menuDropdownRef = useRef(null);
+
   const langItemClick = (lang: string) => {
     setLanguage(lang);
   };
+
+  const menuNameItemClick = (menuName: string) => {
+    setMenuState(menuName);
+  };
+
+  const isBroken = (menuArr: FilteredSodexoMeal[] | DayMenu[]): boolean => (
+    (menuArr === null || menuArr === undefined || menuArr.length === 0)
+  );
 
   useEffect(() => {
     if (session?.user?.email) {
@@ -58,6 +88,10 @@ const Page = () => {
       fetchLanguage();
     }
   }, [session]);
+
+  useEffect(() => {
+
+  }, [menuState]);
 
   useEffect(() => {
     const fetchMenu = async (
@@ -85,20 +119,75 @@ const Page = () => {
       }
     };
 
-    fetchMenu('cc', language, setCCMenu, setCCLoading);
-    // fetchMenu('sdx', 'Japanese', setGWMenu, setGWLoading, 'gw');
-    // fetchMenu('sdx', 'Japanese', setGWMenu, setGWLoading, 'ha');
+    if (menuState === 'cc') {
+      fetchMenu(menuState, language, setCCMenu, setCCLoading);
+    } else if (menuState === 'gw') {
+      fetchMenu('sdx', language, setGWMenu, setGWLoading, menuState);
+    } else if (menuState === 'ha') {
+      fetchMenu('sdx', language, setHAMenu, setHALoading, menuState);
+    }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [language]);
+  }, [language, menuState]);
+
+  const renderMenu = () => {
+    switch (menuState) {
+      case 'cc':
+        return (ccMenu === undefined || ccMenu.length === 0)
+          ? <h2>Menu Unavailable</h2>
+          : <CCMenuList menu={ccMenu} language={language} userId={userId} />;
+      case 'gw':
+        return (gwMenu === undefined || gwMenu.length === 0)
+          ? <h2>Menu Unavailable</h2>
+          : <SdxMenu weekMenu={gwMenu} language={language} />;
+      case 'ha':
+        return (haMenu === undefined || haMenu.length === 0)
+          ? <h2>Menu Unavailable</h2>
+          : <SdxMenu weekMenu={haMenu} language={language} />;
+      default:
+        return null;
+    }
+  };
+
   return (
-    ccMenu !== null && ccMenu !== undefined ? (
-      <Container fluid className="my-5 menu-container" style={{ paddingTop: '120px' }}>
-        <div className="d-flex justify-content-center">
-          <h1 className="text-center">Campus Center Menu</h1>
+    <Container fluid className="my-4 menu-container" style={{ paddingTop: '120px' }}>
+      <Stack
+        spacing={2}
+        sx={{
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <Typography variant="h3" className="text-center">
+          {displayMenuNames.get(menuState)}
+          {' Menu'}
+        </Typography>
+        <Stack direction="row">
           <DropdownButton
-            className="mx-3 p-1"
-            ref={dropdownRef}
+            className="mx-2 p-1"
+            ref={menuDropdownRef}
+            id="dropdown-basic-button"
+            title={(
+              <span className="align-items-center">
+                <FaUtensils className="" />
+                {' '}
+                {displayMenuNames.get(menuState)}
+              </span>
+            )}
+          >
+            {menuNames.map((menuName) => (
+              <Dropdown.Item
+                key={menuName.name}
+                onClick={() => menuNameItemClick(menuName.name)}
+                disabled={menuName.name === 'Korean' || menuName.name === 'Spanish'}
+              >
+                {menuName.displayName}
+              </Dropdown.Item>
+            ))}
+          </DropdownButton>
+          <DropdownButton
+            className="mx-2 p-1"
+            ref={langDropdownRef}
             id="dropdown-basic-button"
             title={(
               <span className="align-items-center">
@@ -118,65 +207,20 @@ const Page = () => {
               </Dropdown.Item>
             ))}
           </DropdownButton>
-        </div>
+        </Stack>
+      </Stack>
 
-        <div className="d-flex flex-column">
-          {(isCCLoading) ? (
-            <BlackSpinner />
-          ) : (
-            <div className="m-2">
-              <CCMenuList menu={ccMenu} language={language} />
-            </div>
-          )}
-          {/* {(isGWLoading) ? (
-            <BlackSpinner />
-          ) : (
-            <div className="m-2">
-              <GatewayMenu menu={gwMenu} language={language} />
-            </div>
-          )} */}
+      <div className="d-flex flex-column">
+        {(isCCLoading || isGWLoading || isHALoading) ? (
+          <BlackSpinner />
+        ) : (
+          <div className="m-2">
+            {renderMenu()}
+          </div>
+        )}
+      </div>
 
-        </div>
-
-      </Container>
-    ) : (
-      <Container fluid className="my-5 menu-container">
-        <div className="justify-content-center">
-          <h1 className="text-center">Campus Center Menu</h1>
-          <DropdownButton
-            className="mx-3 p-1"
-            ref={dropdownRef}
-            id="dropdown-basic-button"
-            title={(
-              <span className="align-items-center">
-                <Translate className="me-1 mb-1" />
-                {' '}
-                {displayLanguages.get(language)}
-              </span>
-            )}
-          >
-            {languages.map((lang) => (
-              <Dropdown.Item
-                key={lang.name}
-                onClick={() => langItemClick(lang.name)}
-                disabled={lang.name === 'Korean' || lang.name === 'Spanish'}
-              >
-                {lang.displayName}
-              </Dropdown.Item>
-            ))}
-          </DropdownButton>
-        </div>
-
-        {(isCCLoading)
-          ? (
-            <div className="d-flex justify-content-center my-5">
-              <div className="spinner-border" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
-            </div>
-          ) : <h4>Menu not available</h4>}
-      </Container>
-    )
+    </Container>
   );
 };
 

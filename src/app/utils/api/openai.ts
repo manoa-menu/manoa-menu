@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 
 import jpManualReplace from '@/lib/manualTranslate';
 
-import { MenuResponse, Location, FilteredSodexoMeal, FilteredSodexoModRoot } from '@/types/menuTypes';
+import { MenuResponse, Location, FilteredSodexoMeal, SdxSchemaObject } from '@/types/menuTypes';
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -157,7 +157,7 @@ const sdxJsonSchemaOld = {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const sdxJsonSchema = {
+const sdxJsonSchemaOld2 = {
   name: 'sdx_menu',
   schema: {
     type: 'object',
@@ -231,12 +231,87 @@ const sdxJsonSchema = {
   strict: true,
 };
 
+const sdxJsonSchema = {
+  name: 'sdx_menu',
+  schema: {
+    type: 'object',
+    properties: {
+      schemaObject: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            name: {
+              type: 'string',
+            },
+            groups: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  name: {
+                    type: 'string',
+                  },
+                  items: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        meal: {
+                          type: 'string',
+                        },
+                        course: {
+                          type: 'string',
+                        },
+                        isVegan: {
+                          type: 'boolean',
+                        },
+                        formalName: {
+                          type: 'string',
+                        },
+                        description: {
+                          type: 'string',
+                        },
+                        isVegetarian: {
+                          type: 'boolean',
+                        },
+                      },
+                      required: [
+                        'meal',
+                        'course',
+                        'isVegan',
+                        'formalName',
+                        'description',
+                        'isVegetarian',
+                      ],
+                    },
+                  },
+                },
+                required: [
+                  'items',
+                ],
+              },
+            },
+          },
+          required: [
+            'name',
+            'groups',
+          ],
+        },
+      },
+    },
+    required: [
+      'meals',
+    ],
+  },
+};
+
 async function fetchOpenAI(
   prompt: string,
   option: Location,
   weeklyMenu: MenuResponse | FilteredSodexoMeal[],
   language: string,
-): Promise<MenuResponse | FilteredSodexoModRoot> {
+): Promise<MenuResponse | SdxSchemaObject> {
   const maxTokens = (option === Location.CAMPUS_CENTER) ? 2000 : 4096;
   const chatCompletion = await client.beta.chat.completions.parse({
     model: 'gpt-4o',
