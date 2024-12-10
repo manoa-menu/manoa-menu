@@ -2,4 +2,11 @@
   background-color: transparent;
   font-size: 24px;
   color: white;
+  border: 1px solid white;
+}
+
+.starButton:hover,
+.starButton:focus {
+  border-color: white; /* Ensure the outline remains white on hover and focus */
+  color: white; /* Ensure the text color remains white on hover and focus */
 }

@@ -49,7 +49,12 @@ const StarButton: React.FC<StarButtonProps> = ({ item, isStarred: initialIsStarr
 
   return (
     <>
-      <Button variant="link" onClick={handleToggle} style={{ color: isStarred ? 'gold' : 'gray' }}>
+      <Button
+        className="starButton"
+        variant="link"
+        onClick={handleToggle}
+        style={{ color: isStarred ? 'gold' : 'gray' }}
+      >
         {isStarred ? <StarFill /> : <Star />}
       </Button>
       {loading && (

@@ -7,6 +7,7 @@ interface FoodInfo {
   name: string;
   likes: number;
   image: string;
+  label: string;
   isStarred: boolean;
   onToggle: (id: string) => void;
 }
@@ -27,13 +28,20 @@ const CravingsFoodCard: React.FC<CravingsFoodCardProps> = ({ foodItems, currentU
               <Card.Title className="foodName">{itemCard.name}</Card.Title>
               <Card.Text className="foodLikes">
                 {`${itemCard.likes} favorite(s)`}
+                <Card.Text className="location">
+                  Location:
+                  {itemCard.label}
+                </Card.Text>
               </Card.Text>
               {currentUser && (
-              <StarButton
-                item={itemCard.name}
-                isStarred={itemCard.isStarred}
-                onToggle={() => itemCard.onToggle(itemCard.name)}
-              />
+                <div className="starContainer">
+                  <StarButton
+                    item={itemCard.name}
+                    isStarred={itemCard.isStarred}
+                    onToggle={() => itemCard.onToggle(itemCard.name)}
+                  />
+                  <Card.Text className="clickToFavorite">click to favorite</Card.Text>
+                </div>
               )}
             </div>
           </div>

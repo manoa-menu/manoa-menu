@@ -9,11 +9,15 @@
 }
 
 .blackShadeContainer {
-    background-color: rgba(0, 0, 0, 0.5); /* Black with 50% opacity */
-    padding: 1rem;
+    background-color: rgba(0, 0, 0, 1);
+    height: 200px;
+    padding: 30px;
+    margin-left: 25px;
+    margin-right: 10px;
     border-radius: 5px;
-    color: white; /* Ensure text is visible on the black background */
+    color: white; 
     flex: 1; 
+    align-items: center;
 }
 
 .foodImage {
@@ -26,11 +30,29 @@
 .foodName {
     font-family: Georgia, sans-serif;
     font-weight: bold;
+    text-align: center;
 }
 
 .foodLikes {
     font-family: Georgia, sans-serif;
-    font-weight: bold;
-    color: black;
+    color: white;
+    font-family: Georgia, sans-serif;
+
+}
+
+.starContainer {
+    display: flex;
+    align-items: center;
+    font-family: Georgia, sans-serif;
+    margin-left: -15px;
+}
+
+.clickToFavorite {
+    margin-top: 3px;
+    color: white;
+}
+
+.location {
+    color: white;
     font-family: Georgia, sans-serif;
 }
