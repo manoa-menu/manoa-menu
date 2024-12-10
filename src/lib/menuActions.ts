@@ -19,7 +19,7 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
     }
     const parsedMenu: MenuResponse = await parseCampusCenterMenu(menuPdf);
 
-    console.log(`Parsed menu: ${JSON.stringify(parsedMenu)}`);
+    // console.log(`Parsed menu: ${JSON.stringify(parsedMenu)}`);
 
     // Gets latest English menu from database
     const dbLatestMenu = await getLatestCCMenu('English');

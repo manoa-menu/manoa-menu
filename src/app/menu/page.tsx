@@ -3,6 +3,7 @@
 'use client';
 
 import '@/styles/Menu.css';
+import '@/styles/Scrollbar.css';
 
 import CCMenuList from '@/components/CCMenuList';
 import { Translate, TypeH1 } from 'react-bootstrap-icons';
@@ -14,8 +15,9 @@ import { useSession } from 'next-auth/react';
 import { getUserLanguage } from '@/lib/dbActions';
 import { useState, useEffect, useRef } from 'react';
 import BlackSpinner from '@/components/BlackSpinner';
-import fixDayNames from '@/lib/menuHelper';
+import { fixDayNames } from '@/lib/menuHelper';
 import SdxMenu from '@/components/SdxMenu';
+import { Box, Stack, Typography } from '@mui/material';
 
 const Page = () => {
   const languages = [
@@ -45,6 +47,7 @@ const Page = () => {
   ]);
 
   const { data: session } = useSession();
+  const userId = (session?.user as { id: number })?.id;
 
   const [menuState, setMenuState] = useState<string>('cc');
 
@@ -132,7 +135,7 @@ const Page = () => {
       case 'cc':
         return (ccMenu === undefined || ccMenu.length === 0)
           ? <h2>Menu Unavailable</h2>
-          : <CCMenuList menu={ccMenu} language={language} />;
+          : <CCMenuList menu={ccMenu} language={language} userId={userId} />;
       case 'gw':
         return (gwMenu === undefined || gwMenu.length === 0)
           ? <h2>Menu Unavailable</h2>
@@ -147,57 +150,65 @@ const Page = () => {
   };
 
   return (
-    <Container fluid className="my-5 menu-container" style={{ paddingTop: '120px' }}>
-      <div className="d-flex justify-content-center flex-wrap">
-        <h1 className="text-center">
+    <Container fluid className="my-4 menu-container" style={{ paddingTop: '120px' }}>
+      <Stack
+        spacing={2}
+        sx={{
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <Typography variant="h3" className="text-center">
           {displayMenuNames.get(menuState)}
           {' Menu'}
-        </h1>
-        <DropdownButton
-          className="mx-2 p-1"
-          ref={langDropdownRef}
-          id="dropdown-basic-button"
-          title={(
-            <span className="align-items-center">
-              <Translate className="me-1 mb-1" />
-              {' '}
-              {displayLanguages.get(language)}
-            </span>
+        </Typography>
+        <Stack direction="row">
+          <DropdownButton
+            className="mx-2 p-1"
+            ref={menuDropdownRef}
+            id="dropdown-basic-button"
+            title={(
+              <span className="align-items-center">
+                <FaUtensils className="" />
+                {' '}
+                {displayMenuNames.get(menuState)}
+              </span>
             )}
-        >
-          {languages.map((lang) => (
-            <Dropdown.Item
-              key={lang.name}
-              onClick={() => langItemClick(lang.name)}
-              disabled={lang.name === 'Korean' || lang.name === 'Spanish'}
-            >
-              {lang.displayName}
-            </Dropdown.Item>
-          ))}
-        </DropdownButton>
-        <DropdownButton
-          className="mx-2 p-1"
-          ref={menuDropdownRef}
-          id="dropdown-basic-button"
-          title={(
-            <span className="align-items-center">
-              <FaUtensils className="" />
-              {' '}
-              {displayMenuNames.get(menuState)}
-            </span>
+          >
+            {menuNames.map((menuName) => (
+              <Dropdown.Item
+                key={menuName.name}
+                onClick={() => menuNameItemClick(menuName.name)}
+                disabled={menuName.name === 'Korean' || menuName.name === 'Spanish'}
+              >
+                {menuName.displayName}
+              </Dropdown.Item>
+            ))}
+          </DropdownButton>
+          <DropdownButton
+            className="mx-2 p-1"
+            ref={langDropdownRef}
+            id="dropdown-basic-button"
+            title={(
+              <span className="align-items-center">
+                <Translate className="me-1 mb-1" />
+                {' '}
+                {displayLanguages.get(language)}
+              </span>
             )}
-        >
-          {menuNames.map((menuName) => (
-            <Dropdown.Item
-              key={menuName.name}
-              onClick={() => menuNameItemClick(menuName.name)}
-              disabled={menuName.name === 'Korean' || menuName.name === 'Spanish'}
-            >
-              {menuName.displayName}
-            </Dropdown.Item>
-          ))}
-        </DropdownButton>
-      </div>
+          >
+            {languages.map((lang) => (
+              <Dropdown.Item
+                key={lang.name}
+                onClick={() => langItemClick(lang.name)}
+                disabled={lang.name === 'Korean' || lang.name === 'Spanish'}
+              >
+                {lang.displayName}
+              </Dropdown.Item>
+            ))}
+          </DropdownButton>
+        </Stack>
+      </Stack>
 
       <div className="d-flex flex-column">
         {(isCCLoading || isGWLoading || isHALoading) ? (
