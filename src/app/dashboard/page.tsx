@@ -166,7 +166,7 @@ const DashboardPage = () => {
   // Weekly and Recommended for Campus Center Food Court
   const flattenedMenu = latestMenu.map((day) => [...day.grabAndGo, ...day.plateLunch]);
   const filteredMenu = flattenedMenu.map((day) => day.filter((item) => userFavoriteItems.includes(item)));
-  const campusCenterWeeklyItems: string[][] = [[], ...filteredMenu, []];
+  const campusCenterWeeklyItems: string[][] = useMemo(() => [[], ...filteredMenu, []], [filteredMenu]);
   const campusCenterRecommendedItems: RecommendedItem[] = foodTable
     .map((entry) => ({
       name: entry.name,
@@ -266,11 +266,10 @@ const DashboardPage = () => {
     ...(gatewayLunchFiltered[index] || []),
     ...(gatewayDinnerFiltered[index] || []),
   ]);
-  const gatewayCafeRecommendedItems: RecommendedItem[] = [
-    ...gatewayBreakfastRecommendedItems,
-    ...gatewayLunchRecommendedItems,
-    ...gatewayDinnerRecommendedItems,
-  ];
+  const gatewayCafeRecommendedItems: RecommendedItem[] = useMemo(
+    () => [...gatewayBreakfastRecommendedItems, ...gatewayLunchRecommendedItems, ...gatewayDinnerRecommendedItems],
+    [gatewayBreakfastRecommendedItems, gatewayLunchRecommendedItems, gatewayDinnerRecommendedItems],
+  );
 
   // Weekly and Recommended for Aloha Cafe
   const alohaBrunchMenu = alohaMenu.map((day: DayMenu) =>
@@ -329,7 +328,10 @@ const DashboardPage = () => {
     ...brunchItems,
     ...(alohaDinnerFiltered[index] || []),
   ]);
-  const haleAlohaRecommendedItems: RecommendedItem[] = [...alohaBrunchRecommendedItems, ...alohaDinnerRecommendedItems];
+  const haleAlohaRecommendedItems: RecommendedItem[] = useMemo(
+    () => [...alohaBrunchRecommendedItems, ...alohaDinnerRecommendedItems],
+    [alohaBrunchRecommendedItems, alohaDinnerRecommendedItems],
+  );
   console.log(haleAlohaRecommendedItems);
 
   // Filter by location
@@ -399,6 +401,7 @@ const DashboardPage = () => {
   };
 
   // Recommended Items
+  // eslint-disable-next-line arrow-body-style
   const combinedRecommendedItems = useMemo(() => {
     return [
       ...safeArray(campusCenterRecommendedItems),

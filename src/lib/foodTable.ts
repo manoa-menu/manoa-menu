@@ -1,7 +1,7 @@
 /* eslint-disable operator-linebreak */
 import { PrismaClient } from '@prisma/client';
+import { FilteredSodexoMeal } from '@/types/menuTypes';
 import assignLabels from './assignLabel';
-import { FilteredSodexoMeal, FilteredSodexoModRoot } from '@/types/menuTypes';
 
 const SerpApi = require('google-search-results-nodejs');
 
@@ -269,7 +269,9 @@ export default async function populateFoodTableFromCCMenu(parsedMenu: DayMenu[])
         }),
       );
       console.log(
-        `Updated or inserted ${itemsToUpdateLabelsOrTranslations.length} items in FoodTable with new labels or translations.`,
+        `Updated or inserted 
+        ${itemsToUpdateLabelsOrTranslations.length} 
+        items in FoodTable with new labels or translations.`,
       );
     }
 
@@ -373,6 +375,7 @@ export async function populateFoodTableFromSdxMenu(parsedMenu: FilteredSodexoMea
         }),
       );
       console.log(
+        // eslint-disable-next-line max-len
         `Updated or inserted ${itemsToUpdateLabelsOrTranslations.length} items in FoodTable with new labels or translations.`,
       );
     }
@@ -520,7 +523,9 @@ export async function populateFoodTableFromCCMenuId(menuId: number) {
         }),
       );
       console.log(
-        `Updated or inserted ${itemsToUpdateLabelsOrTranslations.length} items in FoodTable with new labels or translations.`,
+        `Updated or inserted 
+        ${itemsToUpdateLabelsOrTranslations.length} 
+        items in FoodTable with new labels or translations.`,
       );
     }
     // Determine which items are new or need an image URL update
@@ -645,7 +650,8 @@ export async function populateFoodTableFromSdxId(menuId: number) {
         }),
       );
       console.log(
-        `Updated or inserted ${itemsToUpdateLabelsOrTranslations.length} items in FoodTable with new labels or translations.`,
+        `Updated or inserted 
+        ${itemsToUpdateLabelsOrTranslations.length} items in FoodTable with new labels or translations.`,
       );
     }
     // Determine which items are new or need an image URL update
