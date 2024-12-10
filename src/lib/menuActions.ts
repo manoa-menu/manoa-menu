@@ -3,7 +3,7 @@ import scrapeCCUrl from '@/lib/scrapeCCUrl';
 import parseCampusCenterMenu from '@/lib/menuParse';
 import { getLatestCCMenu, insertCCMenu } from '@/lib/dbActions';
 import { Location, DayMenu, MenuResponse } from '@/types/menuTypes';
-import populateFoodTableFromMenu from './foodTable';
+// import populateFoodTableFromMenu from './foodTable';
 import fetchOpenAI from '../app/utils/api/openai';
 import { getCurrentWeekOf, getNextWeekOf } from './dateFunctions';
 
@@ -15,9 +15,11 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
     const menuURL: string = 'https://uhm.sodexomyway.com/en-us/locations/campus-center-food-court';
     const menuPdf: string | null = await scrapeCCUrl(menuURL);
     if (menuPdf === null) {
-      throw new Error('Failed to scrape menu PDF');
+      throw new Error('Failed to scrape menu PDF URL');
     }
     const parsedMenu: MenuResponse = await parseCampusCenterMenu(menuPdf);
+
+    console.log(`Parsed menu: ${JSON.stringify(parsedMenu)}`);
 
     // Gets latest English menu from database
     const dbLatestMenu = await getLatestCCMenu('English');
@@ -29,35 +31,36 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
 
     // Check if the latest menu is not up to date
     if ((dbMenuParsed.length === 0)
-        || (JSON.stringify(dbMenuParsed[1].grabAndGo) !== JSON.stringify(parsedMenu.weekOne[1].grabAndGo)
+        || (JSON.stringify(dbMenuParsed[0].plateLunch) !== JSON.stringify(parsedMenu.weekOne[0].plateLunch)
         && JSON.stringify(dbMenuParsed[2].plateLunch) !== JSON.stringify(parsedMenu.weekOne[2].plateLunch))) {
       console.log('Inserting parsedMenu into database');
 
       // console.log(parsedMenu.weekOne);
       // Insert the parsed menu for week one into the database
       await insertCCMenu(parsedMenu.weekOne, Location.CAMPUS_CENTER, 'English', getCurrentWeekOf());
-      await populateFoodTableFromMenu(parsedMenu.weekOne);
+      // await populateFoodTableFromMenu(parsedMenu.weekOne);
 
       // If week two menu exists, insert it into the database
-      if (parsedMenu.weekTwo) {
+      if (parsedMenu.weekTwo.length > 0) {
         await insertCCMenu(parsedMenu.weekTwo, Location.CAMPUS_CENTER, 'English', getNextWeekOf());
-        await populateFoodTableFromMenu(parsedMenu.weekTwo);
+        // await populateFoodTableFromMenu(parsedMenu.weekTwo);
         // console.log(parsedMenu.weekTwo);
       }
 
       // Fetch the translated menu using OpenAI
       console.log('Translating menu into Japanese');
 
-      const prompt = `You will translate all menu items into ${language}. 
-      Translate and word in a way that is easy for native speakers of ${language} to understand.
-      In parenthesis provide a brief description of dish contents in ${language}
-      or foods that ${language} people may not be familiar with,
+      const translateLanguage = 'Japanese';
+      const prompt = `You will translate all menu items into ${translateLanguage}. 
+      Translate and word in a way that is easy for native speakers of ${translateLanguage} to understand.
+      In parenthesis provide a brief description of dish contents in ${translateLanguage}
+      or foods that ${translateLanguage} people may not be familiar with,
       or Chinese food, Uncommon Mexican food, Hawaiian food,
       or Chicken Parmesan, Cobb Salad, Huli Huli Chicken
       or foods that are not self-explanatory.
       Must describe pasta dishes, special salads, non-famous American dishes, and foreign asian dishes.
       Do not add or create new items that are not on the menu.
-      If there is a special message, provide a translation in ${language}.`;
+      If there is a special message, provide a translation in ${translateLanguage}.`;
 
       const translatedMenu = await fetchOpenAI(prompt, Location.CAMPUS_CENTER, parsedMenu, 'Japanese') as MenuResponse;
 
@@ -65,7 +68,7 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
       await insertCCMenu(translatedMenu.weekOne, Location.CAMPUS_CENTER, 'Japanese', getCurrentWeekOf());
 
       // If week two translated menu exists, insert it into the database
-      if (translatedMenu.weekTwo) {
+      if (translatedMenu.weekTwo.length > 0) {
         await insertCCMenu(translatedMenu.weekTwo, Location.CAMPUS_CENTER, 'Japanese', getNextWeekOf());
       }
 
