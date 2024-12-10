@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Container, Row, Form } from 'react-bootstrap';
 import { useSession } from 'next-auth/react';
 import Calendar from '@/components/Calendar';
 import FoodItemSlider from '@/components/FoodItemSlider';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import './dashboard.css';
-import test from 'node:test';
 
 /* eslint-disable function-paren-newline */
 /* eslint-disable implicit-arrow-linebreak */
@@ -55,6 +54,10 @@ export const SdxFilter = [
   'Steamed Brown Rice',
   "Lay's Potato Chips",
 ];
+
+// Ensure arrays are not null or undefined
+const safeArray = (arr: any[]) => arr || [];
+
 const DashboardPage = () => {
   const { data: session } = useSession();
   const userId = (session?.user as { id: number })?.id || null;
@@ -354,86 +357,83 @@ const DashboardPage = () => {
 
   // Calendar Display
   // Weekly Items
-  const combinedWeeklyItems = () => {
+  const combinedWeeklyItems = useMemo(() => {
     const combined = [];
     for (let i = 0; i < 7; i++) {
-      combined.push([...campusCenterWeeklyItems[i], ...gatewayCafeWeeklyItems[i], ...haleAlohaWeeklyItems[i]]);
+      combined.push([
+        ...safeArray(campusCenterWeeklyItems[i]),
+        ...safeArray(gatewayCafeWeeklyItems[i]),
+        ...safeArray(haleAlohaWeeklyItems[i]),
+      ]);
     }
     return combined;
-  };
-  const testArray = [[], [], [], [], [], [], []];
+  }, [campusCenterWeeklyItems, gatewayCafeWeeklyItems, haleAlohaWeeklyItems]);
+
   const getFilteredWeeklyItems = () => {
-    if (selectedOption === 'All') {
-      return combinedWeeklyItems();
+    switch (selectedOption) {
+      case 'Campus Center Food Court':
+        return campusCenterWeeklyItems;
+      case 'Gateway Café':
+        switch (selectedSecondaryOption) {
+          case 'Breakfast':
+            return gatewayBreakfastFiltered;
+          case 'Lunch':
+            return gatewayLunchFiltered;
+          case 'Dinner':
+            return gatewayDinnerFiltered;
+          default:
+            return gatewayCafeWeeklyItems;
+        }
+      case 'Hale Aloha Café':
+        switch (selectedSecondaryOption) {
+          case 'Brunch':
+            return alohaBrunchFiltered;
+          case 'Dinner':
+            return alohaDinnerFiltered;
+          default:
+            return haleAlohaWeeklyItems;
+        }
+      default:
+        return combinedWeeklyItems;
     }
-    if (selectedOption === 'Campus Center Food Court') {
-      return campusCenterWeeklyItems;
-    }
-    if (selectedOption === 'Gateway Café') {
-      if (selectedSecondaryOption === 'All') {
-        return gatewayCafeWeeklyItems;
-      }
-      if (selectedSecondaryOption === 'Breakfast') {
-        return gatewayBreakfastFiltered;
-      }
-      if (selectedSecondaryOption === 'Lunch') {
-        return gatewayLunchFiltered;
-      }
-      if (selectedSecondaryOption === 'Dinner') {
-        return gatewayDinnerFiltered;
-      }
-    }
-    if (selectedOption === 'Hale Aloha Café') {
-      if (selectedSecondaryOption === 'All') {
-        return haleAlohaWeeklyItems;
-      }
-      if (selectedSecondaryOption === 'Brunch') {
-        return alohaBrunchFiltered;
-      }
-      if (selectedSecondaryOption === 'Dinner') {
-        return alohaDinnerFiltered;
-      }
-    }
-    return [];
   };
+
   // Recommended Items
-  const combinedRecommendedItems = () => {
-    const combined: RecommendedItem[] = [];
-    return combined.concat(campusCenterRecommendedItems, gatewayCafeRecommendedItems, haleAlohaRecommendedItems);
-  };
+  const combinedRecommendedItems = useMemo(() => {
+    return [
+      ...safeArray(campusCenterRecommendedItems),
+      ...safeArray(gatewayCafeRecommendedItems),
+      ...safeArray(haleAlohaRecommendedItems),
+    ];
+  }, [campusCenterRecommendedItems, gatewayCafeRecommendedItems, haleAlohaRecommendedItems]);
+
   const getFilteredRecommendedItems = () => {
-    if (selectedOption === 'All') {
-      return combinedRecommendedItems();
+    switch (selectedOption) {
+      case 'Campus Center Food Court':
+        return campusCenterRecommendedItems;
+      case 'Gateway Café':
+        switch (selectedSecondaryOption) {
+          case 'Breakfast':
+            return gatewayBreakfastRecommendedItems;
+          case 'Lunch':
+            return gatewayLunchRecommendedItems;
+          case 'Dinner':
+            return gatewayDinnerRecommendedItems;
+          default:
+            return gatewayCafeRecommendedItems;
+        }
+      case 'Hale Aloha Café':
+        switch (selectedSecondaryOption) {
+          case 'Brunch':
+            return alohaBrunchRecommendedItems;
+          case 'Dinner':
+            return alohaDinnerRecommendedItems;
+          default:
+            return haleAlohaRecommendedItems;
+        }
+      default:
+        return combinedRecommendedItems;
     }
-    if (selectedOption === 'Campus Center Food Court') {
-      return campusCenterRecommendedItems;
-    }
-    if (selectedOption === 'Gateway Café') {
-      if (selectedSecondaryOption === 'All') {
-        return gatewayCafeRecommendedItems;
-      }
-      if (selectedSecondaryOption === 'Breakfast') {
-        return gatewayBreakfastRecommendedItems;
-      }
-      if (selectedSecondaryOption === 'Lunch') {
-        return gatewayLunchRecommendedItems;
-      }
-      if (selectedSecondaryOption === 'Dinner') {
-        return gatewayDinnerRecommendedItems;
-      }
-    }
-    if (selectedOption === 'Hale Aloha Café') {
-      if (selectedSecondaryOption === 'All') {
-        return haleAlohaRecommendedItems;
-      }
-      if (selectedSecondaryOption === 'Brunch') {
-        return alohaBrunchRecommendedItems;
-      }
-      if (selectedSecondaryOption === 'Dinner') {
-        return alohaDinnerRecommendedItems;
-      }
-    }
-    return [];
   };
 
   // Render a loading state while fetching data
