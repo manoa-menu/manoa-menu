@@ -6,7 +6,7 @@
 import { hash } from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
 import { DayMenu, Location, FilteredSodexoMeal, FilteredSodexoModRoot } from '@/types/menuTypes';
-import { getCurrentWeekOf, getCurrentDayOf } from '@/lib/dateFunctions';
+import { getCurrentWeekDates, getCurrentDayOf } from '@/lib/dateFunctions';
 
 const prisma = new PrismaClient();
 
@@ -118,7 +118,7 @@ export async function getAllCCMenus() {
 }
 
 export async function insertSdxMenu(
-  menuInfo: FilteredSodexoModRoot,
+  menuInfo: FilteredSodexoMeal[],
   location: Location,
   language: string,
   date: string,
@@ -179,6 +179,43 @@ export async function getLatestSdxMenu(language: string, location: Location) {
     throw new Error('Invalid location');
   } catch (error) {
     console.error('Error fetching latest menu:', error);
+    throw error;
+  }
+}
+
+/**
+ * Retrieves the latest menus for the current week from the database using the week_of field.
+ * @returns an array of menu objects for the current week.
+ */
+export async function getLatestSdxMenusWeek(language: string, location: Location) {
+  try {
+    const weekDates = getCurrentWeekDates();
+    const menuPromises = weekDates.map((date) => {
+      if (location === Location.GATEWAY) {
+        return prisma.gatewayMenus.findFirst({
+          where: {
+            language,
+            date,
+            location,
+          },
+        });
+      }
+      if (location === Location.HALE_ALOHA) {
+        return prisma.haleAlohaMenus.findFirst({
+          where: {
+            language,
+            date,
+            location,
+          },
+        });
+      }
+      throw new Error('Invalid location');
+    });
+
+    const menus = await Promise.all(menuPromises);
+    return menus.filter((menu) => menu !== null);
+  } catch (error) {
+    console.error('Error fetching latest menus:', error);
     throw error;
   }
 }

@@ -1,12 +1,12 @@
 @keyframes moveBackground {
   0% {
-    background-position: 0% 50%;
+    background-position: 10% 50%;
   }
   50% {
     background-position: 50% 50%;
   }
   100% {
-    background-position: 0% 50%;
+    background-position: 10% 50%;
   }
 }
 
@@ -16,7 +16,7 @@ body {
   padding: 0;
   background: url('/campus-center.jpg') no-repeat center center fixed;
   background-size: cover;
-  animation: moveBackground 100s ease-in-out infinite;
+  animation: moveBackground 90s ease-in-out infinite;
   font-family: Arial, sans-serif;
 }
 
@@ -40,7 +40,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7));
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.65));
   z-index: -1;
 }
 
@@ -73,7 +73,6 @@ body {
 
 /* Features Section Title */
 #features-title {
-  font-family: Verdana, Geneva, Tahoma, sans-serif;
   font-size: 50px;
   font-weight: 600;
   color: #f5f5f5;
@@ -87,7 +86,7 @@ body {
   flex-direction: column;
   width: 100%;
   max-width: 550px;
-  height: 140px;
+  height: 100%;
   padding: 20px;
   background-color: #212529;
   color: white;
@@ -105,9 +104,8 @@ body {
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
-.language-card h5 {
-  margin: 0 0 20px 0;
-  color: #178754;
+.language-card h3 {
+  font-weight: 600;
 }
 
 .language-card p {
@@ -125,13 +123,12 @@ body {
 }
 
 .language-content {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.65));
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100vh;
-  padding: 80px 20px;
-  text-align: center;
 }
 
 @keyframes slideInFromLeft {

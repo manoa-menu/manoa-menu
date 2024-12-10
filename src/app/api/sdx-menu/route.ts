@@ -3,44 +3,90 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
-import { SodexoMeal, FilteredSodexoMeal, Location,
-  FilteredSodexoModRoot, FilteredSodexoMenuRow, SdxAPIResponse } from '@/types/menuTypes';
+import {
+  SodexoMeal,
+  FilteredSodexoMeal,
+  Location,
+  FilteredSodexoModRoot,
+  FilteredSodexoMenuRow,
+  SdxAPIResponse,
+  SdxSchemaObject,
+} from '@/types/menuTypes';
 
 import fetchOpenAI from '@/app/utils/api/openai';
 import { getSdxMenu, insertSdxMenu } from '@/lib/dbActions';
 import { getSevenDayDate, getCurrentWeekDates } from '@/lib/dateFunctions';
+import { populateFoodTableFromSdxMenu } from '@/lib/foodTable';
 
 const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => ({
   name: rootObject.name,
-  groups: rootObject.groups.map(group => ({
-    name: group.name,
-    items: group.items.filter(item => (
-      (item.formalName.toLowerCase() !== 'have a nice day')
-    )).map(item => {
-      const {
-        price, addons, sizes, allergens, courseSortOrder, menuItemId,
-        isMindful, isSwell, calories, caloriesFromFat, fat,
-        saturatedFat, transFat, polyunsaturatedFat, cholesterol,
-        sodium, carbohydrates, dietaryFiber, sugar, protein,
-        potassium, iron, calcium, vitaminA, vitaminC,
-        ...rest
-      } = item;
-      return rest;
-    }),
-  })),
+  groups: rootObject.groups
+    // Filter out groups with no names or no items
+    .filter((group) => group.name && group.items.length > 0)
+    .map((group) => ({
+      name: group.name || '',
+      items: group.items
+        .filter(
+          (item) =>
+            // Filter out items with the name 'Have a nice day'
+            // eslint-disable-next-line implicit-arrow-linebreak
+            item.formalName.toLowerCase() !== 'have a nice day',
+        )
+        .map((item) => {
+          // Remove nutritional facts from items
+          const {
+            price,
+            addons,
+            sizes,
+            allergens,
+            courseSortOrder,
+            menuItemId,
+            isMindful,
+            isSwell,
+            calories,
+            caloriesFromFat,
+            fat,
+            saturatedFat,
+            transFat,
+            polyunsaturatedFat,
+            cholesterol,
+            sodium,
+            carbohydrates,
+            dietaryFiber,
+            sugar,
+            protein,
+            potassium,
+            iron,
+            calcium,
+            vitaminA,
+            vitaminC,
+            ...rest
+          } = item;
+          return rest;
+        }),
+    })),
 });
 
 // eslint-disable-next-line import/prefer-default-export
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
-  const language = searchParams.get('language') || 'Japanese';
-  const location = searchParams.get('location')
-    || NextResponse.json({ error: 'Missing Location Parameter' }, { status: 500 });
+  let language = searchParams.get('language');
+  language = language ? language.charAt(0).toUpperCase() + language.slice(1).toLowerCase() : null;
+
+  if (language?.toLowerCase() !== 'english' && language?.toLowerCase() !== 'japanese') {
+    return NextResponse.json({ error: 'Invalid Language Parameter' }, { status: 500 });
+  }
+  if (!language) {
+    return NextResponse.json({ error: 'Missing Language Parameter' }, { status: 500 });
+  }
+  // eslint-disable-next-line operator-linebreak
+  const location =
+    searchParams.get('location') || NextResponse.json({ error: 'Missing Location Parameter' }, { status: 500 });
   console.log(`Location: ${location}`);
 
-  const locationOption = (location === 'gw') ? Location.GATEWAY : Location.HALE_ALOHA;
-  const locationString = (location === 'gw') ? 'Gateway' : 'Hale Aloha';
+  const locationOption = location === 'gw' ? Location.GATEWAY : Location.HALE_ALOHA;
+  const locationString = location === 'gw' ? 'Gateway' : 'Hale Aloha';
   // console.log(`Location Option: ${locationOption}`);
 
   const translateLanguage = 'Japanese';
@@ -60,7 +106,7 @@ export async function GET(req: NextRequest) {
   const gwURL = process.env.GW_API_URL;
   const haURL = process.env.HA_API_URL;
 
-  const url = (location === 'gw') ? gwURL : haURL;
+  const url = location === 'gw' ? gwURL : haURL;
   // console.log(`URL: ${url}`);
 
   const apiKey = process.env.MMR_API_KEY;
@@ -78,18 +124,18 @@ export async function GET(req: NextRequest) {
   // Check if menu for next 7 days is available
   const currentWeekDates = getCurrentWeekDates();
 
-  const testDays = ['2024-12-06', '2024-12-08'];
+  // const testDays = ['2024-12-06', '2024-12-08'];
 
   const nextSevenDaysMenu: SdxAPIResponse[] = await Promise.all(
-    testDays.map(async (day) => {
+    currentWeekDates.map(async (day) => {
       try {
         // Fetch the menu for the specific day
 
         console.log(`Attempting to get menu for ${day} from database`);
 
-        const dayMenuRow = await getSdxMenu(day, 'English', locationOption);
+        const dayMenuRow = await getSdxMenu(day, language, locationOption);
 
-        const dayMenu: FilteredSodexoModRoot = dayMenuRow?.menu as unknown as FilteredSodexoModRoot || [];
+        const dayMenu: FilteredSodexoMeal[] = (dayMenuRow?.menu as unknown as FilteredSodexoMeal[]) || [];
 
         console.log(`Menu for ${day} from database:`, dayMenuRow);
 
@@ -105,29 +151,41 @@ export async function GET(req: NextRequest) {
           const filteredData: FilteredSodexoMeal[] = dataArr.map((data: SodexoMeal) => removeNutritionalFacts(data));
 
           // Insert the menu
-          const formattedMenu: FilteredSodexoModRoot = {
-            name: `${locationString} Menu for ${day}`,
+          const formattedMenu: SdxAPIResponse = {
+            date: day,
             meals: filteredData,
           };
 
-          console.log(`Inserting menu for ${day} in English`);
-          await insertSdxMenu(formattedMenu, locationOption, 'English', day);
+          if (filteredData.length > 0) {
+            console.log(`Inserting menu for ${day} in English`);
+          } else {
+            console.log(`Inserting blank menu for ${day} in English`);
+          }
+          await insertSdxMenu(filteredData, locationOption, 'English', day);
+          await populateFoodTableFromSdxMenu(filteredData);
 
           // Translate the menu
 
-          console.log(`Translating menu for ${day} into Japanese`);
-          const translatedMenu: FilteredSodexoModRoot = (filteredData.length > 0)
-            ? await fetchOpenAI(
+          let translatedMenu: FilteredSodexoMeal[] = [];
+
+          if (filteredData.length > 0) {
+            console.log(`Translating menu for ${day} into Japanese`);
+            const translatedMenuSchemaObj: SdxSchemaObject = (await fetchOpenAI(
               prompt,
               locationOption,
               filteredData,
               'Japanese',
-            ) as FilteredSodexoModRoot : formattedMenu;
+            )) as SdxSchemaObject;
 
-          // Insert the translated menu
+            translatedMenu = translatedMenuSchemaObj.schemaObject;
 
-          console.log(`Inserting menu for ${day} in Japanese`);
-          await insertSdxMenu(translatedMenu, locationOption, 'Japanese', day);
+            // Insert the translated menu
+            console.log(`Inserting menu for ${day} in Japanese`);
+            await insertSdxMenu(translatedMenu, locationOption, 'Japanese', day);
+          } else {
+            console.log(`Inserting blank menu for ${day} in Japanese`);
+            await insertSdxMenu([], locationOption, 'Japanese', day);
+          }
 
           if (language.toLowerCase() === 'english') {
             console.log(`Adding English menu for ${day}`);
@@ -137,11 +195,12 @@ export async function GET(req: NextRequest) {
             };
 
             return retVal;
-          } if (language.toLowerCase() === 'japanese') {
+          }
+          if (language.toLowerCase() === 'japanese') {
             console.log(`Adding Japanese menu for ${day}`);
             const retVal: SdxAPIResponse = {
               date: day,
-              meals: translatedMenu.meals,
+              meals: translatedMenu,
             };
 
             return retVal;
@@ -150,7 +209,7 @@ export async function GET(req: NextRequest) {
 
         const retVal: SdxAPIResponse = {
           date: day,
-          meals: dayMenu.meals,
+          meals: dayMenu,
         };
 
         return retVal;

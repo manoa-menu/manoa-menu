@@ -7,9 +7,11 @@ import { DayMenu } from '@/types/menuTypes';
 interface MenuListProps {
   menu: DayMenu[];
   language: string;
+  userId: number;
+  favArr: string[];
 }
 
-const CCMenuList: React.FC<MenuListProps> = ({ menu, language }) => (
+const CCMenuList: React.FC<MenuListProps> = ({ menu, language, userId, favArr }) => (
   <div className="container">
     <div className="row d-flex justify-content-center">
       {menu.map((day: DayMenu) => (
@@ -20,6 +22,8 @@ const CCMenuList: React.FC<MenuListProps> = ({ menu, language }) => (
             grabAndGo={day.grabAndGo}
             message={day.specialMessage}
             language={language}
+            favArr={favArr}
+            userId={userId}
           />
         </div>
       ))}
