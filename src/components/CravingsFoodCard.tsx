@@ -21,21 +21,22 @@ const CravingsFoodCard: React.FC<CravingsFoodCardProps> = ({ foodItems, currentU
     {foodItems.map((itemCard) => (
       <Card key={itemCard.name} className="foodCard">
         <Card.Body>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Card.Title>{itemCard.name}</Card.Title>
-            <Card.Img src={itemCard.image} style={{ width: '100px', height: '100px' }} />
-            {currentUser && (
+          <div className="foodElements">
+            <Card.Img className="foodImage" src={itemCard.image} />
+            <div className="blackShadeContainer">
+              <Card.Title className="foodName">{itemCard.name}</Card.Title>
+              <Card.Text className="foodLikes">
+                {`${itemCard.likes} favorite(s)`}
+              </Card.Text>
+              {currentUser && (
               <StarButton
                 item={itemCard.name}
                 isStarred={itemCard.isStarred}
                 onToggle={() => itemCard.onToggle(itemCard.name)}
               />
-            )}
+              )}
+            </div>
           </div>
-          <Card.Text>
-            Likes:
-            {itemCard.likes}
-          </Card.Text>
         </Card.Body>
       </Card>
     ))}

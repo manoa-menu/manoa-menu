@@ -2,3 +2,35 @@
     margin-top: 12px;
     max-height: 500px;
 }
+
+.foodElements {
+    display: flex;
+    align-items: center;
+}
+
+.blackShadeContainer {
+    background-color: rgba(0, 0, 0, 0.5); /* Black with 50% opacity */
+    padding: 1rem;
+    border-radius: 5px;
+    color: white; /* Ensure text is visible on the black background */
+    flex: 1; 
+}
+
+.foodImage {
+    width: 400px;
+    height: 300px;
+    object-fit: cover;
+    border: 2px solid black;
+}
+
+.foodName {
+    font-family: Georgia, sans-serif;
+    font-weight: bold;
+}
+
+.foodLikes {
+    font-family: Georgia, sans-serif;
+    font-weight: bold;
+    color: black;
+    font-family: Georgia, sans-serif;
+}
