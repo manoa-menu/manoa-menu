@@ -2,25 +2,33 @@
 
 import { signOut } from 'next-auth/react';
 import { Button, Col, Row, Container } from 'react-bootstrap';
+import './signout-style.css';
 
 /** After the user clicks the "SignOut" link in the NavBar, log them out and display this page. */
 const SignOut = () => (
-  <Container style={{ paddingTop: '120px' }}>
-    <Col id="signout-page" className="text-center py-3">
-      <h2>Do you want to sign out?</h2>
-      <Row>
-        <Col xs={4} />
-        <Col>
-          <Button variant="danger" onClick={() => signOut({ callbackUrl: '/', redirect: true })}>
+  <Container id="signout-container" className="d-flex align-items-center justify-content-center">
+    <Col id="signout-page" className="text-center p-5 rounded-shadow">
+      <h2 className="mb-4">Do you want to sign out?</h2>
+      <Row className="justify-content-center">
+        <Col xs="auto">
+          <Button
+            variant="danger"
+            className="me-3 btn-large"
+            onClick={() => signOut({ callbackUrl: '/', redirect: true })}
+          >
             Sign Out
           </Button>
         </Col>
-        <Col>
-          <Button variant="secondary" href="/">
+
+        <Col xs="auto">
+          <Button
+            variant="secondary"
+            className="btn-large"
+            href="/"
+          >
             Cancel
           </Button>
         </Col>
-        <Col xs={4} />
       </Row>
     </Col>
   </Container>
