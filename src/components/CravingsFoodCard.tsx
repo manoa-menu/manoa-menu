@@ -17,6 +17,7 @@ interface CravingsFoodCardProps {
   currentUser: string | null;
 }
 
+// Need to add location through labels later
 const CravingsFoodCard: React.FC<CravingsFoodCardProps> = ({ foodItems, currentUser }) => (
   <Container>
     {foodItems.map((itemCard) => (
