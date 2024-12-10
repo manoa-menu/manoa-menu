@@ -60,7 +60,7 @@ const VegetarianIcon: React.FC<TooltipIconProps> = ({ language }) => (
   </Tooltip>
 );
 
-const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr, userId }) => {
+const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], userId }) => {
   const currentDateOf = getCurrentDayOf();
 
   const handleToggle = (item: string) => {
@@ -77,7 +77,7 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr, userId })
         variant="underline"
         defaultActiveKey={currentDateOf}
         id="menuDateTabs"
-        className="mb-3 d-flex justify-content-center"
+        className="mb-2 d-flex justify-content-center"
       >
         {weekMenu
           .filter((dayMenu) => {
@@ -88,7 +88,7 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr, userId })
             const getGridItemSize = (mealCount: number) => {
               switch (mealCount) {
                 case 1:
-                  return { xs: 12, md: 12, lg: 12, xl: 12 };
+                  return { xs: 12, md: 10, lg: 8, xl: 7 };
                 case 2:
                   return { xs: 12, md: 12, lg: 6, xl: 6 };
                 case 3:
@@ -97,6 +97,36 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr, userId })
                   return { xs: 12, md: 12, lg: 4, xl: 3 };
                 default:
                   return { xs: 12, md: 12, lg: 4, xl: 4 };
+              }
+            };
+
+            const getScrollProperties = (mealCount: number) => {
+              switch (mealCount) {
+                case 1:
+                  return [
+                    { xs: 'none', md: 'none', lg: 'none' },
+                    { xs: 'visible', md: 'visible', lg: 'visible' },
+                  ];
+                case 2:
+                  return [
+                    { xs: 'none', md: 'none', lg: 820 },
+                    { xs: 'visible', md: 'visible', lg: 'auto' },
+                  ];
+                case 3:
+                  return [
+                    { xs: 'none', md: 'none', lg: 840 },
+                    { xs: 'visible', md: 'visible', lg: 'auto' },
+                  ];
+                case 4:
+                  return [
+                    { xs: 'none', md: 'none', lg: 840 },
+                    { xs: 'visible', md: 'visible', lg: 'auto' },
+                  ];
+                default:
+                  return [
+                    { xs: 'none', md: 'none', lg: 840 },
+                    { xs: 'visible', md: 'visible', lg: 'auto' },
+                  ];
               }
             };
 
@@ -122,8 +152,8 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr, userId })
                           sx={{
                             m: 2,
                             height: '100%',
-                            maxHeight: { xs: 'none', md: 'none', lg: 850 },
-                            overflow: { xs: 'visible', md: 'visibile', lg: 'auto' },
+                            maxHeight: getScrollProperties(dayMenu.meals.length)[0],
+                            overflow: getScrollProperties(dayMenu.meals.length)[1],
                           }}
                         >
                           <CardHeader className="px-3 py-2" style={{ backgroundColor: '#ECECEC' }}>
@@ -133,7 +163,7 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr, userId })
                           </CardHeader>
                           <CardContent>
                             {meal.groups.map((group) => (
-                              <Box key={group.name} sx={{ mb: 2 }}>
+                              <Box key={group.name}>
                                 <Typography variant="h6" sx={{ mb: 1 }}>
                                   {group.name}
                                 </Typography>
