@@ -39,7 +39,7 @@ const getWeekdayDates = (language: string): string[] => {
   return weekdayDates;
 };
 
-const fixDayNames = (menu: DayMenu[], language: string) => {
+export const fixDayNames = (menu: DayMenu[], language: string) => {
   const weekdayDates = getWeekdayDates(language);
 
   const englishWeekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -74,4 +74,14 @@ const fixDayNames = (menu: DayMenu[], language: string) => {
   return menu;
 };
 
-export default fixDayNames;
+export const getDayHeaders = (language: string): string[] => {
+  const englishWeekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const japaneseWeekDays = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
+  const weekdayDates = getWeekdayDates(language);
+
+  const dayHeaders = (language === 'English')
+    ? englishWeekDays.map((day, index) => `${day} (${weekdayDates[index % 5]})`)
+    : japaneseWeekDays.map((day, index) => `${day} (${weekdayDates[index % 5]})`);
+
+  return dayHeaders;
+};

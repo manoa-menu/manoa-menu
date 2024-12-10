@@ -118,7 +118,7 @@ export async function getAllCCMenus() {
 }
 
 export async function insertSdxMenu(
-  menuInfo: FilteredSodexoModRoot,
+  menuInfo: FilteredSodexoMeal[],
   location: Location,
   language: string,
   date: string,
