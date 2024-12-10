@@ -10,6 +10,7 @@ import { SodexoMeal, FilteredSodexoMeal, Location,
 import fetchOpenAI from '@/app/utils/api/openai';
 import { getSdxMenu, insertSdxMenu } from '@/lib/dbActions';
 import { getSevenDayDate, getCurrentWeekDates } from '@/lib/dateFunctions';
+import { populateFoodTableFromSdxMenu } from '@/lib/foodTable';
 
 const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => ({
   name: rootObject.name,
@@ -53,8 +54,8 @@ export async function GET(req: NextRequest) {
     || NextResponse.json({ error: 'Missing Location Parameter' }, { status: 500 });
   console.log(`Location: ${location}`);
 
-  const locationOption = (location === 'gw') ? Location.GATEWAY : Location.HALE_ALOHA;
-  const locationString = (location === 'gw') ? 'Gateway' : 'Hale Aloha';
+  const locationOption = location === 'gw' ? Location.GATEWAY : Location.HALE_ALOHA;
+  const locationString = location === 'gw' ? 'Gateway' : 'Hale Aloha';
   // console.log(`Location Option: ${locationOption}`);
 
   const translateLanguage = 'Japanese';
@@ -74,7 +75,7 @@ export async function GET(req: NextRequest) {
   const gwURL = process.env.GW_API_URL;
   const haURL = process.env.HA_API_URL;
 
-  const url = (location === 'gw') ? gwURL : haURL;
+  const url = location === 'gw' ? gwURL : haURL;
   // console.log(`URL: ${url}`);
 
   const apiKey = process.env.MMR_API_KEY;
@@ -162,7 +163,8 @@ export async function GET(req: NextRequest) {
             };
 
             return retVal;
-          } if (language.toLowerCase() === 'japanese') {
+          }
+          if (language.toLowerCase() === 'japanese') {
             console.log(`Adding Japanese menu for ${day}`);
             const retVal: SdxAPIResponse = {
               date: day,
