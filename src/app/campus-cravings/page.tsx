@@ -1,22 +1,45 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Container, Col, Row, Form } from 'react-bootstrap';
 import { useSession } from 'next-auth/react';
 import CravingsFoodCard from '../../components/CravingsFoodCard';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
-const CampusCravings: React.FC = () => {
+interface FoodTableEntry {
+  id: number;
+  name: string;
+  url: string;
+  likes: number;
+  label: string[];
+  translation: string[];
+}
+
+function CampusCravings() {
   const { data: session } = useSession();
   const currentUser = session?.user?.email ?? null;
-  const [starredItems, setStarredItems] = useState<{ [key: string]: boolean }>({});
   const [selectedOption, setSelectedOption] = useState<string>('All');
+  const [foodTable, setFoodTable] = useState<FoodTableEntry[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const foodItems = [
-    { id: 'item1', name: 'Food Item 1', description: 'Description', location: 'Campus Center Food Court', likes: 5 },
-    { id: 'item2', name: 'Food Item 2', description: 'Description', location: 'Gateway Café', likes: 0 },
-    { id: 'item3', name: 'Food Item 3', description: 'Description', location: 'Hale Aloha Café', likes: 2 },
-    { id: 'item4', name: 'Food Item 4', description: 'Description', location: 'Campus Center Food Court', likes: 3 },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/getFoodTable');
+        if (response.ok) {
+          const data = await response.json();
+          setFoodTable(data);
+        } else {
+          console.error('Failed to fetch food table:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   // Handle dropdown selection change
   const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -24,17 +47,26 @@ const CampusCravings: React.FC = () => {
   };
 
   // Filter the food items based on the selected option
-  const filteredFoodItems = foodItems.filter((foodItem) => {
-    if (selectedOption === 'All') return true;
-    return foodItem.location === selectedOption;
-  });
-
-  const toggleStar = (item: string) => {
-    setStarredItems((prev) => ({
-      ...prev,
-      [item]: !prev[item],
+  const filteredFoodItems = foodTable
+    .filter((foodItem) => {
+      if (selectedOption === 'All') return true;
+      return foodItem.label.includes(selectedOption);
+    })
+    .map((entry) => ({
+      name: entry.name,
+      image: entry.url,
+      likes: entry.likes,
+      isStarred: false, // Add logic for starring if needed
+      onToggle: () => {}, // Placeholder for toggle functionality
     }));
-  };
+
+  if (loading) {
+    return (
+      <Container className="body-loading">
+        <LoadingSpinner />
+      </Container>
+    );
+  }
 
   return (
     <Container className="my-5" style={{ paddingTop: '120px' }}>
@@ -66,23 +98,14 @@ const CampusCravings: React.FC = () => {
       {/* Displaying filtered food items */}
       <div className="overflow-auto" style={{ maxHeight: '500px', border: '2px solid', borderRadius: '5px' }}>
         <Col>
-          {filteredFoodItems.map((foodItem) => (
-            <CravingsFoodCard
-              key={foodItem.id}
-              id={foodItem.id}
-              name={foodItem.name}
-              description={foodItem.description}
-              location={foodItem.location}
-              likes={foodItem.likes}
-              isStarred={starredItems[foodItem.id]}
-              onToggle={toggleStar}
-              currentUser={currentUser}
-            />
-          ))}
+          <CravingsFoodCard
+            foodItems={filteredFoodItems}
+            currentUser={currentUser}
+          />
         </Col>
       </div>
     </Container>
   );
-};
+}
 
 export default CampusCravings;
