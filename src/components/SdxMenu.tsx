@@ -18,6 +18,8 @@ import { green, lightGreen } from '@mui/material/colors';
 import { Vegan, Salad } from 'lucide-react';
 
 import { CardHeader } from 'react-bootstrap';
+import Grid from '@mui/material/Grid2';
+import Tooltip from '@mui/material/Tooltip';
 
 interface TabPanelProps {
   // eslint-disable-next-line react/require-default-props
@@ -32,15 +34,20 @@ interface SdxMenuProps {
 }
 
 const VeganIcon = () => (
-  <Avatar sx={{ bgcolor: green[400], width: 30, height: 30 }}>
-    <Vegan color={green[50]} size={20} />
-  </Avatar>
+  <Tooltip title="Vegan">
+    <Avatar sx={{ bgcolor: green[400], width: 28, height: 28 }}>
+      <Vegan color={green[50]} size={19} />
+    </Avatar>
+  </Tooltip>
+
 );
 
 const VegetarianIcon = () => (
-  <Avatar sx={{ bgcolor: lightGreen[500], width: 30, height: 30 }}>
-    <Salad color={green[50]} size={20} />
-  </Avatar>
+  <Tooltip title="Vegetarian">
+    <Avatar sx={{ bgcolor: lightGreen[500], width: 28, height: 28 }}>
+      <Salad color={green[50]} size={19} />
+    </Avatar>
+  </Tooltip>
 );
 
 const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language }) => {
@@ -52,45 +59,50 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language }) => {
 
   return (
     <Box sx={{ padding: 2 }}>
-      <Stack flexWrap="wrap" spacing={0}>
+      <Grid
+        container
+        spacing={2}
+      >
         {weekMenu[2].meals.map((meal: FilteredSodexoMeal) => (
-          <Card sx={{ marginBottom: 2 }}>
-            <CardHeader className="p-3" style={{ backgroundColor: '#EEEEEE' }}>
-              <Typography variant="h4">
-                {meal.name}
-              </Typography>
-            </CardHeader>
-            <CardContent>
-              {meal.groups.map((group) => (
-                <Box key={group.name} sx={{ marginBottom: 2 }}>
-                  <Typography variant="h6" sx={{ marginBottom: 1 }}>
-                    {group.name}
-                  </Typography>
-                  <ul>
-                    {group.items.map((item) => (
-                      <div key={item.formalName} style={{ marginBottom: 1 }}>
-                        <CardContent>
-                          <Stack direction="row" alignItems="center" spacing={1}>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                              {item.formalName}
+          <Grid size={{ xs: 12, md: 12, lg: 4, xl: 4 }} key={meal.name}>
+            <Card sx={{ m: 2 }}>
+              <CardHeader className="p-3" style={{ backgroundColor: '#EEEEEE' }}>
+                <Typography variant="h4">
+                  {meal.name}
+                </Typography>
+              </CardHeader>
+              <CardContent>
+                {meal.groups.map((group) => (
+                  <Box key={group.name} sx={{ mb: 2 }}>
+                    <Typography variant="h6" sx={{ mb: 1 }}>
+                      {group.name}
+                    </Typography>
+                    <ul>
+                      {group.items.map((item) => (
+                        <div key={item.formalName} style={{ marginBottom: 1 }}>
+                          <CardContent>
+                            <Stack direction="row" alignItems="center" spacing={1}>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                {item.formalName}
+                              </Typography>
+                              {item.isVegan && <VeganIcon />}
+                              {item.isVegetarian && <VegetarianIcon />}
+                            </Stack>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                              {item.description}
                             </Typography>
-                            {item.isVegan && <VeganIcon />}
-                            {item.isVegetarian && <VegetarianIcon />}
-                          </Stack>
-                          <Typography variant="body2" sx={{ marginBottom: 1 }}>
-                            {item.description}
-                          </Typography>
 
-                        </CardContent>
-                      </div>
-                    ))}
-                  </ul>
-                </Box>
-              ))}
-            </CardContent>
-          </Card>
+                          </CardContent>
+                        </div>
+                      ))}
+                    </ul>
+                  </Box>
+                ))}
+              </CardContent>
+            </Card>
+          </Grid>
         ))}
-      </Stack>
+      </Grid>
     </Box>
   );
 };

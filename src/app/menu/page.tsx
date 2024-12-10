@@ -118,8 +118,10 @@ const Page = () => {
 
     if (menuState === 'cc') {
       fetchMenu(menuState, language, setCCMenu, setCCLoading);
-    } else {
+    } else if (menuState === 'gw') {
       fetchMenu('sdx', language, setGWMenu, setGWLoading, menuState);
+    } else if (menuState === 'ha') {
+      fetchMenu('sdx', language, setHAMenu, setHALoading, menuState);
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
