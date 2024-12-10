@@ -17,7 +17,7 @@ import { useState, useEffect, useRef } from 'react';
 import BlackSpinner from '@/components/BlackSpinner';
 import { fixDayNames } from '@/lib/menuHelper';
 import SdxMenu from '@/components/SdxMenu';
-import { Box, Stack, Typography } from '@mui/material';
+import { Box, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
 
 interface MenuNameArrProps {
   name: string;
@@ -85,7 +85,10 @@ const Page = () => {
   };
 
   const { data: session } = useSession();
-  const userId = (session?.user as { id: number })?.id;
+
+  const [userId, setUserId] = useState<number>(-21);
+
+  const [favArr, setFavArr] = useState<string[]>([]);
 
   const [menuState, setMenuState] = useState<string>('cc');
 
@@ -102,6 +105,20 @@ const Page = () => {
   const langDropdownRef = useRef(null);
   const menuDropdownRef = useRef(null);
 
+  const theme = useTheme();
+  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const isSmUp = useMediaQuery(theme.breakpoints.up('sm'));
+  const isXsUp = useMediaQuery(theme.breakpoints.up('xs'));
+
+  let typographyVariant: 'h3' | 'h4' | 'h5' = 'h3';
+  if (isMdUp) {
+    typographyVariant = 'h3';
+  } else if (isSmUp) {
+    typographyVariant = 'h3';
+  } else if (isXsUp) {
+    typographyVariant = 'h4';
+  }
+
   const langItemClick = (lang: string) => {
     setLanguage(lang);
   };
@@ -110,26 +127,26 @@ const Page = () => {
     setMenuState(menuName);
   };
 
-  const isBroken = (menuArr: FilteredSodexoMeal[] | DayMenu[]): boolean => (
-    (menuArr === null || menuArr === undefined || menuArr.length === 0)
-  );
-
   useEffect(() => {
-    if (session?.user?.email) {
-      const fetchLanguage = async () => {
-        if (session?.user?.email) {
-          const userLanguage = await getUserLanguage(session.user.email);
-          setLanguage(userLanguage);
-          console.log(`User language: ${userLanguage}`);
-        }
-      };
-      fetchLanguage();
-    }
+    const fetchData = async () => {
+      if (session?.user?.email) {
+        const userLanguage = await getUserLanguage(session.user.email);
+        setUserId((session?.user as { id: number })?.id);
+        setLanguage(userLanguage);
+        console.log(`User language: ${userLanguage}`);
+      }
+    };
+    fetchData();
   }, [session]);
 
   useEffect(() => {
-
-  }, [menuState]);
+    const fetchFav = async () => {
+      const response = await fetch(`/api/userFavorites?userId=${userId}`);
+      const data = await response.json() || [];
+      setFavArr(data);
+    };
+    fetchFav();
+  }, [userId]);
 
   useEffect(() => {
     const fetchMenu = async (
@@ -172,23 +189,23 @@ const Page = () => {
     switch (menuState) {
       case 'cc':
         return (ccMenu === undefined || ccMenu.length === 0)
-          ? <h2>Menu Unavailable</h2>
-          : <CCMenuList menu={ccMenu} language={language} userId={userId} />;
+          ? <h2 className="text-center">Menu Unavailable</h2>
+          : <CCMenuList menu={ccMenu} language={language} userId={userId} favArr={favArr} />;
       case 'gw':
         return (gwMenu === undefined || gwMenu.length === 0)
-          ? <h2>Menu Unavailable</h2>
-          : <SdxMenu weekMenu={gwMenu} language={language} />;
+          ? <h2 className="text-center">Menu Unavailable</h2>
+          : <SdxMenu weekMenu={gwMenu} language={language} favArr={favArr} userId={userId} />;
       case 'ha':
         return (haMenu === undefined || haMenu.length === 0)
-          ? <h2>Menu Unavailable</h2>
-          : <SdxMenu weekMenu={haMenu} language={language} />;
+          ? <h2 className="text-center">Menu Unavailable</h2>
+          : <SdxMenu weekMenu={haMenu} language={language} favArr={favArr} userId={userId} />;
       default:
         return null;
     }
   };
 
   return (
-    <Container fluid className="my-4 menu-container" style={{ paddingTop: '120px' }}>
+    <Container fluid className="my-4 menu-container" style={{ paddingTop: '110px' }}>
       <Stack
         spacing={2}
         sx={{
@@ -196,11 +213,17 @@ const Page = () => {
           alignItems: 'center',
         }}
       >
-        <Typography variant="h3" className="text-center">
+        <Typography variant={typographyVariant} className="text-center">
           {getDisplayMenuNames(menuState, language)}
           {(language === 'English') ? ' Menu' : 'のメニュー'}
         </Typography>
-        <Stack direction="row">
+        <Stack
+          direction="row"
+          sx={{ justifyContent: 'center',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
           <DropdownButton
             className="mx-2 p-1"
             ref={menuDropdownRef}

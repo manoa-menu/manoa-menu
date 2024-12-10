@@ -3,6 +3,7 @@
 import React from 'react';
 import Card from 'react-bootstrap/Card';
 import Table from 'react-bootstrap/Table';
+import Tooltip from '@mui/material/Tooltip';
 
 import checkHoliday from '@/lib/checkHoliday';
 import StarButton from '@/app/campus-cravings/StarButton';
@@ -14,9 +15,17 @@ interface MenuCardProps {
   message: string;
   language: string;
   favArr: string[];
+  userId: number;
 }
 
-const CCMenuCard: React.FC<MenuCardProps> = ({ name, plateLunch, grabAndGo, message, language, favArr }) => {
+const CCMenuCard: React.FC<MenuCardProps> = ({ name, plateLunch, grabAndGo, message, language, favArr, userId }) => {
+  const displayTooltipNames = new Map<string, string>([
+    ['English', 'Favorite?'],
+    ['Japanese', 'お気に？'],
+    ['english', 'Favorite?'],
+    ['japanese', 'お気に？'],
+  ]);
+
   const handleToggle = (item: string) => {
     console.log(`Toggled favorite for ${item}`);
   };
@@ -55,39 +64,40 @@ const CCMenuCard: React.FC<MenuCardProps> = ({ name, plateLunch, grabAndGo, mess
               </tr>
             </thead>
             <tbody>
-              {plateLunch.map((item, index) => {
-                const isStarred = favArr.includes(item);
-                return (
-                  <tr key={item}>
-                    <td className="pe-0">
-                      <span className="d-flex justify-content-between">
-                        {item}
-                        {item && (
-                        <StarButton
-                          item={item}
-                          isStarred={isStarred}
-                          onToggle={() => handleToggle(item)}
-                        />
-                        )}
-
-                      </span>
-                    </td>
-
-                    <td className="pe-0">
-                      <span className="d-flex justify-content-between">
-                        {grabAndGo[index] || ''}
-                        {grabAndGo[index] && (
+              {plateLunch.map((item, index) => (
+                <tr key={item}>
+                  <td className={(userId === -21) ? 'pe-2' : 'pe-0'}>
+                    <span className="d-flex justify-content-between">
+                      {item}
+                      {item && (userId !== -21) && (
+                        <Tooltip title={displayTooltipNames.get(language)} arrow>
+                          <div style={{ display: 'flex', justifyContent: 'center' }}>
+                            <StarButton
+                              item={item}
+                              isStarred={favArr.includes(item)}
+                              onToggle={() => handleToggle(item)}
+                            />
+                          </div>
+                        </Tooltip>
+                      )}
+                    </span>
+                  </td>
+                  <td className={(userId === -21) ? 'pe-2' : 'pe-0'}>
+                    <span className="d-flex justify-content-between">
+                      {grabAndGo[index] || ''}
+                      {grabAndGo[index] && (userId !== -21) && (
+                        <Tooltip title={displayTooltipNames.get(language)} arrow>
                           <StarButton
                             item={grabAndGo[index]}
                             isStarred={favArr.includes(grabAndGo[index])}
                             onToggle={() => handleToggle(grabAndGo[index])}
                           />
-                        )}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
+                        </Tooltip>
+                      )}
+                    </span>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </Table>
         ) : (
