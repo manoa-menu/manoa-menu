@@ -4,7 +4,6 @@ import scrapeCCUrl from '@/lib/scrapeCCUrl';
 import parseCampusCenterMenu from '@/lib/menuParse';
 import { getLatestCCMenu, insertCCMenu } from '@/lib/dbActions';
 import { Location, DayMenu, MenuResponse } from '@/types/menuTypes';
-// import populateFoodTableFromMenu from './foodTable';
 import fetchOpenAI from '../app/utils/api/openai';
 import { getCurrentWeekOf, getNextWeekOf } from './dateFunctions';
 
@@ -31,20 +30,20 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
     // console.log(`dbMenuParsed: ${JSON.stringify(dbMenuParsed)}`);
 
     // Check if the latest menu is not up to date
-    if ((dbMenuParsed.length === 0)
-        || (JSON.stringify(dbMenuParsed[0].plateLunch) !== JSON.stringify(parsedMenu.weekOne[0].plateLunch)
-        && JSON.stringify(dbMenuParsed[2].plateLunch) !== JSON.stringify(parsedMenu.weekOne[2].plateLunch))) {
+    if (
+      dbMenuParsed.length === 0 ||
+      (JSON.stringify(dbMenuParsed[0].plateLunch) !== JSON.stringify(parsedMenu.weekOne[0].plateLunch) &&
+        JSON.stringify(dbMenuParsed[2].plateLunch) !== JSON.stringify(parsedMenu.weekOne[2].plateLunch))
+    ) {
       console.log('Inserting parsedMenu into database');
 
       // console.log(parsedMenu.weekOne);
       // Insert the parsed menu for week one into the database
       await insertCCMenu(parsedMenu.weekOne, Location.CAMPUS_CENTER, 'English', getCurrentWeekOf());
-      // await populateFoodTableFromMenu(parsedMenu.weekOne);
 
       // If week two menu exists, insert it into the database
       if (parsedMenu.weekTwo.length > 0) {
         await insertCCMenu(parsedMenu.weekTwo, Location.CAMPUS_CENTER, 'English', getNextWeekOf());
-        // await populateFoodTableFromMenu(parsedMenu.weekTwo);
         // console.log(parsedMenu.weekTwo);
       }
 
