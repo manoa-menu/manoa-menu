@@ -53,89 +53,103 @@ const VegetarianIcon: React.FC<TooltipIconProps> = ({ language }) => (
 const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language }) => {
   const currentDateOf = getCurrentDayOf();
 
+  const [daysOpen, setDaysOpen] = useState(
+    weekMenu.filter((day) => day.meals.length > 0).length,
+  );
+
   return (
     <Box sx={{ padding: 2 }}>
       <Tabs
+        variant="underline"
         defaultActiveKey={currentDateOf}
         id="menuDateTabs"
         className="mb-3 d-flex justify-content-center"
       >
-        {weekMenu.map((dayMenu, index) => {
-          const getGridItemSize = (mealCount: number) => {
-            switch (mealCount) {
-              case 1:
-                return { xs: 12, md: 12, lg: 12, xl: 12 };
-              case 2:
-                return { xs: 12, md: 12, lg: 6, xl: 6 };
-              case 3:
-                return { xs: 12, md: 12, lg: 6, xl: 4 };
-              case 4:
-                return { xs: 12, md: 12, lg: 4, xl: 3 };
-              default:
-                return { xs: 12, md: 12, lg: 4, xl: 4 };
-            }
-          };
+        {weekMenu
+          .filter((dayMenu) => {
+            console.log(`daysOpen: ${daysOpen}`);
+            return (dayMenu.meals.length > 0);
+          })
+          .map((dayMenu, index) => {
+            const getGridItemSize = (mealCount: number) => {
+              switch (mealCount) {
+                case 1:
+                  return { xs: 12, md: 12, lg: 12, xl: 12 };
+                case 2:
+                  return { xs: 12, md: 12, lg: 6, xl: 6 };
+                case 3:
+                  return { xs: 12, md: 12, lg: 12, xl: 4 };
+                case 4:
+                  return { xs: 12, md: 12, lg: 4, xl: 3 };
+                default:
+                  return { xs: 12, md: 12, lg: 4, xl: 4 };
+              }
+            };
 
-          const gridItemSize = getGridItemSize(dayMenu.meals.length);
+            const gridItemSize = getGridItemSize(dayMenu.meals.length);
 
-          return (
-            (dayMenu.meals.length > 0) ? (
-              <Tab eventKey={dayMenu.date} title={getDayHeaders(language)[index]}>
-                <Grid
-                  container
-                  spacing={2}
-                  justifyContent="center"
+            return (
+              (dayMenu.meals.length > 0) ? (
+                <Tab
+                  eventKey={dayMenu.date}
+                  title={
+                    getDayHeaders(language)[index + (daysOpen >= 7 ? 0 : 1)]
+                  }
                 >
-                  {dayMenu.meals.map((meal: FilteredSodexoMeal) => (
-                    <Grid size={gridItemSize} key={meal.name}>
-                      <Card
-                        className="custom-scrollbar"
-                        sx={{ m: 2, height: '100%', maxHeight: { lg: 850 }, overflow: { lg: 'auto' } }}
-                      >
-                        <CardHeader className="p-3" style={{ backgroundColor: '#EEEEEE' }}>
-                          <Typography variant="h4">
-                            {meal.name}
-                          </Typography>
-                        </CardHeader>
-                        <CardContent>
-                          {meal.groups.map((group) => (
-                            <Box key={group.name} sx={{ mb: 2 }}>
-                              <Typography variant="h6" sx={{ mb: 1 }}>
-                              {group.name}
+                  <Grid
+                    container
+                    spacing={2}
+                  >
+                    {dayMenu.meals.map((meal: FilteredSodexoMeal) => (
+                      <Grid size={gridItemSize} key={meal.name}>
+                        <Card
+                          className="custom-scrollbar"
+                          sx={{ m: 2, height: '100%', maxHeight: { lg: 850 }, overflow: { lg: 'auto' } }}
+                        >
+                          <CardHeader className="p-3" style={{ backgroundColor: '#ECECEC' }}>
+                            <Typography variant="h4">
+                              {meal.name}
                             </Typography>
-                              <ul>
-                              {group.items.map((item) => (
-                                <div key={item.formalName} className="py-2">
-                                  <Stack direction="row" alignItems="center" spacing={1}>
-                                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
-                                      {item.formalName}
-                                    </Typography>
-                                    {item.isVegan && <VeganIcon language={language} />}
-                                    {item.isVegetarian && <VegetarianIcon language={language} />}
-                                  </Stack>
-                                  <Typography variant="body2" sx={{ mb: 1 }}>
-                                    {item.description}
-                                  </Typography>
-                                </div>
-                              ))}
-                            </ul>
-                            </Box>
-                          ))}
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Tab>
-            ) : (
-              <Tab eventKey={dayMenu.date} title={getDayHeaders(language)[index]} key={dayMenu.date} disabled>
-                <Typography variant="h3" className="text-center">
-                  Closed/Menu Unavailable
-                </Typography>
-              </Tab>
-            )
-          );
-        })}
+                          </CardHeader>
+                          <CardContent>
+                            {meal.groups.map((group) => (
+                              <Box key={group.name} sx={{ mb: 2 }}>
+                                <Typography variant="h6" sx={{ mb: 1 }}>
+                                  {group.name}
+                                </Typography>
+                                <ul>
+                                  {group.items.map((item) => (
+                                    <div key={item.formalName} className="py-2">
+                                      <Stack direction="row" alignItems="center" spacing={1}>
+                                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                          {item.formalName}
+                                        </Typography>
+                                        {item.isVegan && <VeganIcon language={language} />}
+                                        {item.isVegetarian && <VegetarianIcon language={language} />}
+                                      </Stack>
+                                      <Typography variant="body2" sx={{ mb: 1 }}>
+                                        {item.description}
+                                      </Typography>
+                                    </div>
+                                  ))}
+                                </ul>
+                              </Box>
+                            ))}
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Tab>
+              ) : (
+                <Tab eventKey={dayMenu.date} title={getDayHeaders(language)[index]} key={dayMenu.date} disabled>
+                  <Typography variant="h3" className="text-center">
+                    Closed/Menu Unavailable
+                  </Typography>
+                </Tab>
+              )
+            );
+          })}
 
       </Tabs>
     </Box>
