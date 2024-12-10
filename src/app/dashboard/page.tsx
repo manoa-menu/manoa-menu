@@ -46,7 +46,7 @@ interface RecommendedItem {
   label: string[];
 }
 
-export const SdxFilter = [
+const SdxFilter = [
   'White Rice',
   'Brown Rice',
   'Sour Cream',
@@ -55,13 +55,13 @@ export const SdxFilter = [
   "Lay's Potato Chips",
 ];
 
-// Ensure arrays are not null or undefined
-const safeArray = (arr: any[]) => arr || [];
-
 const DashboardPage = () => {
   const { data: session } = useSession();
   const userId = (session?.user as { id: number })?.id || null;
   const language: string = 'English';
+
+  // Ensure arrays are not null or undefined
+  const safeArray = (arr: any[]) => arr || [];
 
   // Fetching data
   const [userFavoriteItems, setUserFavoriteItems] = useState<string[]>([]);
