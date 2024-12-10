@@ -19,10 +19,13 @@ import Tooltip from '@mui/material/Tooltip';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { getDayHeaders } from '@/lib/menuHelper';
 import { getCurrentDayOf } from '@/lib/dateFunctions';
+import StarButton from '@/app/campus-cravings/StarButton';
 
 interface SdxMenuProps {
   weekMenu: SdxAPIResponse[];
   language: string;
+  favArr: string[];
+  userId: number;
 }
 
 interface TooltipIconProps {
@@ -32,6 +35,13 @@ interface TooltipIconProps {
 const displayTooltipNames = new Map<string, string[]>([
   ['English', ['Vegan', 'Vegetarian']],
   ['Japanese', ['ビーガン', 'ベジタリアン']],
+]);
+
+const favTooltipNames = new Map<string, string>([
+  ['English', 'Favorite?'],
+  ['Japanese', 'お気に？'],
+  ['english', 'Favorite?'],
+  ['japanese', 'お気に？'],
 ]);
 
 const VeganIcon: React.FC<TooltipIconProps> = ({ language }) => (
@@ -50,8 +60,12 @@ const VegetarianIcon: React.FC<TooltipIconProps> = ({ language }) => (
   </Tooltip>
 );
 
-const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language }) => {
+const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr, userId }) => {
   const currentDateOf = getCurrentDayOf();
+
+  const handleToggle = (item: string) => {
+    console.log(`Toggled favorite for ${item}`);
+  };
 
   const [daysOpen, setDaysOpen] = useState(
     weekMenu.filter((day) => day.meals.length > 0).length,
@@ -78,7 +92,7 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language }) => {
                 case 2:
                   return { xs: 12, md: 12, lg: 6, xl: 6 };
                 case 3:
-                  return { xs: 12, md: 12, lg: 12, xl: 4 };
+                  return { xs: 12, md: 12, lg: 6, xl: 4 };
                 case 4:
                   return { xs: 12, md: 12, lg: 4, xl: 3 };
                 default:
@@ -99,14 +113,20 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language }) => {
                   <Grid
                     container
                     spacing={2}
+                    justifyContent="center"
                   >
                     {dayMenu.meals.map((meal: FilteredSodexoMeal) => (
                       <Grid size={gridItemSize} key={meal.name}>
                         <Card
                           className="custom-scrollbar"
-                          sx={{ m: 2, height: '100%', maxHeight: { lg: 850 }, overflow: { lg: 'auto' } }}
+                          sx={{
+                            m: 2,
+                            height: '100%',
+                            maxHeight: { xs: 'none', md: 'none', lg: 850 },
+                            overflow: { xs: 'visible', md: 'visibile', lg: 'auto' },
+                          }}
                         >
-                          <CardHeader className="p-3" style={{ backgroundColor: '#ECECEC' }}>
+                          <CardHeader className="px-3 py-2" style={{ backgroundColor: '#ECECEC' }}>
                             <Typography variant="h4">
                               {meal.name}
                             </Typography>
@@ -119,18 +139,33 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language }) => {
                                 </Typography>
                                 <ul>
                                   {group.items.map((item) => (
-                                    <div key={item.formalName} className="py-2">
-                                      <Stack direction="row" alignItems="center" spacing={1}>
-                                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
-                                          {item.formalName}
+                                    <Grid container spacing={1} className="py-2" key={item.formalName}>
+                                      <Grid size={10}>
+                                        <Stack direction="row" alignItems="center" spacing={1}>
+                                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                            {item.formalName}
+                                          </Typography>
+                                          {item.isVegan && <VeganIcon language={language} />}
+                                          {item.isVegetarian && <VegetarianIcon language={language} />}
+                                        </Stack>
+                                        <Typography variant="body2" sx={{ my: 1 }}>
+                                          {item.description}
                                         </Typography>
-                                        {item.isVegan && <VeganIcon language={language} />}
-                                        {item.isVegetarian && <VegetarianIcon language={language} />}
-                                      </Stack>
-                                      <Typography variant="body2" sx={{ mb: 1 }}>
-                                        {item.description}
-                                      </Typography>
-                                    </div>
+                                      </Grid>
+                                      <Grid size={2}>
+                                        {(userId !== -21) && (
+                                        <Tooltip title={favTooltipNames.get(language)} placement="bottom" arrow>
+                                          <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                            <StarButton
+                                              item={item.formalName}
+                                              isStarred={favArr.includes(item.formalName)}
+                                              onToggle={() => handleToggle(item.formalName)}
+                                            />
+                                          </div>
+                                        </Tooltip>
+                                        )}
+                                      </Grid>
+                                    </Grid>
                                   ))}
                                 </ul>
                               </Box>
@@ -144,7 +179,7 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language }) => {
               ) : (
                 <Tab eventKey={dayMenu.date} title={getDayHeaders(language)[index]} key={dayMenu.date} disabled>
                   <Typography variant="h3" className="text-center">
-                    Closed/Menu Unavailable
+                    Closed or Menu Unavailable
                   </Typography>
                 </Tab>
               )
