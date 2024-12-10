@@ -18,7 +18,15 @@ interface MenuCardProps {
   userId: number;
 }
 
-const CCMenuCard: React.FC<MenuCardProps> = ({ name, plateLunch, grabAndGo, message, language, favArr, userId }) => {
+const CCMenuCard: React.FC<MenuCardProps> = ({
+  name,
+  plateLunch,
+  grabAndGo,
+  message,
+  language,
+  favArr = [],
+  userId,
+}) => {
   const displayTooltipNames = new Map<string, string>([
     ['English', 'Favorite?'],
     ['Japanese', 'お気に？'],

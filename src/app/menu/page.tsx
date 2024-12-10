@@ -6,18 +6,18 @@ import '@/styles/Menu.css';
 import '@/styles/Scrollbar.css';
 
 import CCMenuList from '@/components/CCMenuList';
-import { Translate, TypeH1 } from 'react-bootstrap-icons';
+import { Translate } from 'react-bootstrap-icons';
 import { FaUtensils } from 'react-icons/fa';
 
 import { Container, Dropdown, DropdownButton } from 'react-bootstrap';
-import { DayMenu, FilteredSodexoMeal, SdxAPIResponse } from '@/types/menuTypes';
+import { DayMenu, SdxAPIResponse } from '@/types/menuTypes';
 import { useSession } from 'next-auth/react';
 import { getUserLanguage } from '@/lib/dbActions';
 import { useState, useEffect, useRef } from 'react';
 import BlackSpinner from '@/components/BlackSpinner';
 import { fixDayNames } from '@/lib/menuHelper';
 import SdxMenu from '@/components/SdxMenu';
-import { Box, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
 
 interface MenuNameArrProps {
   name: string;
