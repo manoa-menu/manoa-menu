@@ -19,6 +19,11 @@ import { fixDayNames } from '@/lib/menuHelper';
 import SdxMenu from '@/components/SdxMenu';
 import { Box, Stack, Typography } from '@mui/material';
 
+interface MenuNameArrProps {
+  name: string;
+  displayName: string;
+}
+
 const Page = () => {
   const languages = [
     { name: 'English', displayName: 'English' },
@@ -27,11 +32,28 @@ const Page = () => {
     { name: 'Spanish', displayName: 'Español' },
   ];
 
-  const menuNames = [
-    { name: 'cc', displayName: 'Campus Center Food Court' },
-    { name: 'gw', displayName: 'Gateway Cafe' },
-    { name: 'ha', displayName: 'Hale Aloha Cafe' },
-  ];
+  const getMenuNames = (language: string): MenuNameArrProps[] => {
+    switch (language) {
+      case 'English':
+        return [
+          { name: 'cc', displayName: 'Campus Center Food Court' },
+          { name: 'gw', displayName: 'Gateway Cafe' },
+          { name: 'ha', displayName: 'Hale Aloha Cafe' },
+        ];
+      case 'Japanese':
+        return [
+          { name: 'cc', displayName: 'キャンパスセンター' },
+          { name: 'gw', displayName: 'ゲートウェイカフェ' },
+          { name: 'ha', displayName: 'ハレアロハカフェ' },
+        ];
+      default:
+        return [
+          { name: 'cc', displayName: 'Campus Center Food Court' },
+          { name: 'gw', displayName: 'Gateway Cafe' },
+          { name: 'ha', displayName: 'Hale Aloha Cafe' },
+        ];
+    }
+  };
 
   const displayLanguages = new Map<string, string>([
     ['English', 'English'],
@@ -40,11 +62,27 @@ const Page = () => {
     ['Spanish', 'Español'],
   ]);
 
-  const displayMenuNames = new Map<string, string>([
-    ['cc', 'Campus Center Food Court'],
-    ['gw', 'Gateway Cafe'],
-    ['ha', 'Hale Aloha Cafe'],
-  ]);
+  const getDisplayMenuNames = (menuName: string, language: string): string => {
+    switch (menuName) {
+      case 'cc':
+        if (language === 'English') {
+          return 'Campus Center Food Court';
+        }
+        return 'キャンパスセンター';
+      case 'gw':
+        if (language === 'English') {
+          return 'Gateway Cafe';
+        }
+        return 'ゲートウェイカフェ';
+      case 'ha':
+        if (language === 'English') {
+          return 'Hale Aloha Cafe';
+        }
+        return 'ハレアロハカフェ';
+      default:
+        return '';
+    }
+  };
 
   const { data: session } = useSession();
   const userId = (session?.user as { id: number })?.id;
@@ -159,8 +197,8 @@ const Page = () => {
         }}
       >
         <Typography variant="h3" className="text-center">
-          {displayMenuNames.get(menuState)}
-          {' Menu'}
+          {getDisplayMenuNames(menuState, language)}
+          {(language === 'English') ? ' Menu' : 'のメニュー'}
         </Typography>
         <Stack direction="row">
           <DropdownButton
@@ -171,11 +209,11 @@ const Page = () => {
               <span className="align-items-center">
                 <FaUtensils className="" />
                 {' '}
-                {displayMenuNames.get(menuState)}
+                {getDisplayMenuNames(menuState, language)}
               </span>
             )}
           >
-            {menuNames.map((menuName) => (
+            {getMenuNames(language).map((menuName) => (
               <Dropdown.Item
                 key={menuName.name}
                 onClick={() => menuNameItemClick(menuName.name)}

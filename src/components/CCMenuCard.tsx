@@ -37,22 +37,20 @@ const CCMenuCard: React.FC<MenuCardProps> = ({ name, plateLunch, grabAndGo, mess
   };
   return (
     <Card className="h-100">
-      <Card.Body className="px-0">
+      <Card.Body className="px-0 pb-0">
         <Card.Title className="px-2 text-center">
           <strong>{name}</strong>
         </Card.Title>
         {
         (grabAndGo.length > 0 && plateLunch.length > 0) ? (
-          <Table bordered>
+          <Table bordered striped>
             <thead>
               <tr>
                 <th>{getTableHeader(language)[0]}</th>
                 {/*  eslint-disable-next-line jsx-a11y/control-has-associated-label */}
-                <th />
                 {/* <th>{getTableHeader(language)[2]}</th> */}
                 <th>{getTableHeader(language)[1]}</th>
                 {/* eslint-disable-next-line jsx-a11y/control-has-associated-label */}
-                <th />
                 {/* <th>{getTableHeader(language)[2]}</th> */}
               </tr>
             </thead>
@@ -61,21 +59,31 @@ const CCMenuCard: React.FC<MenuCardProps> = ({ name, plateLunch, grabAndGo, mess
                 const isStarred = favArr.includes(item);
                 return (
                   <tr key={item}>
-                    <td>{item}</td>
-                    <td className="p-0">
-                      <StarButton
-                        item={item}
-                        isStarred={isStarred}
-                        onToggle={() => handleToggle(item)}
-                      />
+                    <td className="pe-0">
+                      <span className="d-flex justify-content-between">
+                        {item}
+                        {item && (
+                        <StarButton
+                          item={item}
+                          isStarred={isStarred}
+                          onToggle={() => handleToggle(item)}
+                        />
+                        )}
+
+                      </span>
                     </td>
-                    <td>{grabAndGo[index] || ''}</td>
-                    <td className="p-0">
-                      <StarButton
-                        item={grabAndGo[index]}
-                        isStarred={isStarred}
-                        onToggle={() => handleToggle(grabAndGo[index])}
-                      />
+
+                    <td className="pe-0">
+                      <span className="d-flex justify-content-between">
+                        {grabAndGo[index] || ''}
+                        {grabAndGo[index] && (
+                          <StarButton
+                            item={grabAndGo[index]}
+                            isStarred={favArr.includes(grabAndGo[index])}
+                            onToggle={() => handleToggle(grabAndGo[index])}
+                          />
+                        )}
+                      </span>
                     </td>
                   </tr>
                 );
