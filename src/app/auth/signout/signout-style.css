@@ -1,0 +1,47 @@
+/* General container styling */
+#signout-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Styling for the sign-out card */
+#signout-page {
+  background-color: #fff; 
+  padding: 2rem;
+  border-radius: 15px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  max-width: 500px;
+  width: 100%;
+}
+
+/* Styling for the header text */
+#signout-page h2 {
+  font-family: 'Arial', sans-serif;
+  color: #333;
+}
+
+/* Add hover effects for buttons */
+button {
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  transform: scale(1.05);
+}
+
+/* Add responsive behavior */
+@media (max-width: 576px) {
+  #signout-page {
+    padding: 1.5rem;
+  }
+
+  #signout-page h2 {
+    font-size: 1.5rem;
+  }
+
+  button {
+    font-size: 0.9rem;
+  }
+}
