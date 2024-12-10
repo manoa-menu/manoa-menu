@@ -128,11 +128,6 @@ const DashboardPage = () => {
       setLoading(false);
     }
   };
-  // Testing
-  // Might be optional
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   // Local storage
   useEffect(() => {
@@ -333,6 +328,7 @@ const DashboardPage = () => {
   ]);
   const haleAlohaRecommendedItems: RecommendedItem[] = [...alohaBrunchRecommendedItems, ...alohaDinnerRecommendedItems];
   console.log(haleAlohaRecommendedItems);
+
   // Filter by location
   const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const { value }: { value: string } = event.target;

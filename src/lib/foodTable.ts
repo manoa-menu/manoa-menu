@@ -1,6 +1,7 @@
 /* eslint-disable operator-linebreak */
 import { PrismaClient } from '@prisma/client';
 import assignLabels from './assignLabel';
+import { FilteredSodexoMeal, FilteredSodexoModRoot } from '@/types/menuTypes';
 
 const SerpApi = require('google-search-results-nodejs');
 
@@ -25,26 +26,8 @@ interface DayMenu {
   grabAndGo: string[];
   specialMessage: string;
 }
-interface MenuItem {
-  meal: string;
-  course: string;
-  isVegan: boolean;
-  formalName: string;
-  description: string | null;
-  isVegetarian: boolean;
-}
 
-interface MenuGroup {
-  name: string;
-  items: MenuItem[];
-}
-
-interface Menu {
-  name: string;
-  groups: MenuGroup[];
-}
-
-function extractFormalNames(menuData: Menu[]): string[] {
+function extractFormalNames(menuData: FilteredSodexoMeal[]): string[] {
   const formalNames: string[] = [];
 
   menuData.forEach((menu) => {
@@ -113,6 +96,14 @@ export async function addFavoriteItem(userId: number, foodName: string): Promise
         },
       },
     });
+    await prisma.foodTable.update({
+      where: { name: foodName },
+      data: {
+        likes: {
+          increment: 1,
+        },
+      },
+    });
     return true;
   } catch (error) {
     console.error('Error adding favorite item:', error);
@@ -148,6 +139,14 @@ export async function removeFavoriteItem(userId: number, foodName: string): Prom
       },
     });
 
+    await prisma.foodTable.update({
+      where: { name: foodName },
+      data: {
+        likes: {
+          decrement: 1,
+        },
+      },
+    });
     return true;
   } catch (error) {
     console.error('Error removing favorite item:', error);
@@ -315,111 +314,7 @@ export default async function populateFoodTableFromCCMenu(parsedMenu: DayMenu[])
     await prisma.$disconnect();
   }
 }
-export async function populateFoodTableFromGatewayMenu(parsedMenu: Menu[]): Promise<void> {
-  try {
-    const foodData: FoodItem[] = extractFormalNames(parsedMenu).map((name) => ({ name, label: [] }));
-
-    // Deduplicate by `name` and `label`
-    const uniqueFoodData: FoodTableEntry[] = Array.from(
-      new Map(foodData.map((item) => [JSON.stringify({ name: item.name }), item])).values(),
-    ).map(({ name }) => {
-      const assignedLabels = assignLabels(name);
-
-      return {
-        name,
-        url: '',
-        label: [...assignedLabels],
-        translation: [],
-      };
-    });
-
-    // Filter out items already in the database
-    const existingFoodItems = await prisma.foodTable.findMany({
-      where: {
-        name: {
-          in: uniqueFoodData.map((item) => item.name),
-        },
-      },
-      select: { name: true, url: true, label: true, translation: true },
-    });
-    console.log(existingFoodItems);
-
-    // Determine which items need label or translation updates
-    const itemsToUpdateLabelsOrTranslations = uniqueFoodData.filter((item) => {
-      const existingItem = existingFoodItems.find((existing) => existing.name === item.name);
-      return (
-        existingItem &&
-        (JSON.stringify(existingItem.label) !== JSON.stringify(item.label) ||
-          JSON.stringify(existingItem.translation) !== JSON.stringify(item.translation))
-      );
-    });
-
-    // Update items with new labels or translations
-    if (itemsToUpdateLabelsOrTranslations.length > 0) {
-      await Promise.all(
-        itemsToUpdateLabelsOrTranslations.map(async (item) => {
-          await prisma.foodTable.upsert({
-            where: { name: item.name },
-            update: {
-              label: item.label,
-              translation: item.translation,
-            },
-            create: {
-              name: item.name,
-              url: '', // Assuming URL is empty for new items in this context
-              label: item.label,
-              translation: item.translation,
-            },
-          });
-        }),
-      );
-      console.log(
-        `Updated or inserted ${itemsToUpdateLabelsOrTranslations.length} items in FoodTable with new labels or translations.`,
-      );
-    }
-    // Determine which items are new or need an image URL update
-    const existingNamesWithUrls = new Map(existingFoodItems.map((item) => [item.name, item.url]));
-
-    const itemsToUpdate = uniqueFoodData.filter((item) => {
-      const existingUrl = existingNamesWithUrls.get(item.name);
-      return !existingUrl; // Update only items with an empty URL
-    });
-
-    if (itemsToUpdate.length > 0) {
-      // Fetch image URLs concurrently
-      const updatedFoodData = await Promise.all(
-        itemsToUpdate.map(async (item) => {
-          const imageUrl = await fetchImageUrl(item.name);
-          return { ...item, url: typeof imageUrl === 'string' ? imageUrl : '' };
-        }),
-      );
-
-      // Insert or update food items in the database
-      await Promise.all(
-        updatedFoodData.map(async (item) => {
-          await prisma.foodTable.upsert({
-            where: { name: item.name },
-            update: { url: item.url },
-            create: {
-              name: item.name,
-              url: item.url,
-              label: item.label,
-              translation: item.translation,
-            },
-          });
-        }),
-      );
-      console.log(`Inserted or updated ${updatedFoodData.length} items in FoodTable with image URLs.`);
-    }
-  } catch (error) {
-    console.error('Error populating FoodTable:', error);
-    throw new Error('Error populating FoodTable');
-  } finally {
-    await prisma.$disconnect();
-  }
-}
-
-export async function populateFoodTableFromHaleAlohaMenu(parsedMenu: Menu[]): Promise<void> {
+export async function populateFoodTableFromSdxMenu(parsedMenu: FilteredSodexoMeal[]): Promise<void> {
   try {
     const foodData: FoodItem[] = extractFormalNames(parsedMenu).map((name) => ({ name, label: [] }));
 
@@ -672,132 +567,7 @@ export async function populateFoodTableFromCCMenuId(menuId: number) {
   }
 }
 
-export async function populateFoodTableFromGatewayId(menuId: number) {
-  try {
-    // Fetch the specific menu row by ID
-    const menu = await prisma.gatewayMenus.findUnique({
-      where: { id: menuId },
-    });
-
-    if (!menu) {
-      console.error(`No menu found with id: ${menuId}`);
-      return;
-    }
-
-    // Safely parse the menu data
-    let menuItems;
-    try {
-      menuItems = typeof menu.menu === 'string' ? JSON.parse(menu.menu) : menu.menu;
-    } catch (error) {
-      console.error('Invalid menu data:', menu.menu);
-      return;
-    }
-
-    const foodData: FoodItem[] = extractFormalNames(menuItems).map((name) => ({ name, label: [] }));
-
-    // Deduplicate by `name` and `label`
-    const uniqueFoodData: FoodTableEntry[] = Array.from(
-      new Map(foodData.map((item) => [JSON.stringify({ name: item.name }), item])).values(),
-    ).map(({ name }) => {
-      const assignedLabels = assignLabels(name);
-
-      return {
-        name,
-        url: '',
-        label: [...assignedLabels],
-        translation: [],
-      };
-    });
-
-    // Filter out items already in the database
-    const existingFoodItems = await prisma.foodTable.findMany({
-      where: {
-        name: {
-          in: uniqueFoodData.map((item) => item.name),
-        },
-      },
-      select: { name: true, url: true, label: true, translation: true },
-    });
-    console.log(existingFoodItems);
-
-    // Determine which items need label or translation updates
-    const itemsToUpdateLabelsOrTranslations = uniqueFoodData.filter((item) => {
-      const existingItem = existingFoodItems.find((existing) => existing.name === item.name);
-      return (
-        existingItem &&
-        (JSON.stringify(existingItem.label) !== JSON.stringify(item.label) ||
-          JSON.stringify(existingItem.translation) !== JSON.stringify(item.translation))
-      );
-    });
-
-    // Update items with new labels or translations
-    if (itemsToUpdateLabelsOrTranslations.length > 0) {
-      await Promise.all(
-        itemsToUpdateLabelsOrTranslations.map(async (item) => {
-          await prisma.foodTable.upsert({
-            where: { name: item.name },
-            update: {
-              label: item.label,
-              translation: item.translation,
-            },
-            create: {
-              name: item.name,
-              url: '', // Assuming URL is empty for new items in this context
-              label: item.label,
-              translation: item.translation,
-            },
-          });
-        }),
-      );
-      console.log(
-        `Updated or inserted ${itemsToUpdateLabelsOrTranslations.length} items in FoodTable with new labels or translations.`,
-      );
-    }
-    // Determine which items are new or need an image URL update
-    const existingNamesWithUrls = new Map(existingFoodItems.map((item) => [item.name, item.url]));
-
-    const itemsToUpdate = uniqueFoodData.filter((item) => {
-      const existingUrl = existingNamesWithUrls.get(item.name);
-      return !existingUrl; // Update only items with an empty URL
-    });
-
-    if (itemsToUpdate.length > 0) {
-      // Fetch image URLs concurrently
-      const updatedFoodData = await Promise.all(
-        itemsToUpdate.map(async (item) => {
-          const imageUrl = await fetchImageUrl(item.name);
-          return { ...item, url: typeof imageUrl === 'string' ? imageUrl : '' };
-        }),
-      );
-
-      // Insert or update food items in the database
-      await Promise.all(
-        updatedFoodData.map(async (item) => {
-          await prisma.foodTable.upsert({
-            where: { name: item.name },
-            update: { url: item.url },
-            create: {
-              name: item.name,
-              url: item.url,
-              label: item.label,
-              translation: item.translation,
-            },
-          });
-        }),
-      );
-      console.log(`Inserted or updated ${updatedFoodData.length} items in FoodTable with image URLs.`);
-    } else {
-      console.log(`No new items to insert for menu ID ${menuId}.`);
-    }
-  } catch (error) {
-    console.error('Error populating FoodTable:', error);
-    throw new Error('Error populating FoodTable');
-  } finally {
-    await prisma.$disconnect();
-  }
-}
-
-export async function populateFoodTableFromHaleAlohaId(menuId: number) {
+export async function populateFoodTableFromSdxId(menuId: number) {
   try {
     // Fetch the specific menu row by ID
     const menu = await prisma.gatewayMenus.findUnique({

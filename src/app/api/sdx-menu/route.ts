@@ -3,30 +3,57 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
-import { SodexoMeal, FilteredSodexoMeal, Location,
-  FilteredSodexoModRoot, FilteredSodexoMenuRow, SdxAPIResponse } from '@/types/menuTypes';
+import {
+  SodexoMeal,
+  FilteredSodexoMeal,
+  Location,
+  FilteredSodexoModRoot,
+  FilteredSodexoMenuRow,
+  SdxAPIResponse,
+} from '@/types/menuTypes';
 
 import fetchOpenAI from '@/app/utils/api/openai';
 import { getSdxMenu, insertSdxMenu } from '@/lib/dbActions';
 import { getSevenDayDate, getCurrentWeekDates } from '@/lib/dateFunctions';
+import { populateFoodTableFromSdxMenu } from '@/lib/foodTable';
 
 const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => ({
   name: rootObject.name,
-  groups: rootObject.groups.map(group => ({
+  groups: rootObject.groups.map((group) => ({
     name: group.name,
-    items: group.items.filter(item => (
-      (item.formalName.toLowerCase() !== 'have a nice day')
-    )).map(item => {
-      const {
-        price, addons, sizes, allergens, courseSortOrder, menuItemId,
-        isMindful, isSwell, calories, caloriesFromFat, fat,
-        saturatedFat, transFat, polyunsaturatedFat, cholesterol,
-        sodium, carbohydrates, dietaryFiber, sugar, protein,
-        potassium, iron, calcium, vitaminA, vitaminC,
-        ...rest
-      } = item;
-      return rest;
-    }),
+    items: group.items
+      .filter((item) => item.formalName.toLowerCase() !== 'have a nice day')
+      .map((item) => {
+        const {
+          price,
+          addons,
+          sizes,
+          allergens,
+          courseSortOrder,
+          menuItemId,
+          isMindful,
+          isSwell,
+          calories,
+          caloriesFromFat,
+          fat,
+          saturatedFat,
+          transFat,
+          polyunsaturatedFat,
+          cholesterol,
+          sodium,
+          carbohydrates,
+          dietaryFiber,
+          sugar,
+          protein,
+          potassium,
+          iron,
+          calcium,
+          vitaminA,
+          vitaminC,
+          ...rest
+        } = item;
+        return rest;
+      }),
   })),
 });
 
@@ -35,12 +62,12 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
   const language = searchParams.get('language') || 'Japanese';
-  const location = searchParams.get('location')
-    || NextResponse.json({ error: 'Missing Location Parameter' }, { status: 500 });
+  const location =
+    searchParams.get('location') || NextResponse.json({ error: 'Missing Location Parameter' }, { status: 500 });
   console.log(`Location: ${location}`);
 
-  const locationOption = (location === 'gw') ? Location.GATEWAY : Location.HALE_ALOHA;
-  const locationString = (location === 'gw') ? 'Gateway' : 'Hale Aloha';
+  const locationOption = location === 'gw' ? Location.GATEWAY : Location.HALE_ALOHA;
+  const locationString = location === 'gw' ? 'Gateway' : 'Hale Aloha';
   // console.log(`Location Option: ${locationOption}`);
 
   const translateLanguage = 'Japanese';
@@ -60,7 +87,7 @@ export async function GET(req: NextRequest) {
   const gwURL = process.env.GW_API_URL;
   const haURL = process.env.HA_API_URL;
 
-  const url = (location === 'gw') ? gwURL : haURL;
+  const url = location === 'gw' ? gwURL : haURL;
   // console.log(`URL: ${url}`);
 
   const apiKey = process.env.MMR_API_KEY;
@@ -89,7 +116,7 @@ export async function GET(req: NextRequest) {
 
         const dayMenuRow = await getSdxMenu(day, 'English', locationOption);
 
-        const dayMenu: FilteredSodexoModRoot = dayMenuRow?.menu as unknown as FilteredSodexoModRoot || [];
+        const dayMenu: FilteredSodexoModRoot = (dayMenuRow?.menu as unknown as FilteredSodexoModRoot) || [];
 
         console.log(`Menu for ${day} from database:`, dayMenuRow);
 
@@ -112,17 +139,15 @@ export async function GET(req: NextRequest) {
 
           console.log(`Inserting menu for ${day} in English`);
           await insertSdxMenu(formattedMenu, locationOption, 'English', day);
+          await populateFoodTableFromSdxMenu(filteredData);
 
           // Translate the menu
 
           console.log(`Translating menu for ${day} into Japanese`);
-          const translatedMenu: FilteredSodexoModRoot = (filteredData.length > 0)
-            ? await fetchOpenAI(
-              prompt,
-              locationOption,
-              filteredData,
-              'Japanese',
-            ) as FilteredSodexoModRoot : formattedMenu;
+          const translatedMenu: FilteredSodexoModRoot =
+            filteredData.length > 0
+              ? ((await fetchOpenAI(prompt, locationOption, filteredData, 'Japanese')) as FilteredSodexoModRoot)
+              : formattedMenu;
 
           // Insert the translated menu
 
@@ -137,7 +162,8 @@ export async function GET(req: NextRequest) {
             };
 
             return retVal;
-          } if (language.toLowerCase() === 'japanese') {
+          }
+          if (language.toLowerCase() === 'japanese') {
             console.log(`Adding Japanese menu for ${day}`);
             const retVal: SdxAPIResponse = {
               date: day,
