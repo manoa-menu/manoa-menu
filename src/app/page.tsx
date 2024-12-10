@@ -51,7 +51,7 @@ const Home = () => (
         <Col className="col-12 col-sm-6 col-md-6 col-lg-4 mb-3">
           <Card className="language-card">
             <AiOutlineLike className="mb-1" style={{ width: 48, height: 48, color: '#1ea468' }} />
-            <h3 className="my-2">Recommended Feed</h3>
+            <h3 className="my-2">Recommendations</h3>
             <p>See a curated list of recommended foods based on your favorites!</p>
           </Card>
         </Col>
@@ -66,7 +66,7 @@ const Home = () => (
           <Card className="language-card">
             <RiDashboardFill className="mb-1" style={{ width: 48, height: 48, color: '#1ea468' }} />
             <h3 className="my-2">Dashboard Page</h3>
-            <p>Swiftly view if your favorite items are on the menu.</p>
+            <p>Quickly check if your favorite items are on the menu.</p>
           </Card>
         </Col>
       </Row>
