@@ -17,3 +17,13 @@
   color: #ccc; 
   background-color: transparent; 
 }
+
+.login-dropdown-sign-out {
+  background-color: black;
+  color: white;
+}
+
+.login-dropdown {
+  background-color: black;
+  color: white;
+}
