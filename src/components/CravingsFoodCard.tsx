@@ -9,6 +9,7 @@ interface FoodInfo {
   image: string;
   label: string[];
   isStarred: boolean;
+  location: string;
   onToggle: (id: string) => void;
 }
 
@@ -33,8 +34,7 @@ const CravingsFoodCard: React.FC<CravingsFoodCardProps> = ({ foodItems, currentU
                 <Card.Text className="foodLikes">
                   {`${itemCard.likes} favorite(s)`}
                   <Card.Text className="location">
-                    Location:
-                    {itemCard.label}
+                    {`Location: ${itemCard.location}`}
                   </Card.Text>
                 </Card.Text>
                 {currentUser && (
