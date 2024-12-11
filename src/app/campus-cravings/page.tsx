@@ -5,6 +5,7 @@ import { Container, Col, Row, Form } from 'react-bootstrap';
 import { useSession } from 'next-auth/react';
 import CravingsFoodCard from '../../components/CravingsFoodCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import './CampusCravings.css';
 
 interface FoodTableEntry {
   id: number;
@@ -56,6 +57,7 @@ function CampusCravings() {
       name: entry.name,
       image: entry.url,
       likes: entry.likes,
+      label: entry.label,
       isStarred: false, // Add logic for starring if needed
       onToggle: () => {}, // Placeholder for toggle functionality
     }));
@@ -96,7 +98,7 @@ function CampusCravings() {
       </Row>
 
       {/* Displaying filtered food items */}
-      <div className="overflow-auto" style={{ maxHeight: '500px', border: '2px solid', borderRadius: '5px' }}>
+      <div className="foodCardHolder">
         <Col>
           <CravingsFoodCard
             foodItems={filteredFoodItems}

@@ -1,0 +1,58 @@
+.foodCard {
+    margin-top: 12px;
+    max-height: 500px;
+}
+
+.foodElements {
+    display: flex;
+    align-items: center;
+}
+
+.blackShadeContainer {
+    background-color: rgba(0, 0, 0, 1);
+    height: 200px;
+    padding: 30px;
+    margin-left: 25px;
+    margin-right: 10px;
+    border-radius: 5px;
+    color: white; 
+    flex: 1; 
+    align-items: center;
+}
+
+.foodImage {
+    width: 400px;
+    height: 300px;
+    object-fit: cover;
+    border: 2px solid black;
+}
+
+.foodName {
+    font-family: Georgia, sans-serif;
+    font-weight: bold;
+    text-align: center;
+}
+
+.foodLikes {
+    font-family: Georgia, sans-serif;
+    color: white;
+    font-family: Georgia, sans-serif;
+
+}
+
+.starContainer {
+    display: flex;
+    align-items: center;
+    font-family: Georgia, sans-serif;
+    margin-left: -15px;
+}
+
+.clickToFavorite {
+    margin-top: 3px;
+    color: white;
+}
+
+.location {
+    color: white;
+    font-family: Georgia, sans-serif;
+}
