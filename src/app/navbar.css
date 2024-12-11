@@ -1,19 +1,30 @@
 .custom-navbar {
-    background-color: black; 
-  }
+  background-color: #212529;
+}
 
-  .custom-navbar .nav-link {
-    color: #fff; 
-    font-family: Georgia, 'Times New Roman', Times, serif;
-  }
+.custom-navbar .nav-link {
+  color: #fff;
+  font-family: Georgia, 'Times New Roman', Times, serif;
+}
 
-  #manoa-menu {
-    font-family: Georgia, 'Times New Roman', Times, serif;
-  }
+#manoa-menu {
+  font-family: Georgia, 'Times New Roman', Times, serif;
+}
 
 .custom-navbar .nav-link:hover,
 .custom-navbar .nav-link:focus,
 .custom-navbar .nav-link:active {
-  color: #ccc; 
-  background-color: transparent; 
+  color: #ccc;
+  background-color: transparent;
+}
+
+@media (max-width: 700px) {
+  .navbar-toggler {
+    background-color: #818181;
+    border-radius: 5px;
+    border-color: #212529;
+  }
+  #basic-navbar-nav {
+    background-color: #2a3452;
+  }
 }
