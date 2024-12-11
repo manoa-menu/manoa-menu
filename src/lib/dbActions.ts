@@ -270,7 +270,7 @@ export async function getUserFavorites(email: string): Promise<string[]> {
  * Creates a new user in the database.
  * @param credentials, an object with the following properties: email, password.
  */
-export async function createUser(credentials: { email: string; username: string; password: string }) {
+export async function createUser(credentials: { email: string; username: string; password: string, language: string }) {
   // console.log(`createUser data: ${JSON.stringify(credentials, null, 2)}`);
   const password = await hash(credentials.password, 10);
   await prisma.user.create({
@@ -278,6 +278,7 @@ export async function createUser(credentials: { email: string; username: string;
       username: credentials.username,
       email: credentials.email,
       password,
+      language: credentials.language,
     },
   });
 }

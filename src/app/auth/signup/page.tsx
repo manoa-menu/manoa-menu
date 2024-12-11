@@ -10,6 +10,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import './signup-style.css';
 
 type SignUpForm = {
+  language: string;
   email: string;
   username: string;
   password: string;
@@ -28,6 +29,7 @@ const SignUp = () => {
     confirmPassword: Yup.string()
       .required('Confirm Password is required')
       .oneOf([Yup.ref('password'), ''], 'Confirm Password does not match'),
+    language: Yup.string().required('Language is required'),
   });
 
   const {
@@ -115,6 +117,25 @@ const SignUp = () => {
                         placeholder="Confirm Password"
                       />
                       <div className="invalid-feedback">{errors.confirmPassword?.message}</div>
+                    </div>
+                  </Form.Group>
+                  <Form.Group className="form-group mb-3">
+                    <Form.Label className="visually-hidden">Language</Form.Label>
+                    <div className="input-group">
+                      <span className="input-group-text">
+                        <i className="bi bi-translate" />
+                      </span>
+                      <select
+                        {...register('language', { required: 'Language is required' })}
+                        className={`form-control ${errors.language ? 'is-invalid' : ''}`}
+                      >
+                        <option value="">Select Language</option>
+                        <option value="English">English</option>
+                        <option value="Japanese">日本語</option>
+                        <option value="Korean" disabled>한국어</option>
+                        <option value="Spanish" disabled>Español</option>
+                      </select>
+                      <div className="invalid-feedback">{errors.language?.message}</div>
                     </div>
                   </Form.Group>
                   <Button type="submit" className="btn btn-primary w-100">
