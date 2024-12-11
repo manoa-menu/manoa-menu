@@ -18,23 +18,26 @@ interface CravingsFoodCardProps {
 }
 
 // Need to add location through labels later
-const CravingsFoodCard: React.FC<CravingsFoodCardProps> = ({ foodItems, currentUser }) => (
-  <Container>
-    {foodItems.map((itemCard) => (
-      <Card key={itemCard.name} className="foodCard">
-        <Card.Body>
-          <div className="foodElements">
-            <Card.Img className="foodImage" src={itemCard.image} />
-            <div className="blackShadeContainer">
-              <Card.Title className="foodName">{itemCard.name}</Card.Title>
-              <Card.Text className="foodLikes">
-                {`${itemCard.likes} favorite(s)`}
-                <Card.Text className="location">
-                  Location:
-                  {itemCard.label}
+const CravingsFoodCard: React.FC<CravingsFoodCardProps> = ({ foodItems, currentUser }) => {
+  const sortedFoodItems = [...foodItems].sort((a, b) => b.likes - a.likes);
+
+  return (
+    <Container>
+      {sortedFoodItems.map((itemCard) => (
+        <Card key={itemCard.name} className="foodCard">
+          <Card.Body>
+            <div className="foodElements">
+              <Card.Img className="foodImage" src={itemCard.image} />
+              <div className="blackShadeContainer">
+                <Card.Title className="foodName">{itemCard.name}</Card.Title>
+                <Card.Text className="foodLikes">
+                  {`${itemCard.likes} favorite(s)`}
+                  <Card.Text className="location">
+                    Location:
+                    {itemCard.label}
+                  </Card.Text>
                 </Card.Text>
-              </Card.Text>
-              {currentUser && (
+                {currentUser && (
                 <div className="starContainer">
                   <StarButton
                     item={itemCard.name}
@@ -43,13 +46,14 @@ const CravingsFoodCard: React.FC<CravingsFoodCardProps> = ({ foodItems, currentU
                   />
                   <Card.Text className="clickToFavorite">click to favorite</Card.Text>
                 </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        </Card.Body>
-      </Card>
-    ))}
-  </Container>
-);
+          </Card.Body>
+        </Card>
+      ))}
+    </Container>
+  );
+};
 
 export default CravingsFoodCard;

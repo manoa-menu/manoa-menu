@@ -19,6 +19,7 @@ interface FoodTableEntry {
 function CampusCravings() {
   const { data: session } = useSession();
   const currentUser = session?.user?.email ?? null;
+  const [starredItems, setStarredItems] = useState<{ [key: string]: boolean }>({});
   const [selectedOption, setSelectedOption] = useState<string>('All');
   const [foodTable, setFoodTable] = useState<FoodTableEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -54,6 +55,7 @@ function CampusCravings() {
       return foodItem.label.includes(selectedOption);
     })
     .map((entry) => ({
+      id: entry.id,
       name: entry.name,
       image: entry.url,
       likes: entry.likes,
@@ -69,6 +71,13 @@ function CampusCravings() {
       </Container>
     );
   }
+
+  const toggleStar = (item: string) => {
+    setStarredItems((prev) => ({
+      ...prev,
+      [item]: !prev[item],
+    }));
+  };
 
   return (
     <Container className="my-5" style={{ paddingTop: '120px' }}>
@@ -101,8 +110,12 @@ function CampusCravings() {
       <div className="foodCardHolder">
         <Col>
           <CravingsFoodCard
-            foodItems={filteredFoodItems}
-            currentUser={currentUser}
+            foodItems={filteredFoodItems.map((foodItem) => ({
+              ...foodItem,
+              isStarred: starredItems[foodItem.id] || false,
+              onToggle: toggleStar,
+            }))}
+            currentUser={currentUser} // Pass currentUser prop
           />
         </Col>
       </div>
