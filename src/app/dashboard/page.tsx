@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { Container, Row, Form } from 'react-bootstrap';
+import { Container, Row, Form, Col } from 'react-bootstrap';
 import { useSession } from 'next-auth/react';
 import Calendar from '@/components/Calendar';
 import FoodItemSlider from '@/components/FoodItemSlider';
@@ -15,13 +15,24 @@ interface MenuItem {
   grabAndGo: string[];
   plateLunch: string[];
 }
+interface FoodTableEntry {
+  id: number;
+  name: string;
+  url: string;
+  label: string[];
+  translation: string[];
+}
+interface RecommendedItem {
+  name: string;
+  image: string;
+  label: string[];
+}
 
 interface SdxMenuItem {
   meal: string;
   formalName: string;
   [key: string]: any;
 }
-
 interface SdxSubGroup {
   items: SdxMenuItem[];
 }
@@ -30,20 +41,6 @@ interface SdxGroup {
 }
 interface DayMenu {
   menu: SdxGroup[];
-}
-
-interface FoodTableEntry {
-  id: number;
-  name: string;
-  url: string;
-  label: string[];
-  translation: string[];
-}
-
-interface RecommendedItem {
-  name: string;
-  image: string;
-  label: string[];
 }
 
 const SdxFilter = [
@@ -58,7 +55,6 @@ const SdxFilter = [
 const DashboardPage = () => {
   const { data: session } = useSession();
   const userId = (session?.user as { id: number })?.id || null;
-  const language: string = 'English';
 
   // Ensure arrays are not null or undefined
   const safeArray = (arr: any[]) => arr || [];
@@ -76,13 +72,21 @@ const DashboardPage = () => {
   const [secondaryOptions, setSecondaryOptions] = useState<string[]>([]);
   const [selectedSecondaryOption, setSelectedSecondaryOption] = useState('All');
 
+  // Language
+  const [language, setLanguage] = useState('English');
+
+  const handleLanguageChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setLanguage(event.target.value);
+  };
+
+  // Fetch Data from API endpoints
   const fetchData = async () => {
     try {
       const [favoriteResult, menuResult, gatewayResult, alohaResult, foodTableResult] = await Promise.allSettled([
         fetch(`/api/userFavorites?userId=${userId}`),
-        fetch(`/api/latestMenuCheck?language=${language}`), // Campus Center Food Court
-        fetch(`/api/latestGatewayMenuCheck?language=${language}`), // Gateway Café
-        fetch(`/api/latestAlohaMenuCheck?language=${language}`), // Hale Aloha Café
+        fetch('/api/latestMenuCheck?language=English'), // Campus Center Food Court
+        fetch('/api/latestGatewayMenuCheck?language=English'), // Gateway Café
+        fetch('/api/latestAlohaMenuCheck?language=English'), // Hale Aloha Café
         fetch('/api/getFoodTable'),
       ]);
 
@@ -151,7 +155,7 @@ const DashboardPage = () => {
       fetchData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, language]);
+  }, [userId]);
 
   const handleToggle = async (item: string) => {
     setUserFavoriteItems((prevStarredItems) => {
@@ -163,24 +167,22 @@ const DashboardPage = () => {
     await fetchData();
   };
 
+  //
   // Weekly and Recommended for Campus Center Food Court
   const flattenedMenu = latestMenu.map((day) => [...day.grabAndGo, ...day.plateLunch]);
   const filteredMenu = flattenedMenu.map((day) => day.filter((item) => userFavoriteItems.includes(item)));
   const campusCenterWeeklyItems: string[][] = useMemo(() => [[], ...filteredMenu, []], [filteredMenu]);
-  const campusCenterRecommendedItems: RecommendedItem[] = foodTable
-    .map((entry) => ({
-      name: entry.name,
-      image: entry.url,
-      label: entry.label,
-    }))
-    .filter((entry) =>
-      flattenedMenu
-        .flatMap((day) => day)
-        .filter((item) => !userFavoriteItems.includes(item))
-        .includes(entry.name),
-    );
+  const campusCenterWeeklyItemsJP = campusCenterWeeklyItems.map((day) =>
+    day
+      .map((item) => foodTable.find((entry) => entry.name === item))
+      .filter(Boolean)
+      .map((name) => name?.translation[0]),
+  );
+  // END OF WEEKLY ITEMS FOR CAMPUS CENTER FOOD COURT
+  //
 
-  // Weekly and Recommended for Gateway Café
+  //
+  // WEEKLY ITEMS FOR GATEWAY CAFE
   const gatewayBreakfastMenu = gatewayMenu.map((day: DayMenu) =>
     day.menu
       .map((group: SdxGroup) =>
@@ -197,18 +199,12 @@ const DashboardPage = () => {
   const gatewayBreakfastFiltered = gatewayBreakfastMenu.map((day) =>
     day.filter((item) => userFavoriteItems.includes(item)),
   );
-  const gatewayBreakfastRecommendedItems: RecommendedItem[] = foodTable
-    .map((entry) => ({
-      name: entry.name,
-      image: entry.url,
-      label: entry.label,
-    }))
-    .filter((entry) =>
-      gatewayBreakfastMenu
-        .flatMap((day) => day)
-        .filter((item) => !userFavoriteItems.includes(item))
-        .includes(entry.name),
-    );
+  const gatewayBreakfastMenuJP = gatewayBreakfastFiltered.map((day) =>
+    day
+      .map((item) => foodTable.find((entry) => entry.name === item))
+      .filter(Boolean)
+      .map((name) => name?.translation[0]),
+  );
   const gatewayLunchMenu = gatewayMenu.map((day: DayMenu) =>
     day.menu
       .map((group: SdxGroup) =>
@@ -223,18 +219,12 @@ const DashboardPage = () => {
       .flat(),
   );
   const gatewayLunchFiltered = gatewayLunchMenu.map((day) => day.filter((item) => userFavoriteItems.includes(item)));
-  const gatewayLunchRecommendedItems: RecommendedItem[] = foodTable
-    .map((entry) => ({
-      name: entry.name,
-      image: entry.url,
-      label: entry.label,
-    }))
-    .filter((entry) =>
-      gatewayLunchMenu
-        .flatMap((day) => day)
-        .filter((item) => !userFavoriteItems.includes(item))
-        .includes(entry.name),
-    );
+  const gatewayLunchMenuJP = gatewayLunchFiltered.map((day) =>
+    day
+      .map((item) => foodTable.find((entry) => entry.name === item))
+      .filter(Boolean)
+      .map((name) => name?.translation[0]),
+  );
   const gatewayDinnerMenu = gatewayMenu.map((day: DayMenu) =>
     day.menu
       .map((group: SdxGroup) =>
@@ -249,29 +239,25 @@ const DashboardPage = () => {
       .flat(),
   );
   const gatewayDinnerFiltered = gatewayDinnerMenu.map((day) => day.filter((item) => userFavoriteItems.includes(item)));
-  const gatewayDinnerRecommendedItems: RecommendedItem[] = foodTable
-    .map((entry) => ({
-      name: entry.name,
-      image: entry.url,
-      label: entry.label,
-    }))
-    .filter((entry) =>
-      gatewayDinnerMenu
-        .flatMap((day) => day)
-        .filter((item) => !userFavoriteItems.includes(item))
-        .includes(entry.name),
-    );
+  const gatewayDinnerMenuJP = gatewayDinnerFiltered.map((day) =>
+    day
+      .map((item) => foodTable.find((entry) => entry.name === item))
+      .filter(Boolean)
+      .map((name) => name?.translation[0]),
+  );
   const gatewayCafeWeeklyItems: string[][] = gatewayBreakfastFiltered.map((breakfastItems, index) => [
     ...breakfastItems,
     ...(gatewayLunchFiltered[index] || []),
     ...(gatewayDinnerFiltered[index] || []),
   ]);
-  const gatewayCafeRecommendedItems: RecommendedItem[] = useMemo(
-    () => [...gatewayBreakfastRecommendedItems, ...gatewayLunchRecommendedItems, ...gatewayDinnerRecommendedItems],
-    [gatewayBreakfastRecommendedItems, gatewayLunchRecommendedItems, gatewayDinnerRecommendedItems],
-  );
+  const gatewayCafeWeeklyItemsJP = gatewayBreakfastMenuJP.map((day, index) => [
+    ...day,
+    ...(gatewayLunchMenuJP[index] || []),
+    ...(gatewayDinnerMenuJP[index] || []),
+  ]);
+  // END OF WEEKLY ITEMS FOR GATEWAY CAFE
 
-  // Weekly and Recommended for Aloha Cafe
+  // WEEKLY ITEMS FOR HALE ALOHA CAFE
   const alohaBrunchMenu = alohaMenu.map((day: DayMenu) =>
     day.menu
       .map((group: SdxGroup) =>
@@ -286,18 +272,12 @@ const DashboardPage = () => {
       .flat(),
   );
   const alohaBrunchFiltered = alohaBrunchMenu.map((day) => day.filter((item) => userFavoriteItems.includes(item)));
-  const alohaBrunchRecommendedItems: RecommendedItem[] = foodTable
-    .map((entry) => ({
-      name: entry.name,
-      image: entry.url,
-      label: entry.label,
-    }))
-    .filter((entry) =>
-      alohaBrunchMenu
-        .flatMap((day) => day)
-        .filter((item) => !userFavoriteItems.includes(item))
-        .includes(entry.name),
-    );
+  const alohaBrunchMenuJP = alohaBrunchFiltered.map((day) =>
+    day
+      .map((item) => foodTable.find((entry) => entry.name === item))
+      .filter(Boolean)
+      .map((name) => name?.translation[0]),
+  );
   const alohaDinnerMenu = alohaMenu.map((day: DayMenu) =>
     day.menu
       .map((group: SdxGroup) =>
@@ -312,6 +292,87 @@ const DashboardPage = () => {
       .flat(),
   );
   const alohaDinnerFiltered = alohaDinnerMenu.map((day) => day.filter((item) => userFavoriteItems.includes(item)));
+  const alohaDinnerMenuJP = alohaDinnerFiltered.map((day) =>
+    day
+      .map((item) => foodTable.find((entry) => entry.name === item))
+      .filter(Boolean)
+      .map((name) => name?.translation[0]),
+  );
+  const haleAlohaWeeklyItems: string[][] = alohaBrunchFiltered.map((brunchItems, index) => [
+    ...brunchItems,
+    ...(alohaDinnerFiltered[index] || []),
+  ]);
+  const haleAlohaWeeklyItemsJP = alohaBrunchMenuJP.map((day, index) => [...day, ...(alohaDinnerMenuJP[index] || [])]);
+  // END OF WEEKLY ITEMS FOR HALE ALOHA CAFE
+  //
+
+  // TO BE REMOVE
+  // TO BE REMOVE
+  // TO BE REMOVE
+  const campusCenterRecommendedItems: RecommendedItem[] = foodTable
+    .map((entry) => ({
+      name: entry.name,
+      image: entry.url,
+      label: entry.label,
+    }))
+    .filter((entry) =>
+      flattenedMenu
+        .flatMap((day) => day)
+        .filter((item) => !userFavoriteItems.includes(item))
+        .includes(entry.name),
+    );
+  const gatewayBreakfastRecommendedItems: RecommendedItem[] = foodTable
+    .map((entry) => ({
+      name: entry.name,
+      image: entry.url,
+      label: entry.label,
+    }))
+    .filter((entry) =>
+      gatewayBreakfastMenu
+        .flatMap((day) => day)
+        .filter((item) => !userFavoriteItems.includes(item))
+        .includes(entry.name),
+    );
+  const gatewayDinnerRecommendedItems: RecommendedItem[] = foodTable
+    .map((entry) => ({
+      name: entry.name,
+      image: entry.url,
+      label: entry.label,
+    }))
+    .filter((entry) =>
+      gatewayDinnerMenu
+        .flatMap((day) => day)
+        .filter((item) => !userFavoriteItems.includes(item))
+        .includes(entry.name),
+    );
+  const gatewayLunchRecommendedItems: RecommendedItem[] = foodTable
+    .map((entry) => ({
+      name: entry.name,
+      image: entry.url,
+      label: entry.label,
+    }))
+    .filter((entry) =>
+      gatewayLunchMenu
+        .flatMap((day) => day)
+        .filter((item) => !userFavoriteItems.includes(item))
+        .includes(entry.name),
+    );
+  const gatewayCafeRecommendedItems: RecommendedItem[] = useMemo(
+    () => [...gatewayBreakfastRecommendedItems, ...gatewayLunchRecommendedItems, ...gatewayDinnerRecommendedItems],
+    [gatewayBreakfastRecommendedItems, gatewayLunchRecommendedItems, gatewayDinnerRecommendedItems],
+  );
+  const alohaBrunchRecommendedItems: RecommendedItem[] = foodTable
+    .map((entry) => ({
+      name: entry.name,
+      image: entry.url,
+      label: entry.label,
+    }))
+    .filter((entry) =>
+      alohaBrunchMenu
+        .flatMap((day) => day)
+        .filter((item) => !userFavoriteItems.includes(item))
+        .includes(entry.name),
+    );
   const alohaDinnerRecommendedItems: RecommendedItem[] = foodTable
     .map((entry) => ({
       name: entry.name,
@@ -324,15 +385,13 @@ const DashboardPage = () => {
         .filter((item) => !userFavoriteItems.includes(item))
         .includes(entry.name),
     );
-  const haleAlohaWeeklyItems: string[][] = alohaBrunchFiltered.map((brunchItems, index) => [
-    ...brunchItems,
-    ...(alohaDinnerFiltered[index] || []),
-  ]);
   const haleAlohaRecommendedItems: RecommendedItem[] = useMemo(
     () => [...alohaBrunchRecommendedItems, ...alohaDinnerRecommendedItems],
     [alohaBrunchRecommendedItems, alohaDinnerRecommendedItems],
   );
-  console.log(haleAlohaRecommendedItems);
+  // END TO BE REMOVE
+  // END TO BE REMOVE
+  // END TO BE REMOVE
 
   // Filter by location
   const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -345,11 +404,21 @@ const DashboardPage = () => {
         setSecondaryOptions(['All', 'Breakfast', 'Lunch', 'Dinner']);
         setSelectedSecondaryOption('All');
         break;
+      case 'ゲートウェイカフェ':
+        setSecondaryOptions(['全部', '朝食', '昼食', '夕食']);
+        setSelectedSecondaryOption('全部');
+        break;
       case 'Hale Aloha Café':
         setSecondaryOptions(['All', 'Brunch', 'Dinner']);
         setSelectedSecondaryOption('All');
         break;
+      case 'ハレアロハカフェ':
+        setSecondaryOptions(['全部', 'ブランチ', '夕食']);
+        setSelectedSecondaryOption('全部');
+        break;
       default:
+        setSecondaryOptions([]);
+        setSelectedSecondaryOption('All');
         break;
     }
   };
@@ -370,37 +439,78 @@ const DashboardPage = () => {
     }
     return combined;
   }, [campusCenterWeeklyItems, gatewayCafeWeeklyItems, haleAlohaWeeklyItems]);
+  const combinedWeeklyItemsJP = useMemo(() => {
+    const combined = [];
+    for (let i = 0; i < 7; i++) {
+      combined.push([
+        ...safeArray(campusCenterWeeklyItemsJP[i]),
+        ...safeArray(gatewayCafeWeeklyItemsJP[i]),
+        ...safeArray(haleAlohaWeeklyItemsJP[i]),
+      ]);
+    }
+    return combined;
+  }, [campusCenterWeeklyItemsJP, gatewayCafeWeeklyItemsJP, haleAlohaWeeklyItemsJP]);
 
+  const defaultArray = Array(7).fill([]);
   const getFilteredWeeklyItems = () => {
     switch (selectedOption) {
       case 'Campus Center Food Court':
         return campusCenterWeeklyItems;
+      case 'キャンパスセンター':
+        return campusCenterWeeklyItemsJP;
       case 'Gateway Café':
+      case 'ゲートウェイカフェ':
         switch (selectedSecondaryOption) {
           case 'Breakfast':
             return gatewayBreakfastFiltered;
+          case '朝食':
+            return gatewayBreakfastMenuJP;
           case 'Lunch':
             return gatewayLunchFiltered;
+          case '昼食':
+            return gatewayLunchMenuJP;
           case 'Dinner':
             return gatewayDinnerFiltered;
-          default:
+          case '夕食':
+            return gatewayDinnerMenuJP;
+          case 'All':
             return gatewayCafeWeeklyItems;
+          case '全部':
+            return gatewayCafeWeeklyItemsJP;
+          default:
+            return [];
         }
       case 'Hale Aloha Café':
+      case 'ハレアロハカフェ':
         switch (selectedSecondaryOption) {
           case 'Brunch':
             return alohaBrunchFiltered;
+          case 'ブランチ':
+            return alohaBrunchMenuJP;
           case 'Dinner':
             return alohaDinnerFiltered;
-          default:
+          case '夕食':
+            return alohaDinnerMenuJP;
+          case 'All':
             return haleAlohaWeeklyItems;
+          case '全部':
+            return haleAlohaWeeklyItemsJP;
+          default:
+            return defaultArray;
         }
-      default:
+      case 'All':
         return combinedWeeklyItems;
+      case '全部':
+        return combinedWeeklyItemsJP;
+      default:
+        return defaultArray;
     }
   };
 
   // Recommended Items
+  // TO BE REMOVE
+  // TO BE REMOVE
+  // TO BE REMOVE
   // eslint-disable-next-line arrow-body-style
   const combinedRecommendedItems = useMemo(() => {
     return [
@@ -414,22 +524,30 @@ const DashboardPage = () => {
     switch (selectedOption) {
       case 'Campus Center Food Court':
         return campusCenterRecommendedItems;
+      case 'キャンパスセンター':
       case 'Gateway Café':
+      case 'ゲートウェイカフェ':
         switch (selectedSecondaryOption) {
           case 'Breakfast':
+          case '朝食':
             return gatewayBreakfastRecommendedItems;
           case 'Lunch':
+          case '昼食':
             return gatewayLunchRecommendedItems;
           case 'Dinner':
+          case '夕食':
             return gatewayDinnerRecommendedItems;
           default:
             return gatewayCafeRecommendedItems;
         }
       case 'Hale Aloha Café':
+      case 'ハレアロハカフェ':
         switch (selectedSecondaryOption) {
           case 'Brunch':
+          case 'ブランチ':
             return alohaBrunchRecommendedItems;
           case 'Dinner':
+          case '夕食':
             return alohaDinnerRecommendedItems;
           default:
             return haleAlohaRecommendedItems;
@@ -438,6 +556,9 @@ const DashboardPage = () => {
         return combinedRecommendedItems;
     }
   };
+  // END TO BE REMOVE
+  // END TO BE REMOVE
+  // END TO BE REMOVE
 
   // Render a loading state while fetching data
   if (loading) {
@@ -450,19 +571,25 @@ const DashboardPage = () => {
 
   return (
     <Container className="body">
-      <Row className="mt-4 mb-2">
-        <Container>
-          <Form.Select className="d-flex ms-auto" style={{ width: '260px' }} onChange={handleSelectChange}>
-            <option>All</option>
-            <option>Campus Center Food Court</option>
-            <option>Gateway Café</option>
-            <option>Hale Aloha Café</option>
+      <Row className="my-2">
+        <Col>
+          <Form.Select style={{ width: '260px' }} onChange={handleSelectChange}>
+            <option>{language === 'English' ? 'All' : '全部'}</option>
+            <option>{language === 'English' ? 'Campus Center Food Court' : 'キャンパスセンター'}</option>
+            <option>{language === 'English' ? 'Gateway Café' : 'ゲートウェイカフェ'}</option>
+            <option>{language === 'English' ? 'Hale Aloha Café' : 'ハレアロハカフェ'}</option>
           </Form.Select>
-        </Container>
+        </Col>
+        <Col>
+          <Form.Select className="d-flex ms-auto" style={{ width: '110px' }} onChange={handleLanguageChange}>
+            <option value="English">English</option>
+            <option value="Japanese">日本語</option>
+          </Form.Select>
+        </Col>
       </Row>
       <Row>
         <Container>
-          <Form.Select className="d-flex ms-auto" style={{ width: '200px' }} onChange={handleSecondarySelectChange}>
+          <Form.Select style={{ width: '200px' }} onChange={handleSecondarySelectChange}>
             {secondaryOptions.map((option) => (
               <option key={option}>{option}</option>
             ))}
@@ -474,11 +601,10 @@ const DashboardPage = () => {
           weeklyItems={getFilteredWeeklyItems()}
           userFavoriteItems={userFavoriteItems}
           onToggle={handleToggle}
+          language={language}
         />
       </Row>
-      <Row className="pt-4 mt-4">
-        <h1>Recommended:</h1>
-      </Row>
+      <Row className="pt-4 mt-4">{language === 'English' ? <h1>Recommended</h1> : <h1>おすすめ</h1>}</Row>
       <Row className="mb-4">
         <FoodItemSlider
           foodItem={getFilteredRecommendedItems()}

@@ -385,7 +385,7 @@ export async function foodTableCCMenu(menuId: number) {
   }
 }
 
-export async function foodTableSdxMenu(menuId: number) {
+export async function foodTableGatewayMenu(menuId: number) {
   try {
     // Fetch the specific menu row by ID
     const menu = await prisma.gatewayMenus.findUnique({
@@ -423,7 +423,9 @@ export async function foodTableSdxMenu(menuId: number) {
     // Create a map of English formal names to Japanese formal names
     const japaneseNameMap = new Map<string, string>();
     japaneseFoodData.forEach((item, index) => {
-      japaneseNameMap.set(foodData[index].name, item.name);
+      if (foodData[index]) {
+        japaneseNameMap.set(foodData[index].name, item.name);
+      }
     });
 
     // Deduplicate by `name` and `label`
@@ -435,7 +437,71 @@ export async function foodTableSdxMenu(menuId: number) {
       return {
         name,
         url: '',
-        label: [],
+        label: ['Gateway'],
+        translation: [japaneseName],
+      };
+    });
+
+    await foodTableBaseFunction(uniqueFoodData, menuId);
+  } catch (error) {
+    console.error('Sodexo:', error);
+    throw new Error('Error populating from Sodexo');
+  }
+}
+
+export async function foodTableAlohaMenu(menuId: number) {
+  try {
+    // Fetch the specific menu row by ID
+    const menu = await prisma.haleAlohaMenus.findUnique({
+      where: { id: menuId },
+    });
+    if (!menu) {
+      console.error(`No menu found with id: ${menuId}`);
+      return;
+    }
+
+    // Fetch the Japanese menu row by date
+    // Could be modular. Add Spanish and Korean.
+    const japaneseMenu = await prisma.haleAlohaMenus.findFirst({
+      where: { date: menu.date, language: 'Japanese' },
+    });
+    if (!japaneseMenu) {
+      console.error(`No Japanese menu found for date: ${menu.date}`);
+      return;
+    }
+
+    // Safely parse the menu data
+    let menuItems;
+    let japaneseMenuItems;
+    try {
+      menuItems = typeof menu.menu === 'string' ? JSON.parse(menu.menu) : menu.menu;
+      japaneseMenuItems = typeof japaneseMenu.menu === 'string' ? JSON.parse(japaneseMenu.menu) : japaneseMenu.menu;
+    } catch (error) {
+      console.error('Invalid menu data:', menu.menu);
+      return;
+    }
+
+    const foodData: FoodItem[] = extractFormalNames(menuItems).map((name) => ({ name, label: [] }));
+    const japaneseFoodData: FoodItem[] = extractFormalNames(japaneseMenuItems).map((name) => ({ name, label: [] }));
+
+    // Create a map of English formal names to Japanese formal names
+    const japaneseNameMap = new Map<string, string>();
+    japaneseFoodData.forEach((item, index) => {
+      if (foodData[index]) {
+        japaneseNameMap.set(foodData[index].name, item.name);
+      }
+    });
+
+    // Deduplicate by `name` and `label`
+    const uniqueFoodData: FoodTableEntry[] = Array.from(
+      new Map(foodData.map((item) => [JSON.stringify({ name: item.name }), item])).values(),
+    ).map(({ name }) => {
+      const japaneseName = japaneseNameMap.get(name) || '';
+
+      return {
+        name,
+        url: '',
+        label: ['Hale Aloha'],
         translation: [japaneseName],
       };
     });

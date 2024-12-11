@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getLatestSdxMenusWeek } from '@/lib/dbActions';
 import { Location } from '@/types/menuTypes';
-import { foodTableSdxMenu } from '@/lib/foodTable';
+import { foodTableGatewayMenu } from '@/lib/foodTable';
 
 // eslint-disable-next-line import/prefer-default-export
 export async function GET(request: NextRequest) {
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     latestMenu.forEach(async (day) => {
-      await foodTableSdxMenu(day.id);
+      await foodTableGatewayMenu(day.id);
     });
     return NextResponse.json(latestMenu);
   } catch (error) {
