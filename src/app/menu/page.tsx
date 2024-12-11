@@ -119,6 +119,17 @@ const Page = () => {
     typographyVariant = 'h4';
   }
 
+  const isXs = useMediaQuery(theme.breakpoints.only('xs'));
+
+  const containerStyle = () => {
+    if (isXs) {
+      return { marginLeft: '0%', marginRight: '0%', paddingTop: '110px' };
+    } if (isSmUp) {
+      return { marginLeft: '0%', marginRight: '0%', paddingTop: '110px' };
+    }
+    return { paddingTop: '110px' };
+  };
+
   const langItemClick = (lang: string) => {
     setLanguage(lang);
   };
@@ -205,7 +216,7 @@ const Page = () => {
   };
 
   return (
-    <Container fluid className="my-4 menu-container" style={{ paddingTop: '110px' }}>
+    <Container fluid className="my-4 menu-container" style={containerStyle()}>
       <Stack
         spacing={2}
         sx={{
