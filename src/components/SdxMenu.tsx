@@ -72,7 +72,7 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
   );
 
   return (
-    <Box sx={{ padding: 2 }}>
+    <Box>
       <Tabs
         variant="underline"
         defaultActiveKey={currentDateOf}
