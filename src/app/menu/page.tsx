@@ -125,7 +125,7 @@ const Page = () => {
     if (isXs) {
       return { marginLeft: '0%', marginRight: '0%', paddingTop: '110px' };
     } if (isSmUp) {
-      return { marginLeft: '0%', marginRight: '0%', paddingTop: '110px' };
+      return { paddingTop: '110px' };
     }
     return { paddingTop: '110px' };
   };
@@ -216,7 +216,11 @@ const Page = () => {
   };
 
   return (
-    <Container fluid className="my-4 menu-container" style={containerStyle()}>
+    <Container
+      fluid
+      className="my-4 menu-container"
+      style={containerStyle()}
+    >
       <Stack
         spacing={2}
         sx={{

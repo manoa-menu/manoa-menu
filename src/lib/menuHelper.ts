@@ -85,3 +85,5 @@ export const getDayHeaders = (language: string): string[] => {
 
   return dayHeaders;
 };
+
+export const isFav = (favList: string[], name: string): boolean => favList.includes(name);

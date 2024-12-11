@@ -17,7 +17,7 @@ import Grid from '@mui/material/Grid2';
 import Tooltip from '@mui/material/Tooltip';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { getDayHeaders } from '@/lib/menuHelper';
+import { getDayHeaders, isFav } from '@/lib/menuHelper';
 import { getCurrentDayOf } from '@/lib/dateFunctions';
 import StarButton from '@/app/campus-cravings/StarButton';
 
@@ -44,6 +44,15 @@ const favTooltipNames = new Map<string, string>([
   ['japanese', 'お気に？'],
 ]);
 
+const sdxFilter = [
+  'White Rice',
+  'Brown Rice',
+  'Sour Cream',
+  'Steamed White Rice',
+  'Steamed Brown Rice',
+  "Lay's Potato Chips",
+];
+
 const VeganIcon: React.FC<TooltipIconProps> = ({ language }) => (
   <Tooltip title={displayTooltipNames.get(language)?.[0] || 'Vegan'} placement="top" arrow>
     <Avatar sx={{ bgcolor: green[400], width: 28, height: 28 }}>
@@ -62,9 +71,18 @@ const VegetarianIcon: React.FC<TooltipIconProps> = ({ language }) => (
 
 const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], userId }) => {
   const currentDateOf = getCurrentDayOf();
+  console.log(`Favorite Array: ${favArr}`);
+
+  const [favArray, setFavArray] = useState(favArr);
 
   const handleToggle = (item: string) => {
-    console.log(`Toggled favorite for ${item}`);
+    const updatedFavArr = (prevFavArray: string[]) => {
+      if (prevFavArray.includes(item)) {
+        return prevFavArray.filter((favItem) => favItem !== item);
+      }
+      return [...prevFavArray, item];
+    };
+    setFavArray(updatedFavArr);
   };
 
   const [daysOpen, setDaysOpen] = useState(
@@ -90,7 +108,7 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
                 case 1:
                   return { xs: 12, md: 10, lg: 8, xl: 7 };
                 case 2:
-                  return { xs: 12, md: 12, lg: 6, xl: 6 };
+                  return { xs: 12, md: 6, lg: 6, xl: 6 };
                 case 3:
                   return { xs: 12, md: 12, lg: 6, xl: 4 };
                 case 4:
@@ -183,12 +201,12 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
                                         </Typography>
                                       </Grid>
                                       <Grid size={2}>
-                                        {(userId !== -21) && (
+                                        {(userId !== -21) && !sdxFilter.includes(item.formalName) && (
                                         <Tooltip title={favTooltipNames.get(language)} placement="bottom" arrow>
                                           <div style={{ display: 'flex', justifyContent: 'center' }}>
                                             <StarButton
                                               item={item.formalName}
-                                              isStarred={favArr.includes(item.formalName)}
+                                              isStarred={isFav(favArray, item.formalName)}
                                               onToggle={() => handleToggle(item.formalName)}
                                             />
                                           </div>
