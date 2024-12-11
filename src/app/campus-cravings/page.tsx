@@ -57,6 +57,7 @@ function CampusCravings() {
       name: entry.name,
       image: entry.url,
       likes: entry.likes,
+      label: entry.label,
       isStarred: false, // Add logic for starring if needed
       onToggle: () => {}, // Placeholder for toggle functionality
     }));

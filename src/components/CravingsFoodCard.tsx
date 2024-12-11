@@ -7,7 +7,7 @@ interface FoodInfo {
   name: string;
   likes: number;
   image: string;
-  label: string;
+  label: string[];
   isStarred: boolean;
   onToggle: (id: string) => void;
 }
