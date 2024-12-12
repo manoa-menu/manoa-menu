@@ -11,12 +11,10 @@ const daysofTheWeekJP: string[] = ['日曜日', '月曜日', '火曜日', '水�
 
 const Calendar = ({
   weeklyItems,
-  userFavoriteItems,
   onToggle,
   language,
 }: {
   weeklyItems: string[][];
-  userFavoriteItems: string[];
   onToggle: (item: string) => void;
   language: string;
 }) => {
@@ -28,7 +26,9 @@ const Calendar = ({
     setSelectedDay(dayIndex);
     setShow(true);
   };
+
   const daysToDisplay = language === 'English' ? daysOfTheWeek : daysofTheWeekJP;
+
   return (
     <Container>
       <Row>
@@ -81,11 +81,7 @@ const Calendar = ({
                         <Row>
                           {foodInDay}
                           <Col className="star-button">
-                            <StarButton
-                              item={foodInDay}
-                              isStarred={userFavoriteItems.includes(foodInDay)}
-                              onToggle={onToggle}
-                            />
+                            <StarButton item={foodInDay} isStarred onToggle={onToggle} />
                           </Col>
                         </Row>
                       </Container>

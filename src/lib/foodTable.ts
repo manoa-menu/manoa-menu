@@ -1,7 +1,7 @@
 /* eslint-disable operator-linebreak */
 import { PrismaClient } from '@prisma/client';
 import { FilteredSodexoMeal } from '@/types/menuTypes';
-// import assignLabels from './assignLabel';
+import assignLabels from './assignLabel';
 
 const SerpApi = require('google-search-results-nodejs');
 
@@ -368,13 +368,13 @@ export async function foodTableCCMenu(menuId: number) {
     const uniqueFoodData: FoodTableEntry[] = Array.from(
       new Map(foodData.map((item) => [JSON.stringify({ name: item.name, label: item.label }), item])).values(),
     ).map(({ name, label }) => {
-      // const assignedLabels = assignLabels(name);
+      const assignedLabels = assignLabels(name);
       const japaneseName = japaneseNameMap.get(name) || '';
 
       return {
         name,
         url: '',
-        label: [...label],
+        label: [...label, ...assignedLabels],
         translation: [japaneseName],
       };
     });
@@ -433,11 +433,12 @@ export async function foodTableGatewayMenu(menuId: number) {
       new Map(foodData.map((item) => [JSON.stringify({ name: item.name }), item])).values(),
     ).map(({ name }) => {
       const japaneseName = japaneseNameMap.get(name) || '';
+      const assignedLabels = assignLabels(name);
 
       return {
         name,
         url: '',
-        label: ['Gateway'],
+        label: ['Gateway', ...assignedLabels],
         translation: [japaneseName],
       };
     });
@@ -496,12 +497,13 @@ export async function foodTableAlohaMenu(menuId: number) {
     const uniqueFoodData: FoodTableEntry[] = Array.from(
       new Map(foodData.map((item) => [JSON.stringify({ name: item.name }), item])).values(),
     ).map(({ name }) => {
+      const assignedLabels = assignLabels(name);
       const japaneseName = japaneseNameMap.get(name) || '';
 
       return {
         name,
         url: '',
-        label: ['Hale Aloha'],
+        label: ['Hale Aloha', ...assignedLabels],
         translation: [japaneseName],
       };
     });
