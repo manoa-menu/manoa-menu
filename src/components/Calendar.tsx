@@ -7,15 +7,16 @@ import StarButton from '@/app/campus-cravings/StarButton';
 import './calendar.css';
 
 const daysOfTheWeek: string[] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const daysofTheWeekJP: string[] = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
 
 const Calendar = ({
   weeklyItems,
-  userFavoriteItems,
   onToggle,
+  language,
 }: {
   weeklyItems: string[][];
-  userFavoriteItems: string[];
   onToggle: (item: string) => void;
+  language: string;
 }) => {
   const [show, setShow] = useState(false);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
@@ -26,11 +27,13 @@ const Calendar = ({
     setShow(true);
   };
 
+  const daysToDisplay = language === 'English' ? daysOfTheWeek : daysofTheWeekJP;
+
   return (
     <Container>
       <Row>
-        {daysOfTheWeek.map((dayTitle, dayIndex) => (
-          <Col key={daysOfTheWeek[dayIndex]}>
+        {daysToDisplay.map((dayTitle, dayIndex) => (
+          <Col key={daysToDisplay[dayIndex]}>
             <Card className="calendar-card" onClick={() => handleShow(dayIndex)}>
               <Card.Header style={{ fontWeight: 'bold', fontSize: '18px' }}>{dayTitle}</Card.Header>
               <Card.Body className="calendar-scroll p-0">
@@ -59,7 +62,7 @@ const Calendar = ({
         {selectedDay !== null && (
           <Card className="calendar-card-expanded">
             <Card.Header className="d-flex justify-content-between" style={{ fontWeight: 'bold', fontSize: '18px' }}>
-              {daysOfTheWeek[selectedDay]}
+              {daysToDisplay[selectedDay]}
               <XLg className="pt-2" onClick={handleClose} />
             </Card.Header>
             <Card.Body className="calendar-scroll p-0">
@@ -78,11 +81,7 @@ const Calendar = ({
                         <Row>
                           {foodInDay}
                           <Col className="star-button">
-                            <StarButton
-                              item={foodInDay}
-                              isStarred={userFavoriteItems.includes(foodInDay)}
-                              onToggle={onToggle}
-                            />
+                            <StarButton item={foodInDay} isStarred onToggle={onToggle} />
                           </Col>
                         </Row>
                       </Container>

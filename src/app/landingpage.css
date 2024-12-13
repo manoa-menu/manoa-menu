@@ -189,4 +189,12 @@ body {
   #features-title {
     font-size: 40px;
   }
+  .notransition {
+    animation-name: none;
+  }
+  .animated {
+    transition-property: none !important;
+    transform: none !important;
+    animation: none !important;
+  }
 }

@@ -16,7 +16,6 @@ import {
 import fetchOpenAI from '@/app/utils/api/openai';
 import { getSdxMenu, insertSdxMenu } from '@/lib/dbActions';
 import { getSevenDayDate, getCurrentWeekDates } from '@/lib/dateFunctions';
-import { populateFoodTableFromSdxMenu } from '@/lib/foodTable';
 
 const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => ({
   name: rootObject.name,
@@ -162,7 +161,6 @@ export async function GET(req: NextRequest) {
             console.log(`Inserting blank menu for ${day} in English`);
           }
           await insertSdxMenu(filteredData, locationOption, 'English', day);
-          await populateFoodTableFromSdxMenu(filteredData);
 
           // Translate the menu
 

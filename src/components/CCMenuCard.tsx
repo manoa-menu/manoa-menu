@@ -1,12 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Card from 'react-bootstrap/Card';
 import Table from 'react-bootstrap/Table';
 import Tooltip from '@mui/material/Tooltip';
 
 import checkHoliday from '@/lib/checkHoliday';
 import StarButton from '@/app/campus-cravings/StarButton';
+import { isFav } from '@/lib/menuHelper';
 
 interface MenuCardProps {
   name: string;
@@ -34,8 +35,25 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
     ['japanese', 'お気に？'],
   ]);
 
+  const sdxFilter = [
+    'White Rice',
+    'Brown Rice',
+    'Sour Cream',
+    'Steamed White Rice',
+    'Steamed Brown Rice',
+    "Lay's Potato Chips",
+  ];
+
+  const [favArray, setFavArray] = useState(favArr);
+
   const handleToggle = (item: string) => {
-    console.log(`Toggled favorite for ${item}`);
+    const updatedFavArr = (prevFavArray: string[]) => {
+      if (prevFavArray.includes(item)) {
+        return prevFavArray.filter((favItem) => favItem !== item);
+      }
+      return [...prevFavArray, item];
+    };
+    setFavArray(updatedFavArr);
   };
 
   const getTableHeader = (lang: string): string[] => {
@@ -77,12 +95,12 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
                   <td className={(userId === -21) ? 'pe-2' : 'pe-0'}>
                     <span className="d-flex justify-content-between">
                       {item}
-                      {item && (userId !== -21) && (
+                      {item && (userId !== -21) && !sdxFilter.includes(item) && (
                         <Tooltip title={displayTooltipNames.get(language)} arrow>
                           <div style={{ display: 'flex', justifyContent: 'center' }}>
                             <StarButton
                               item={item}
-                              isStarred={favArr.includes(item)}
+                              isStarred={isFav(favArray, item)}
                               onToggle={() => handleToggle(item)}
                             />
                           </div>
@@ -93,11 +111,11 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
                   <td className={(userId === -21) ? 'pe-2' : 'pe-0'}>
                     <span className="d-flex justify-content-between">
                       {grabAndGo[index] || ''}
-                      {grabAndGo[index] && (userId !== -21) && (
+                      {grabAndGo[index] && (userId !== -21) && !sdxFilter.includes(grabAndGo[index]) && (
                         <Tooltip title={displayTooltipNames.get(language)} arrow>
                           <StarButton
                             item={grabAndGo[index]}
-                            isStarred={favArr.includes(grabAndGo[index])}
+                            isStarred={isFav(favArray, grabAndGo[index])}
                             onToggle={() => handleToggle(grabAndGo[index])}
                           />
                         </Tooltip>
