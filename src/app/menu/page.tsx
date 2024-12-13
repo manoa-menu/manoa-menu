@@ -147,8 +147,8 @@ const Page = () => {
         console.log(`User language: ${userLanguage}`);
       }
     };
-    fetchData();
-  }, [session]);
+    if (userId !== 21) fetchData();
+  }, [session, userId]);
 
   useEffect(() => {
     const fetchFav = async () => {
@@ -156,7 +156,7 @@ const Page = () => {
       const data = await response.json() || [];
       setFavArr(data);
     };
-    fetchFav();
+    if (userId !== 21) fetchFav();
   }, [userId]);
 
   useEffect(() => {

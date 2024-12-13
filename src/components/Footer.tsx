@@ -1,4 +1,4 @@
-import { Col, Container, Row, Image } from 'react-bootstrap';
+import { Col, Container, Row } from 'react-bootstrap';
 import { FaGithub, FaEnvelope } from 'react-icons/fa';
 
 /** The Footer appears at the bottom of every page. Rendered by the App Layout component. */
@@ -8,16 +8,8 @@ const Footer = () => (
       <Row className="align-items-center">
         {/* Left section with logo and GitHub links */}
         <Col md={4} className="d-flex flex-column align-items-center">
-          <h5 className="text-center text-success mb-3">Follow Us</h5>
+          <h4 className="text-center mb-3" style={{ color: '#1ea468' }}>Follow Us</h4>
           <Row className="d-flex align-items-center">
-            <Col className="pe-0">
-              <Image
-                src="/manoa-menu-logo.jpg"
-                alt="Manoa Menu Logo"
-                width="120px"
-                className="rounded border border-secondary"
-              />
-            </Col>
             <Col className="ps-1">
               <a
                 className="text-light text-decoration-none d-block mb-3"
@@ -49,8 +41,6 @@ const Footer = () => (
             <strong>Brendan Kuwabara, Adam Graham, Eric Kim, Dat Truong, and Justin Sumiye</strong>
             <br />
             University of Hawaii at Manoa
-            <br />
-            Honolulu, HI 96822
           </p>
           <a
             className="text-light text-decoration-none"
@@ -64,7 +54,7 @@ const Footer = () => (
 
         {/* Right section with support and contact */}
         <Col md={4} className="text-center">
-          <h5 className="text-success">Here to Help</h5>
+          <h4 style={{ color: '#1ea468' }}>Here to Help</h4>
           <p>If you run into any issues, we&apos;re here to make your experience smoother.</p>
           <a
             className="text-light text-decoration-none"
@@ -72,7 +62,7 @@ const Footer = () => (
             target="_blank"
             rel="noopener noreferrer"
           >
-            <FaEnvelope size={18} />
+            <FaEnvelope size={19} />
             <span className="ms-2">Contact Us</span>
           </a>
         </Col>

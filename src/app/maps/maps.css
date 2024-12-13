@@ -8,13 +8,13 @@ a {
 }
 
 .header-text {
-  margin: 20px 0 20px 0;
+  margin: 10px 0 10px 0;
   font-size: 24px;
   font-weight: bold;
   text-decoration: underline;
   text-decoration-color: #024731;
-  text-decoration-thickness: 2px;
-  letter-spacing: 2px;
+  text-decoration-thickness: 1px;
+  text-wrap:balance;
   text-align: center;
 }
 
@@ -22,7 +22,11 @@ a {
   color: #024731;
   text-decoration: underline;
   text-decoration-color: #024731;
-  text-decoration-thickness: 3px;
+  text-decoration-thickness: 2px;
+}
+
+.address {
+  font-size: 20px;
 }
 
 .gateway-wrapper {
@@ -65,4 +69,33 @@ a {
   .campus-center {
     height: 250px;
   }
+}
+
+.directions-button {
+  width: 100%;
+  font-weight: 500;
+  font-size: 20px;
+  display: inline-block;
+  outline: 0;
+  border: 0;
+  cursor: pointer;
+  will-change: box-shadow,transform;
+  background: radial-gradient( 100% 100% at 100% 0%, #55d99d 0%, #2c9264 100% );
+  box-shadow: 0px 0.02em 0.02em rgb(45 35 66 / 40%), 0px 0.3em 0.7em -0.01em #334a354d, inset 0px -0.01em 0px #58776480;
+  padding: 0 2em;
+  border-radius: 0.3em;
+  color: #fff;
+  height: 2.6em;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 40%);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.directions-button:hover {
+  box-shadow: 0px 0.1em 0.2em rgba(35, 66, 45, 0.4), 0px 0.4em 0.7em -0.1em rgba(35, 66, 60, 0.3), inset 0px -0.1em 0px #168050;
+  transform: translateY(-0.1em);
+}
+
+.directions-button:active {
+  box-shadow: inset 0px 0.1em 0.6em #3ce093;
+  transform: translateY(0em);
 }
