@@ -14,6 +14,7 @@ interface FoodTableEntry {
   likes: number;
   label: string[];
   translation: string[];
+  location?: string;
 }
 
 function CampusCravings() {
@@ -43,16 +44,40 @@ function CampusCravings() {
     fetchData();
   }, []);
 
+  // Transform labels into location strings
+  const updatedFoodItems = foodTable.map((foodItem) => {
+    const location = foodItem.label.includes('grabAndGo') || foodItem.label.includes('plateLunch')
+      ? 'Campus Center Food Court'
+      : foodItem.label.join(', '); // Join labels into a single string if not 'grabandgo' or 'plate lunch'
+    return { ...foodItem, location };
+  });
+
+  // Mapping display names to location values
+  const locationMapping: { [key: string]: string } = {
+    'Campus Center Food Court': 'Campus Center Food Court',
+    'Gateway Café': 'Gateway',
+    'Hale Aloha Café': 'Hale Aloha',
+  };
+
+  // Reverse mapping for display names
+  const reverseLocationMapping: { [key: string]: string } = {
+    'Campus Center Food Court': 'Campus Center Food Court',
+    Gateway: 'Gateway Café',
+    'Hale Aloha': 'Hale Aloha Café',
+  };
+
   // Handle dropdown selection change
   const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedOption(event.target.value);
+    const selectedValue = event.target.value;
+    const mappedValue = locationMapping[selectedValue] || selectedValue;
+    setSelectedOption(mappedValue);
   };
 
   // Filter the food items based on the selected option
-  const filteredFoodItems = foodTable
+  const filteredFoodItems = updatedFoodItems
     .filter((foodItem) => {
       if (selectedOption === 'All') return true;
-      return foodItem.label.includes(selectedOption);
+      return foodItem.location.includes(selectedOption);
     })
     .map((entry) => ({
       id: entry.id,
@@ -60,6 +85,7 @@ function CampusCravings() {
       image: entry.url,
       likes: entry.likes,
       label: entry.label,
+      location: entry.location, // Include location property
       isStarred: false, // Add logic for starring if needed
       onToggle: () => {}, // Placeholder for toggle functionality
     }));
@@ -88,7 +114,7 @@ function CampusCravings() {
           <Form.Select
             className="my-2"
             style={{ width: '150px', border: '2px solid' }}
-            value={selectedOption}
+            value={reverseLocationMapping[selectedOption] || selectedOption}
             onChange={handleSelectChange}
           >
             <option>All</option>
