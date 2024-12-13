@@ -126,10 +126,18 @@ const labelKeywords: Labels = {
     Fried: ['Fried', 'Tempura', 'Katsu', 'Crispy'],
     'Roasted/Baked': ['Roast', 'Baked', 'Braised'],
   },
-  'Dietary Labels': {
-    Vegetarian: ['Vegetarian', 'Veggie'],
-  },
 };
+
+export function getKeyByValue(value: string): string | undefined {
+  for (const [key, mappings] of Object.entries(labelKeywords)) {
+    for (const [label] of Object.entries(mappings)) {
+      if (label === value) {
+        return key;
+      }
+    }
+  }
+  return undefined;
+}
 
 // Function to assign labels based on keywords
 function assignLabels(itemName: string): string[] {

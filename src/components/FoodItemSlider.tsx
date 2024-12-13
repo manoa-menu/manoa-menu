@@ -8,19 +8,11 @@ import './foodItemSlider.css';
 
 export type FoodItemType = {
   name: string;
-  image: string;
+  url: string;
   label: string[];
 };
 
-const FoodItemSlider = ({
-  foodItem,
-  userFavoriteItems,
-  onToggle,
-}: {
-  foodItem: FoodItemType[];
-  userFavoriteItems: string[];
-  onToggle: (item: string) => void;
-}) => {
+const FoodItemSlider = ({ foodItem, onToggle }: { foodItem: FoodItemType[]; onToggle: (item: string) => void }) => {
   const sliderRef = useRef<HTMLDivElement | null>(null);
   const [isLeftHovered, setIsLeftHovered] = useState(false);
   const [isRightHovered, setIsRightHovered] = useState(false);
@@ -45,9 +37,8 @@ const FoodItemSlider = ({
             <FoodItem
               key={itemCard.name}
               name={itemCard.name}
-              picture={itemCard.image}
+              picture={itemCard.url}
               label={itemCard.label}
-              userFavoriteItems={userFavoriteItems}
               onToggle={onToggle}
             />
           ))}
