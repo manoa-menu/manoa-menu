@@ -17,7 +17,6 @@ interface FoodTableEntry {
 }
 
 function CampusCravings() {
-  const [starredItems, setStarredItems] = useState<{ [key: string]: boolean }>({});
   const [selectedOption, setSelectedOption] = useState<string>('All');
   const [foodTable, setFoodTable] = useState<FoodTableEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -95,13 +94,6 @@ function CampusCravings() {
     );
   }
 
-  const toggleStar = (item: string) => {
-    setStarredItems((prev) => ({
-      ...prev,
-      [item]: !prev[item],
-    }));
-  };
-
   return (
     <Container className="my-5" style={{ paddingTop: '120px' }}>
       <Row>
@@ -128,8 +120,6 @@ function CampusCravings() {
           <CravingsFoodCard
             foodItems={filteredFoodItems.map((foodItem) => ({
               ...foodItem,
-              isStarred: starredItems[foodItem.id] || false,
-              onToggle: toggleStar,
             }))}
           />
         </Col>

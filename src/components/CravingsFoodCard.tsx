@@ -3,7 +3,7 @@ import { Card, Container } from 'react-bootstrap';
 import './CravingsFoodCard.css';
 
 interface FoodInfo {
-  id: string;
+  id: number;
   name: string;
   likes: number;
   image: string;
