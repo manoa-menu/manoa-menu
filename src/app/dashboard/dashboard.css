@@ -1,6 +1,9 @@
 .body {
-  margin-top: 100px;
-  margin-bottom: 150px;
+  padding-left: 13%;
+  padding-right: 13%;
+  padding-top: 110px;
+  padding-bottom: 150px;
+  background-color: rgba(211, 211, 211, 0.228);
 }
 
 .body-loading {
