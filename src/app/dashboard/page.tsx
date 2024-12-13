@@ -51,9 +51,15 @@ const SdxFilter = [
 
 const DashboardPage = () => {
   const { data: session } = useSession();
-  const userId = session?.user as { id: string };
-
-  console.log(userId);
+  const [userId, setUserId] = useState<number>(-21);
+  useEffect(() => {
+    const fetchData = async () => {
+      if (session?.user?.email) {
+        setUserId((session?.user as { id: number })?.id);
+      }
+    };
+    fetchData();
+  }, [session]);
   // Ensure arrays are not null or undefined
   const safeArray = (arr: any[]) => arr || [];
 
@@ -78,26 +84,19 @@ const DashboardPage = () => {
     setLanguage(event.target.value);
   };
 
+  console.log('userId:', userId);
+
   // FETCHING AND STORAGE
   // FETCHING AND STORAGE
   // Fetch Data from API endpoints
   const fetchData = async () => {
     try {
-      const [userFavorites, menuResult, gatewayResult, alohaResult, foodTableResult] = await Promise.allSettled([
-        fetch(`/api/userFavorites?userId=${userId}`),
+      const [menuResult, gatewayResult, alohaResult, foodTableResult] = await Promise.allSettled([
         fetch('/api/latestMenuCheck?language=English'), // Campus Center Food Court
         fetch('/api/latestGatewayMenuCheck?language=English'), // Gateway Café
         fetch('/api/latestAlohaMenuCheck?language=English'), // Hale Aloha Café
         fetch('/api/getFoodTable'),
       ]);
-
-      if (userFavorites.status === 'fulfilled') {
-        const userFavoriteItemsData = await userFavorites.value.json();
-        localStorage.setItem('userFavoriteItems', JSON.stringify(userFavoriteItemsData));
-        setUserFavoriteItems(userFavoriteItemsData);
-      } else {
-        console.error('Failed to fetch user favorite items');
-      }
 
       if (menuResult.status === 'fulfilled' && menuResult.value.ok) {
         const menuData = await menuResult.value.json();
@@ -521,7 +520,7 @@ const DashboardPage = () => {
   }
 
   return (
-    <Container className="body">
+    <div className="body">
       <Row className="my-2">
         <Col>
           <Form.Select style={{ width: '260px' }} onChange={handleSelectChange}>
@@ -556,9 +555,9 @@ const DashboardPage = () => {
       </Row>
       <Row className="pt-4 mt-4">{language === 'English' ? <h1>Recommended</h1> : <h1>おすすめ</h1>}</Row>
       <Row className="mb-4">
-        <FoodItemSlider foodItem={recommendedItems} onToggle={handleToggle} />
+        <FoodItemSlider foodItem={recommendedItems} onToggle={handleToggle} language={language} />
       </Row>
-    </Container>
+    </div>
   );
 };
 

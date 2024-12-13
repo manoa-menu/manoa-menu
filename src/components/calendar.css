@@ -22,6 +22,9 @@
 .calendar-card {
   cursor: pointer;
 }
+.calendar-card:hover {
+  border: 1px solid gold;
+}
 
 .calendar-card-expanded {
   width: 100%;

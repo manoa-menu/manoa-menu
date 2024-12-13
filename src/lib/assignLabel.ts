@@ -50,19 +50,6 @@ const labelKeywords: Labels = {
       'Braised',
     ],
     Seafood: ['Shrimp', 'Fish', 'Hoki', 'Salmon', 'Swai'],
-    Vegetarian: [
-      'Vegetarian',
-      'Veggie',
-      'Lasagna',
-      'Salad',
-      'Tofu',
-      'Quesadilla',
-      'Falafel',
-      'Hummus',
-      'Chickpea',
-      'Lentil',
-      'Bibimbap',
-    ],
   },
   'Cuisine Style': {
     American: [

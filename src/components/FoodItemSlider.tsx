@@ -12,7 +12,15 @@ export type FoodItemType = {
   label: string[];
 };
 
-const FoodItemSlider = ({ foodItem, onToggle }: { foodItem: FoodItemType[]; onToggle: (item: string) => void }) => {
+const FoodItemSlider = ({
+  foodItem,
+  onToggle,
+  language,
+}: {
+  foodItem: FoodItemType[];
+  onToggle: (item: string) => void;
+  language: string;
+}) => {
   const sliderRef = useRef<HTMLDivElement | null>(null);
   const [isLeftHovered, setIsLeftHovered] = useState(false);
   const [isRightHovered, setIsRightHovered] = useState(false);
@@ -40,6 +48,7 @@ const FoodItemSlider = ({ foodItem, onToggle }: { foodItem: FoodItemType[]; onTo
               picture={itemCard.url}
               label={itemCard.label}
               onToggle={onToggle}
+              language={language}
             />
           ))}
         </Col>

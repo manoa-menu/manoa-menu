@@ -19,6 +19,7 @@
   min-height: 350px;
   transition: transform 200ms ease-in-out;
   transform-origin: center;
+  cursor: pointer;
 }
 
 .hover-card:hover {

@@ -214,7 +214,6 @@ export async function foodTableBaseFunction(uniqueFoodData: FoodTableEntry[], me
             create: {
               name: item.name,
               url: '', // Assuming URL is empty for new items in this context
-              label: item.label,
               translation: item.translation,
             },
           });
@@ -251,7 +250,6 @@ export async function foodTableBaseFunction(uniqueFoodData: FoodTableEntry[], me
             create: {
               name: item.name,
               url: item.url,
-              label: item.label,
               translation: item.translation,
             },
           });
@@ -430,15 +428,15 @@ export async function foodTableGatewayMenu(menuId: number) {
 
     // Deduplicate by `name` and `label`
     const uniqueFoodData: FoodTableEntry[] = Array.from(
-      new Map(foodData.map((item) => [JSON.stringify({ name: item.name }), item])).values(),
-    ).map(({ name }) => {
+      new Map(foodData.map((item) => [JSON.stringify({ name: item.name, label: item.label }), item])).values(),
+    ).map(({ name, label }) => {
       const japaneseName = japaneseNameMap.get(name) || '';
       const assignedLabels = assignLabels(name);
 
       return {
         name,
         url: '',
-        label: ['Gateway', ...assignedLabels],
+        label: [...label, ...assignedLabels, 'Gateway'],
         translation: [japaneseName],
       };
     });
@@ -495,15 +493,15 @@ export async function foodTableAlohaMenu(menuId: number) {
 
     // Deduplicate by `name` and `label`
     const uniqueFoodData: FoodTableEntry[] = Array.from(
-      new Map(foodData.map((item) => [JSON.stringify({ name: item.name }), item])).values(),
-    ).map(({ name }) => {
+      new Map(foodData.map((item) => [JSON.stringify({ name: item.name, label: item.label }), item])).values(),
+    ).map(({ name, label }) => {
       const assignedLabels = assignLabels(name);
       const japaneseName = japaneseNameMap.get(name) || '';
 
       return {
         name,
         url: '',
-        label: ['Hale Aloha', ...assignedLabels],
+        label: [...label, ...assignedLabels, 'Hale Aloha'],
         translation: [japaneseName],
       };
     });
