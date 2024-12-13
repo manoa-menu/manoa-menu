@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Container, Col, Row, Form } from 'react-bootstrap';
-import { useSession } from 'next-auth/react';
 import CravingsFoodCard from '../../components/CravingsFoodCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import './CampusCravings.css';
@@ -18,8 +17,6 @@ interface FoodTableEntry {
 }
 
 function CampusCravings() {
-  const { data: session } = useSession();
-  const currentUser = session?.user?.email ?? null;
   const [starredItems, setStarredItems] = useState<{ [key: string]: boolean }>({});
   const [selectedOption, setSelectedOption] = useState<string>('All');
   const [foodTable, setFoodTable] = useState<FoodTableEntry[]>([]);
@@ -122,13 +119,6 @@ function CampusCravings() {
             <option>Gateway Café</option>
             <option>Hale Aloha Café</option>
           </Form.Select>
-
-          {currentUser && (
-            <Form.Select className="my-2" style={{ width: '150px', border: '2px solid' }}>
-              <option>All Favorites</option>
-              <option>My Favorites</option>
-            </Form.Select>
-          )}
         </Container>
       </Row>
 
@@ -141,7 +131,6 @@ function CampusCravings() {
               isStarred: starredItems[foodItem.id] || false,
               onToggle: toggleStar,
             }))}
-            currentUser={currentUser} // Pass currentUser prop
           />
         </Col>
       </div>
