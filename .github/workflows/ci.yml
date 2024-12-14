@@ -1,4 +1,4 @@
-name: ci-nextjs-application-template
+name: ci-manoa-menu
 on:
   push:
     branches: [main, master]
