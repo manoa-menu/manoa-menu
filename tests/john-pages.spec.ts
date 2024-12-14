@@ -1,16 +1,20 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 
 test.use({
   storageState: 'john-auth.json',
 });
 
-test('User Pages', async ({ page }) => {
+test('test', async ({ page }) => {
   await page.goto('http://localhost:3000/');
-  await expect(page.getByRole('link', { name: 'Add Stuff' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'List Stuff' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'john@foo.com' })).toBeVisible();
-  await page.getByRole('link', { name: 'Add Stuff' }).click();
-  await expect(page.getByRole('heading', { name: 'Add Stuff' })).toBeVisible();
-  await page.getByRole('link', { name: 'List Stuff' }).click();
-  await expect(page.getByRole('heading', { name: 'Stuff' })).toBeVisible();
+  await page.getByRole('button', { name: 'Login' }).click();
+  await page.getByRole('link', { name: 'Sign in' }).click();
+  await page.getByPlaceholder('E-mail').click();
+  await page.getByPlaceholder('E-mail').fill('john@foo.com');
+  await page.getByPlaceholder('E-mail').press('Tab');
+  await page.getByPlaceholder('Password').fill('changeme');
+  await page.getByRole('button', { name: 'Login ' }).click();
+  await page.getByRole('link', { name: 'Manoa Menu' }).click();
+  await page.getByRole('link', { name: 'Menu', exact: true }).click();
+  await page.getByRole('link', { name: 'Campus Cravings' }).click();
+  await page.getByRole('link', { name: 'Find a Location' }).click();
 });
