@@ -92,13 +92,13 @@ const NavBar: React.FC = () => {
           <Nav>
             {session ? (
               <NavDropdown id="login-dropdown" title={currentUser}>
-                <NavDropdown.Item id="login-dropdown-sign-out" href="/api/auth/signout">
-                  <BoxArrowRight />
-                  Sign Out
-                </NavDropdown.Item>
                 <NavDropdown.Item id="login-dropdown-change-password" href="/auth/change-password">
-                  <Lock />
+                  <Lock className="me-1 mb-1" />
                   Change Password
+                </NavDropdown.Item>
+                <NavDropdown.Item id="login-dropdown-sign-out" href="/api/auth/signout">
+                  <BoxArrowRight className="me-1 mb-1" />
+                  Sign Out
                 </NavDropdown.Item>
               </NavDropdown>
             ) : (
