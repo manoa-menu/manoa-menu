@@ -6,6 +6,7 @@
 .foodElements {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .blackShadeContainer {
@@ -17,7 +18,13 @@
     border-radius: 5px;
     color: white; 
     flex: 1; 
-    align-items: center;
+    display: flex;
+    flex-direction: column;
+}
+
+.attributes {
+    font-family: Georgia, sans-serif;
+    color: white;
 }
 
 .foodImage {
@@ -38,13 +45,6 @@
     color: white;
     font-family: Georgia, sans-serif;
 
-}
-
-.starContainer {
-    display: flex;
-    align-items: center;
-    font-family: Georgia, sans-serif;
-    margin-left: -15px;
 }
 
 .clickToFavorite {

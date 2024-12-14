@@ -13,15 +13,19 @@
 }
 
 .hover-card {
+  border-width: 0.25rem;
+  border-color: lightgray;
   width: 350px;
   min-height: 350px;
   transition: transform 200ms ease-in-out;
   transform-origin: center;
+  cursor: pointer;
 }
 
 .hover-card:hover {
   transform: scale(1.12);
   z-index: 1;
+  border: solid gold;
 }
 /* Arrow buttons styling*/
 .arrow-btn {
@@ -48,4 +52,10 @@
 
 .card-title-responsive {
   font-size: clamp(0.5rem, 1vw, 1.5rem);
+}
+
+.sliderStar {
+  scale: 1.5;
+  margin-top: -5px;
+  margin-left: -8px;
 }
