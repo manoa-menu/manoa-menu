@@ -20,6 +20,11 @@ const Home = () => (
             <h5 className="title-subheader">
               <span>Menu Translations for International Students at the University of Hawaiʻi at Mānoa</span>
             </h5>
+            <a href="/menu">
+              <button className="title-button" type="button">
+                View Today&apos;s Menu
+              </button>
+            </a>
           </Col>
         </Row>
       </Container>
