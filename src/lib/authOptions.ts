@@ -67,7 +67,7 @@ const authOptions: NextAuthOptions = {
     jwt: ({ token, user }) => {
       // console.log('JWT Callback', { token, user })
       if (user) {
-        const u = user as unknown as any;
+        const u = user as unknown as { id: string; randomKey: string };
         return {
           ...token,
           id: u.id,

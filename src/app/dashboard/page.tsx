@@ -27,7 +27,7 @@ interface FoodTableEntry {
 interface SdxMenuItem {
   meal: string;
   formalName: string;
-  [key: string]: any;
+  [key: string]: string | number | boolean | null | undefined;
 }
 interface SdxSubGroup {
   items: SdxMenuItem[];
@@ -61,7 +61,7 @@ const DashboardPage = () => {
     fetchData();
   }, [session]);
   // Ensure arrays are not null or undefined
-  const safeArray = (arr: any[]) => arr || [];
+  const safeArray = <T,>(arr: T[]) => arr || [];
 
   // Fetching data
   const [userFavoriteItems, setUserFavoriteItems] = useState<string[]>([]);

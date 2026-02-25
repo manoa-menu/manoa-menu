@@ -37,7 +37,10 @@ export async function insertCCMenu(menuInfo: DayMenu[], location: Location, lang
  * @param data - The new data for the menu.
  * @returns the updated menu object.
  */
-export async function editCCMenu(id: number, data: any) {
+export async function editCCMenu(
+  id: number,
+  data: Partial<{ week_of: string; location: Location; menu: unknown; language: string }>,
+) {
   try {
     return await prisma.campusCenterMenus.update({
       where: { id },
