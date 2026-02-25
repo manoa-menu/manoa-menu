@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// eslint-disable-next-line import/prefer-default-export
+ 
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const userId = Number(url.searchParams.get('userId'));

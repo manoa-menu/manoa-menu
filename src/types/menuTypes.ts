@@ -1,12 +1,3 @@
-export interface PDFData {
-  numpages: number;
-  numrender: number;
-  info: any;
-  metadata: any;
-  version: string;
-  text: string;
-}
-
 export interface DayMenu {
   name: string;
   plateLunch: string[];

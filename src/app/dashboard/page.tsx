@@ -10,8 +10,8 @@ import FoodItemSlider from '@/components/FoodItemSlider';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import './dashboard.css';
 
-/* eslint-disable function-paren-newline */
-/* eslint-disable implicit-arrow-linebreak */
+ 
+ 
 
 interface MenuItem {
   grabAndGo: string[];

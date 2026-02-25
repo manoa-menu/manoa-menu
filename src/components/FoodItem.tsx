@@ -112,7 +112,7 @@ const FoodItem = ({
           {label.map((category) => {
             const labelType = getKeyByValue(category) || '';
             const badgeColor = labelType ? labelColors[labelType] : 'secondary';
-            // eslint-disable-next-line operator-linebreak
+             
             const translatedLabel =
               labelTranslations[category] && labelTranslations[category][language]
                 ? labelTranslations[category][language]

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import getCheckCCMenu from '@/lib/menuActions';
 
-// eslint-disable-next-line import/prefer-default-export
+ 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const language = searchParams.get('language') || 'English';
