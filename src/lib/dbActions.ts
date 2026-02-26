@@ -4,7 +4,7 @@
 'use server';
 
 import { hash } from 'bcrypt';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { DayMenu, Location, FilteredSodexoMeal, FilteredSodexoModRoot } from '@/types/menuTypes';
 import { getCurrentWeekDates, getCurrentDayOf } from '@/lib/dateFunctions';
 
@@ -39,7 +39,7 @@ export async function insertCCMenu(menuInfo: DayMenu[], location: Location, lang
  */
 export async function editCCMenu(
   id: number,
-  data: Partial<{ week_of: string; location: Location; menu: unknown; language: string }>,
+  data: Partial<{ week_of: string; location: Location; menu: Prisma.InputJsonValue; language: string }>,
 ) {
   try {
     return await prisma.campusCenterMenus.update({
