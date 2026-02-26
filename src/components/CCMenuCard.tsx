@@ -82,10 +82,10 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
             <thead>
               <tr>
                 <th>{getTableHeader(language)[0]}</th>
-                {/*  eslint-disable-next-line jsx-a11y/control-has-associated-label */}
+                { }
                 {/* <th>{getTableHeader(language)[2]}</th> */}
                 <th>{getTableHeader(language)[1]}</th>
-                {/* eslint-disable-next-line jsx-a11y/control-has-associated-label */}
+                { }
                 {/* <th>{getTableHeader(language)[2]}</th> */}
               </tr>
             </thead>

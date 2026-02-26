@@ -1,8 +1,9 @@
-/* eslint-disable operator-linebreak */
+ 
 import { PrismaClient } from '@prisma/client';
 import { FilteredSodexoMeal } from '@/types/menuTypes';
 import assignLabels from './assignLabel';
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const SerpApi = require('google-search-results-nodejs');
 
 const search = new SerpApi.GoogleSearch(process.env.SERP_API_KEY);
@@ -159,9 +160,10 @@ async function fetchImageUrl(foodName: string) {
           tbm: 'isch',
           num: 10,
         },
-        (result: any) => {
+        (result: { images_results?: { original: string }[] }) => {
           if (result.images_results && result.images_results.length > 0) {
-            const filterHttps = result.images_results.filter((image: any) => image.original.startsWith('https://'));
+            const filterHttps = result.images_results
+              .filter((image: { original: string }) => image.original.startsWith('https://'));
 
             if (filterHttps.length > 0) {
               resolve(result.images_results[0].original || null);
@@ -295,7 +297,7 @@ export async function foodTableCCMenu(menuId: number) {
     try {
       menuItems = typeof menu.menu === 'string' ? JSON.parse(menu.menu) : menu.menu;
       japaneseMenuItems = typeof japaneseMenu.menu === 'string' ? JSON.parse(japaneseMenu.menu) : japaneseMenu.menu;
-    } catch (error) {
+    } catch (_error) {
       console.error('Invalid menu data:', menu.menu);
       return;
     }
@@ -410,7 +412,7 @@ export async function foodTableGatewayMenu(menuId: number) {
     try {
       menuItems = typeof menu.menu === 'string' ? JSON.parse(menu.menu) : menu.menu;
       japaneseMenuItems = typeof japaneseMenu.menu === 'string' ? JSON.parse(japaneseMenu.menu) : japaneseMenu.menu;
-    } catch (error) {
+    } catch (_error) {
       console.error('Invalid menu data:', menu.menu);
       return;
     }
@@ -475,7 +477,7 @@ export async function foodTableAlohaMenu(menuId: number) {
     try {
       menuItems = typeof menu.menu === 'string' ? JSON.parse(menu.menu) : menu.menu;
       japaneseMenuItems = typeof japaneseMenu.menu === 'string' ? JSON.parse(japaneseMenu.menu) : japaneseMenu.menu;
-    } catch (error) {
+    } catch (_error) {
       console.error('Invalid menu data:', menu.menu);
       return;
     }

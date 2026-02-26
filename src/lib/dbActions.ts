@@ -1,10 +1,10 @@
-/* eslint-disable @typescript-eslint/return-await */
+ 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 'use server';
 
 import { hash } from 'bcrypt';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { DayMenu, Location, FilteredSodexoMeal, FilteredSodexoModRoot } from '@/types/menuTypes';
 import { getCurrentWeekDates, getCurrentDayOf } from '@/lib/dateFunctions';
 
@@ -37,7 +37,10 @@ export async function insertCCMenu(menuInfo: DayMenu[], location: Location, lang
  * @param data - The new data for the menu.
  * @returns the updated menu object.
  */
-export async function editCCMenu(id: number, data: any) {
+export async function editCCMenu(
+  id: number,
+  data: Partial<{ week_of: string; location: Location; menu: Prisma.InputJsonValue; language: string }>,
+) {
   try {
     return await prisma.campusCenterMenus.update({
       where: { id },

@@ -28,7 +28,7 @@ const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => (
         .filter(
           (item) =>
             // Filter out items with the name 'Have a nice day'
-            // eslint-disable-next-line implicit-arrow-linebreak
+             
             item.formalName.toLowerCase() !== 'have a nice day',
         )
         .map((item) => {
@@ -66,7 +66,7 @@ const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => (
     })),
 });
 
-// eslint-disable-next-line import/prefer-default-export
+ 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
   if (!language) {
     return NextResponse.json({ error: 'Missing Language Parameter' }, { status: 500 });
   }
-  // eslint-disable-next-line operator-linebreak
+   
   const location =
     searchParams.get('location') || NextResponse.json({ error: 'Missing Location Parameter' }, { status: 500 });
   console.log(`Location: ${location}`);
@@ -173,13 +173,10 @@ export async function GET(req: NextRequest) {
               locationOption,
               filteredData,
               'Japanese',
+              day,
             )) as SdxSchemaObject;
 
             translatedMenu = translatedMenuSchemaObj.schemaObject;
-
-            // Insert the translated menu
-            console.log(`Inserting menu for ${day} in Japanese`);
-            await insertSdxMenu(translatedMenu, locationOption, 'Japanese', day);
           } else {
             console.log(`Inserting blank menu for ${day} in Japanese`);
             await insertSdxMenu([], locationOption, 'Japanese', day);

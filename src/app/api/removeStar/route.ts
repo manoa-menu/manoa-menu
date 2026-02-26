@@ -1,6 +1,6 @@
 import { removeFavoriteItem } from '@/lib/foodTable';
 
-// eslint-disable-next-line import/prefer-default-export
+ 
 export async function POST(request: Request) {
   try {
     const { userId, item } = await request.json();

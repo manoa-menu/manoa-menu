@@ -3,7 +3,7 @@ import { getLatestSdxMenusWeek } from '@/lib/dbActions';
 import { Location } from '@/types/menuTypes';
 import { foodTableAlohaMenu } from '@/lib/foodTable';
 
-// eslint-disable-next-line import/prefer-default-export
+ 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const language = searchParams.get('language') || 'English';

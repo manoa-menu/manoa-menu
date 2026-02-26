@@ -1,11 +1,10 @@
-/* eslint-disable operator-linebreak */
-/* eslint-disable eqeqeq */
+ 
+ 
 import scrapeCCUrl from '@/lib/scrapeCCUrl';
-import parseCampusCenterMenu from '@/lib/menuParse';
-import { getLatestCCMenu, insertCCMenu } from '@/lib/dbActions';
+import { getLatestCCMenu } from '@/lib/dbActions';
 import { Location, DayMenu, MenuResponse } from '@/types/menuTypes';
-import fetchOpenAI from '../app/utils/api/openai';
-import { getCurrentWeekOf, getNextWeekOf } from './dateFunctions';
+import fetchOpenAI, { parseCCMenuFromPDF } from '../app/utils/api/openai';
+import { getCurrentWeekOf } from './dateFunctions';
 
 async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
   try {
@@ -13,11 +12,42 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
     console.log(`Fetching menu for language: ${language}`);
 
     const menuURL: string = 'https://uhm.sodexomyway.com/en-us/locations/campus-center-food-court';
-    const menuPdf: string | null = await scrapeCCUrl(menuURL);
-    if (menuPdf === null) {
-      throw new Error('Failed to scrape menu PDF URL');
+    console.log(`Attempting to scrape PDF URL from: ${menuURL}`);
+    let menuPdf: string | null = null;
+
+    try {
+      menuPdf = await scrapeCCUrl(menuURL);
+      console.log(`Scraped PDF URL: ${menuPdf}`);
+    } catch (scrapeError) {
+      console.warn(`Failed to scrape PDF URL: ${scrapeError}`);
+      console.log('Falling back to static PDF files...');
+
+      // Try to use static PDFs as fallback
+      const staticPdfs = [
+        '/cc-menus/menu.pdf',
+        '/cc-menus/menu2.pdf',
+        '/cc-menus/specialmenu.pdf',
+      ];
+
+      for (const staticPdf of staticPdfs) {
+        try {
+          console.log(`Trying static PDF: ${staticPdf}`);
+          const fullUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}${staticPdf}`;
+          menuPdf = fullUrl;
+          break;
+        } catch (error) {
+          console.warn(`Failed to use static PDF ${staticPdf}: ${error}`);
+        }
+      }
+
+      if (!menuPdf) {
+        throw new Error('Failed to scrape menu PDF URL and no static PDFs available');
+      }
     }
-    const parsedMenu: MenuResponse = await parseCampusCenterMenu(menuPdf);
+
+    console.log(`Attempting to parse PDF from URL: ${menuPdf}`);
+    const parsedMenu: MenuResponse = await parseCCMenuFromPDF(menuPdf);
+    console.log('Successfully parsed menu from PDF');
 
     // console.log(`Parsed menu: ${JSON.stringify(parsedMenu)}`);
 
@@ -35,19 +65,9 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
       (JSON.stringify(dbMenuParsed[0].plateLunch) !== JSON.stringify(parsedMenu.weekOne[0].plateLunch) &&
         JSON.stringify(dbMenuParsed[2].plateLunch) !== JSON.stringify(parsedMenu.weekOne[2].plateLunch))
     ) {
-      console.log('Inserting parsedMenu into database');
+      console.log('Menu is not up to date, parseCCMenuFromPDF already inserted English menu');
 
-      // console.log(parsedMenu.weekOne);
-      // Insert the parsed menu for week one into the database
-      await insertCCMenu(parsedMenu.weekOne, Location.CAMPUS_CENTER, 'English', getCurrentWeekOf());
-
-      // If week two menu exists, insert it into the database
-      if (parsedMenu.weekTwo.length > 0) {
-        await insertCCMenu(parsedMenu.weekTwo, Location.CAMPUS_CENTER, 'English', getNextWeekOf());
-        // console.log(parsedMenu.weekTwo);
-      }
-
-      // Fetch the translated menu using OpenAI
+      // Fetch the translated menu using OpenAI (DB check + insert handled inside fetchOpenAI)
       console.log('Translating menu into Japanese');
 
       const translateLanguage = 'Japanese';
@@ -62,20 +82,13 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
       Do not add or create new items that are not on the menu.
       If there is a special message, provide a translation in ${translateLanguage}.`;
 
-      const translatedMenu = (await fetchOpenAI(
+      await fetchOpenAI(
         prompt,
         Location.CAMPUS_CENTER,
         parsedMenu,
         'Japanese',
-      )) as MenuResponse;
-
-      // Insert the translated menu for week one into the database
-      await insertCCMenu(translatedMenu.weekOne, Location.CAMPUS_CENTER, 'Japanese', getCurrentWeekOf());
-
-      // If week two translated menu exists, insert it into the database
-      if (translatedMenu.weekTwo.length > 0) {
-        await insertCCMenu(translatedMenu.weekTwo, Location.CAMPUS_CENTER, 'Japanese', getNextWeekOf());
-      }
+        getCurrentWeekOf(),
+      ) as MenuResponse;
 
       // If the latest menu is up to date, fetch the menu from the database
       console.log(`Fetching parsedMenu from database in ${language}`);

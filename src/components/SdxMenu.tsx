@@ -9,7 +9,7 @@ import Avatar from '@mui/material/Avatar';
 import Stack from '@mui/material/Stack';
 import { green, lightGreen } from '@mui/material/colors';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
+ 
 import { Vegan, Salad } from 'lucide-react';
 
 import { CardHeader, Tab, Tabs } from 'react-bootstrap';

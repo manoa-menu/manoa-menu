@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 
 'use client';
 
@@ -163,6 +163,7 @@ const Page = () => {
     const fetchMenu = async (
       menuType: string,
       lang: string,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setMenu: React.Dispatch<React.SetStateAction<any>>,
       setLoading: React.Dispatch<React.SetStateAction<boolean>>,
       location?: string,
@@ -193,7 +194,7 @@ const Page = () => {
       fetchMenu('sdx', language, setHAMenu, setHALoading, menuState);
     }
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [language, menuState]);
 
   const renderMenu = () => {
@@ -255,7 +256,12 @@ const Page = () => {
               <Dropdown.Item
                 key={menuName.name}
                 onClick={() => menuNameItemClick(menuName.name)}
-                disabled={menuName.name === 'Korean' || menuName.name === 'Spanish'}
+                disabled={
+                  menuName.name === 'Korean'
+                  || menuName.name === 'Spanish'
+                  || menuName.name === 'gw'
+                  || menuName.name === 'ha'
+                }
               >
                 {menuName.displayName}
               </Dropdown.Item>
