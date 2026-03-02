@@ -4,7 +4,7 @@ import scrapeCCUrl from '@/lib/scrapeCCUrl';
 import { getCCMenu } from '@/lib/dbActions';
 import { Location, DayMenu, MenuResponse } from '@/types/menuTypes';
 import fetchOpenAI, { parseCCMenuFromPDF } from '../app/utils/api/openai';
-import { getCurrentWeekOf } from './dateFunctions';
+import { getCurrentWeekOf, getNextWeekOf } from './dateFunctions';
 
 async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
   try {
@@ -45,14 +45,29 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
       }
     }
 
-    console.log(`Attempting to parse PDF from URL: ${menuPdf}`);
-    const parsedMenu: MenuResponse = await parseCCMenuFromPDF(menuPdf);
-    console.log('Successfully parsed menu from PDF');
-
     const currentWeekOf = getCurrentWeekOf();
+    const nextWeekOf = getNextWeekOf();
+
+    console.log(`Ensuring English menu exists for week ${currentWeekOf} (source PDF: ${menuPdf})`);
+    await parseCCMenuFromPDF(menuPdf);
+
+    const englishWeekOneRow = await getCCMenu(currentWeekOf, 'English');
+    if (!englishWeekOneRow) {
+      throw new Error(`English menu is missing in DB for ${currentWeekOf}.`);
+    }
+
+    const englishWeekOne: DayMenu[] = JSON.parse(JSON.stringify(englishWeekOneRow.menu));
+    const englishWeekTwoRow = await getCCMenu(nextWeekOf, 'English');
+    const englishWeekTwo: DayMenu[] = englishWeekTwoRow
+      ? JSON.parse(JSON.stringify(englishWeekTwoRow.menu))
+      : [];
+    const englishMenuFromDb: MenuResponse = {
+      weekOne: englishWeekOne,
+      weekTwo: englishWeekTwo,
+    };
 
     if (language === 'English') {
-      return parsedMenu.weekOne;
+      return englishMenuFromDb.weekOne;
     }
 
     console.log(`Checking ${language} menu for current week: ${currentWeekOf}`);
@@ -103,8 +118,8 @@ STYLE FOR PARENTHESES (if needed)
 - Explain what it is using ingredients or dish type, not extra marketing.
 
 SPECIAL CASES
-- Keep proper nouns as-is (example: "Cobb", "Cajun", "Mesquite",
-  "Chimichurri", "Huli Huli", "Mochiko") and optionally explain ONLY if
+- Keep proper nouns as-is (example: "Cajun", "Mesquite",
+  "Chimichurri", "Huli Huli") and optionally explain ONLY if
   needed.
 
 Return ONLY the translated menu text.\n`;
@@ -112,7 +127,7 @@ Return ONLY the translated menu text.\n`;
     const translatedMenu = await fetchOpenAI(
       prompt,
       Location.CAMPUS_CENTER,
-      parsedMenu,
+      englishMenuFromDb,
       language,
       currentWeekOf,
     ) as MenuResponse;

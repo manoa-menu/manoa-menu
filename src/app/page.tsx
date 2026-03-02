@@ -1,84 +1,74 @@
 'use client';
 
-import '@/styles/Menu.css';
-import '@/styles/Scrollbar.css';
+// import '@/styles/Menu.css';
+// import '@/styles/Scrollbar.css';
 
 import CCMenuList from '@/components/CCMenuList';
 import { Translate } from 'react-bootstrap-icons';
-import { FaUtensils } from 'react-icons/fa';
 
-import { Container, Dropdown, DropdownButton } from 'react-bootstrap';
+import { Container } from 'react-bootstrap';
 import { DayMenu, SdxAPIResponse } from '@/types/menuTypes';
 import { useSession } from 'next-auth/react';
 import { getUserLanguage } from '@/lib/dbActions';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import BlackSpinner from '@/components/BlackSpinner';
 import { fixDayNames } from '@/lib/menuHelper';
 import SdxMenu from '@/components/SdxMenu';
-import { Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
-
-interface MenuNameArrProps {
-  name: string;
-  displayName: string;
-}
+import { Button, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 const Page = () => {
   const languages = [
     { name: 'English', displayName: 'English' },
     { name: 'Japanese', displayName: '日本語' },
     { name: 'Korean', displayName: '한국어' },
-    { name: 'Spanish', displayName: 'Español' },
+    { name: 'Chinese', displayName: '中文' },
   ];
 
-  const getMenuNames = (language: string): MenuNameArrProps[] => {
-    switch (language) {
-      case 'English':
-        return [
-          { name: 'cc', displayName: 'Campus Center Food Court' },
-          { name: 'gw', displayName: 'Gateway Cafe' },
-          { name: 'ha', displayName: 'Hale Aloha Cafe' },
-        ];
-      case 'Japanese':
-        return [
-          { name: 'cc', displayName: 'キャンパスセンター' },
-          { name: 'gw', displayName: 'ゲートウェイカフェ' },
-          { name: 'ha', displayName: 'ハレアロハカフェ' },
-        ];
+  const getDisplayMenuNames = (menuName: string, language: string): string => {
+    const isEnglish = language === 'English';
+    const isJapanese = language === 'Japanese';
+
+    switch (menuName) {
+      case 'cc':
+        if (isEnglish) {
+          return 'Campus Center Food Court';
+        }
+        if (isJapanese) {
+          return 'キャンパスセンター';
+        }
+        return 'Campus Center Food Court';
+      case 'gw':
+        if (isEnglish) {
+          return 'Gateway Cafe';
+        }
+        if (isJapanese) {
+          return 'ゲートウェイカフェ';
+        }
+        return 'Gateway Cafe';
+      case 'ha':
+        if (isEnglish) {
+          return 'Hale Aloha Cafe';
+        }
+        if (isJapanese) {
+          return 'ハレアロハカフェ';
+        }
+        return 'Hale Aloha Cafe';
       default:
-        return [
-          { name: 'cc', displayName: 'Campus Center Food Court' },
-          { name: 'gw', displayName: 'Gateway Cafe' },
-          { name: 'ha', displayName: 'Hale Aloha Cafe' },
-        ];
+        return '';
     }
   };
 
-  const displayLanguages = new Map<string, string>([
-    ['English', 'English'],
-    ['Japanese', '日本語'],
-    ['Korean', '한국어'],
-    ['Spanish', 'Español'],
-  ]);
-
-  const getDisplayMenuNames = (menuName: string, language: string): string => {
-    switch (menuName) {
-      case 'cc':
-        if (language === 'English') {
-          return 'Campus Center Food Court';
-        }
-        return 'キャンパスセンター';
-      case 'gw':
-        if (language === 'English') {
-          return 'Gateway Cafe';
-        }
-        return 'ゲートウェイカフェ';
-      case 'ha':
-        if (language === 'English') {
-          return 'Hale Aloha Cafe';
-        }
-        return 'ハレアロハカフェ';
+  const getMenuSuffix = (lang: string): string => {
+    switch (lang) {
+      case 'Japanese':
+        return 'のメニュー';
+      case 'Korean':
+        return ' 메뉴';
+      case 'Chinese':
+        return ' 菜单';
       default:
-        return '';
+        return ' Menu';
     }
   };
 
@@ -88,7 +78,7 @@ const Page = () => {
 
   const [favArr, setFavArr] = useState<string[]>([]);
 
-  const [menuState, setMenuState] = useState<string>('cc');
+  const [menuState] = useState<string>('cc');
 
   const [ccMenu, setCCMenu] = useState<DayMenu[]>([]);
   const [gwMenu, setGWMenu] = useState<SdxAPIResponse[]>([]);
@@ -99,9 +89,6 @@ const Page = () => {
   const [isHALoading, setHALoading] = useState(false);
 
   const [language, setLanguage] = useState<string>('English');
-
-  const langDropdownRef = useRef(null);
-  const menuDropdownRef = useRef(null);
 
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
@@ -130,10 +117,6 @@ const Page = () => {
 
   const langItemClick = (lang: string) => {
     setLanguage(lang);
-  };
-
-  const menuNameItemClick = (menuName: string) => {
-    setMenuState(menuName);
   };
 
   useEffect(() => {
@@ -227,7 +210,7 @@ const Page = () => {
       >
         <Typography variant={typographyVariant} className="text-center">
           {getDisplayMenuNames(menuState, language)}
-          {(language === 'English') ? ' Menu' : 'のメニュー'}
+          {getMenuSuffix(language)}
         </Typography>
         <Stack
           direction="row"
@@ -236,61 +219,43 @@ const Page = () => {
             flexWrap: 'wrap',
           }}
         >
-          <DropdownButton
-            className="mx-2 p-1"
-            ref={menuDropdownRef}
-            id="dropdown-basic-button"
-            title={(
-              <span className="align-items-center">
-                <FaUtensils className="" />
-                {' '}
-                {getDisplayMenuNames(menuState, language)}
-              </span>
-            )}
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+            }}
           >
-            {getMenuNames(language).map((menuName) => (
-              <Dropdown.Item
-                key={menuName.name}
-                onClick={() => menuNameItemClick(menuName.name)}
-                disabled={
-                  menuName.name === 'Korean'
-                  || menuName.name === 'Spanish'
-                  || menuName.name === 'gw'
-                  || menuName.name === 'ha'
-                }
-              >
-                {menuName.displayName}
-              </Dropdown.Item>
-            ))}
-          </DropdownButton>
-          <DropdownButton
-            className="mx-2 p-1"
-            ref={langDropdownRef}
-            id="dropdown-basic-button"
-            title={(
-              <span className="align-items-center">
-                <Translate className="me-1 mb-1" />
-                {' '}
-                {displayLanguages.get(language)}
-              </span>
-            )}
-          >
-            {languages.map((lang) => (
-              <Dropdown.Item
-                key={lang.name}
-                onClick={() => langItemClick(lang.name)}
-                disabled={lang.name === 'Korean' || lang.name === 'Spanish'}
-              >
-                {lang.displayName}
-              </Dropdown.Item>
-            ))}
-          </DropdownButton>
+            <Translate className="me-1" />
+            {languages.map((lang) => {
+              const isActive = language === lang.name;
+
+              return (
+                <Button
+                  key={lang.name}
+                  variant={isActive ? 'contained' : 'outlined'}
+                  color="primary"
+                  size="small"
+                  onClick={() => langItemClick(lang.name)}
+                  sx={{
+                    minWidth: '92px',
+                    textTransform: 'none',
+                    fontWeight: isActive ? 600 : 500,
+                  }}
+                >
+                  {lang.displayName}
+                </Button>
+              );
+            })}
+          </Stack>
         </Stack>
       </Stack>
 
       <div className="d-flex flex-column">
         {(isCCLoading || isGWLoading || isHALoading) ? (
-          <BlackSpinner />
+          <LoadingSpinner />
         ) : (
           <div className="m-2">
             {renderMenu()}

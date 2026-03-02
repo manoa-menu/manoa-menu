@@ -31,6 +31,8 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
   const displayTooltipNames = new Map<string, string>([
     ['English', 'Favorite?'],
     ['Japanese', 'お気に？'],
+    ['Korean', '즐겨찾기?'],
+    ['Chinese', '收藏?'],
     ['english', 'Favorite?'],
     ['japanese', 'お気に？'],
   ]);
@@ -63,9 +65,9 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
       case 'Japanese':
         return ['セットメニュー', 'クイックメニュー', 'お気に？'];
       case 'Korean':
-        return ['백반', '빨리 먹고 가는 식사'];
-      case 'Spanish':
-        return ['Plato Combinado', 'Comida para Llevar'];
+        return ['백반', '포장 메뉴', '즐겨찾기?'];
+      case 'Chinese':
+        return ['套餐', '外带餐', '收藏?'];
       default:
         return ['Plate Lunch', 'Grab and Go'];
     }
