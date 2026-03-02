@@ -39,10 +39,14 @@ const LoadingSpinner = () => {
   const CurrentSpinner = spinnerOrder[currentSpinnerIndex];
 
   return (
-    <Container>
-      <Row className="justify-content-md-center">
-        <CurrentSpinner />
-        Getting data
+    <Container fluid className="d-flex justify-content-center mt-5 pt-4">
+      <Row className="justify-content-center w-100">
+        <div className="d-flex flex-column align-items-center justify-content-center gap-3 text-center">
+          <div style={{ transform: 'scale(1.5)', transformOrigin: 'center' }}>
+            <CurrentSpinner />
+          </div>
+          <div className='mt-5'>Loading...</div>
+        </div>
       </Row>
     </Container>
   );

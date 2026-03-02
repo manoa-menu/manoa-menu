@@ -37,6 +37,12 @@ const Page = () => {
         if (isJapanese) {
           return 'キャンパスセンター';
         }
+        if (language === 'Korean') {
+          return '캠퍼스 센터 푸드 코트';
+        }
+        if (language === 'Chinese') {
+          return '校园中心美食广场';
+        }
         return 'Campus Center Food Court';
       case 'gw':
         if (isEnglish) {
