@@ -15,6 +15,9 @@ const jpManualReplace = (original: MenuResponse): MenuResponse => {
         if (item.includes('バリューボウル')) {
           return item.replace('バリューボウル', 'お得サイズボウル');
         }
+        if (item.includes('グレービー')) {
+          return item.replace('グレービー', 'グレイビーソース');
+        }
         return item;
       }),
       grabAndGo: dayMenu.grabAndGo.map((item) => {

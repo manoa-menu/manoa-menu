@@ -337,7 +337,7 @@ async function fetchOpenAI(
   }
 
   // --- No cached menu found, call OpenAI ---
-  const maxTokens = (option === Location.CAMPUS_CENTER) ? 2000 : 4096;
+  const maxTokens = 8000;
   const jsonSchema = (option === Location.CAMPUS_CENTER) ? ccJsonSchema : sdxJsonSchema;
 
   const response = await client.responses.create({
@@ -354,7 +354,16 @@ async function fetchOpenAI(
     },
     max_output_tokens: maxTokens,
   });
+  const rId = response.id;
+  const rStatus = response.status;
+  const rModel = response.model;
+  console.log(`[OpenAI] id: ${rId}, status: ${rStatus}, model: ${rModel}`);
   console.log(`Total tokens used: ${response.usage?.total_tokens}`);
+
+  if (response.status === 'incomplete') {
+    console.error(`OpenAI response was incomplete (likely truncated). Increase max_output_tokens or reduce menu size.`);
+    throw new Error('OpenAI response was incomplete – the translated menu was too long for the token limit.');
+  }
 
   const content = response.output_text;
   if (content) {

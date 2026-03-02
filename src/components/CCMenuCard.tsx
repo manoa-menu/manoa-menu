@@ -6,7 +6,7 @@ import Table from 'react-bootstrap/Table';
 import Tooltip from '@mui/material/Tooltip';
 
 import checkHoliday from '@/lib/checkHoliday';
-import StarButton from '@/app/campus-cravings/StarButton';
+import StarButton from '@/components/StarButton';
 import { isFav } from '@/lib/menuHelper';
 
 interface MenuCardProps {
@@ -61,7 +61,7 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
       case 'English':
         return ['Plate Lunch', 'Grab and Go', 'Fav?'];
       case 'Japanese':
-        return ['セット料理', 'すぐ食べられる', 'お気に？'];
+        return ['セットメニュー', 'クイックメニュー', 'お気に？'];
       case 'Korean':
         return ['백반', '빨리 먹고 가는 식사'];
       case 'Spanish':

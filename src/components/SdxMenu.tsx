@@ -19,7 +19,7 @@ import Tooltip from '@mui/material/Tooltip';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { getDayHeaders, isFav } from '@/lib/menuHelper';
 import { getCurrentDayOf } from '@/lib/dateFunctions';
-import StarButton from '@/app/campus-cravings/StarButton';
+import StarButton from '@/components/StarButton';
 
 interface SdxMenuProps {
   weekMenu: SdxAPIResponse[];

@@ -90,17 +90,49 @@ export async function GET(req: NextRequest) {
 
   const translateLanguage = 'Japanese';
 
-  const prompt = `You will translate all menu items into ${translateLanguage}. 
-  For the group names, do not directly translate, but instead use similar meaning words in ${translateLanguage}.
-  Do not add additional groups or items that are not in the original.
-  Translate both menu items AND item description and word in a way 
-  that is easy for native speakers of ${translateLanguage} to understand.
-  ONLY IF there is no description already,
-  Add descriptions to items that native speakers of ${translateLanguage} may not understand
-  such as Portuegese Sausage, or Chicken Parmesan, Cobb Salad, Huli Huli Chicken,
-  pasta dishes, special salads, non-famous American dishes, and foreign asian dishes, etc
-  or foods that are not self-explanatory.
-  Do not add or create new items that are not on the menu.\n`;
+  const prompt = `You are translating a cafeteria menu into ${translateLanguage}.
+
+OUTPUT RULES
+1) Preserve the original structure and ordering exactly. Do not add, remove,
+   merge, or invent groups or items.
+2) Translate every group name and every menu item name into natural
+   ${translateLanguage}.
+   - Group names: do not translate word-for-word. Use a natural equivalent
+     category name in ${translateLanguage}.
+3) Parentheses notes are OPTIONAL and must be NECESSARY.
+   - Only add a short explanation in parentheses when the dish would still be
+     unclear to an average native speaker of ${translateLanguage} AFTER
+     translation.
+   - If the translated name already clearly tells what it is, DO NOT add
+     parentheses.
+
+WHEN TO ADD PARENTHESES
+A) The item is culturally specific OR uses an unfamiliar dish name OR a
+   brand/place name OR a cooking style that many people in
+   ${translateLanguage} would not recognize, AND
+B) The translation alone does not reveal the main ingredients or what kind
+   of dish it is, AND
+C) A one-phrase clarification would reduce confusion.
+
+WHEN NOT TO ADD PARENTHESES
+- If the translated name already makes the dish obvious (wrap, salad, grilled
+  chicken, garlic chicken, steak, lobster tail, fish & chips, Caesar salad,
+  etc.)
+- If it is just a normal combination of common ingredients and cooking
+  methods.
+- If the item name contains the main ingredient and form (example: "Asian
+  chicken wrap", "Garlic chicken", "New York steak", "Lobster tail").
+
+STYLE FOR PARENTHESES (if needed)
+- Keep it to 6 to 12 words in ${translateLanguage}.
+- Explain what it is using ingredients or dish type, not extra marketing.
+
+SPECIAL CASES
+- Keep proper nouns as-is (example: "Cobb", "Cajun", "Mesquite",
+  "Chimichurri", "Huli Huli", "Mochiko") and optionally explain ONLY if
+  needed.
+
+Return ONLY the translated menu text.\n`;
 
   const gwURL = process.env.GW_API_URL;
   const haURL = process.env.HA_API_URL;
