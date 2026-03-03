@@ -2,17 +2,19 @@
 
 import { usePathname } from 'next/navigation';
 import { Container, Nav, Navbar } from 'react-bootstrap';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import Image from 'next/image';
 import '../app/navbar.css';
 
 const NavBar: React.FC = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const pathName = usePathname();
 
   return (
-    <Navbar className="custom-navbar fixed-top" expand="lg" style={{ height: '100px' }}>
+    <Navbar className="custom-navbar fixed-top" expand="lg" style={{ height: '65px' }}>
       <Container fluid className="px-5">
         <div className="d-flex align-items-center">
-          <Navbar.Brand>
+          {/* <Navbar.Brand>
             <Image
               src="/manoa-menu-logo.jpg"
               alt="Manoa Menu Logo"
@@ -20,7 +22,7 @@ const NavBar: React.FC = () => {
               height={50}
               className="rounded border border-secondary d-inline-block align-top"
             />
-          </Navbar.Brand>
+          </Navbar.Brand> */}
 
           <Navbar.Brand id="manoa-menu" className="me-auto justify-content-start px-2 text-light" href="/">
             Manoa Menu

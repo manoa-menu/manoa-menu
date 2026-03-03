@@ -114,11 +114,11 @@ const Page = () => {
 
   const containerStyle = () => {
     if (isXs) {
-      return { marginLeft: '0%', marginRight: '0%', paddingTop: '110px' };
+      return { marginLeft: '0%', marginRight: '0%', paddingTop: '75px' };
     } if (isSmUp) {
-      return { paddingTop: '110px' };
+      return { paddingTop: '75px' };
     }
-    return { paddingTop: '110px' };
+    return { paddingTop: '75px' };
   };
 
   const langItemClick = (lang: string) => {
@@ -204,7 +204,7 @@ const Page = () => {
   return (
     <Container
       fluid
-      className="my-4 menu-container"
+      className="my-3 menu-container"
       style={containerStyle()}
     >
       <Stack
