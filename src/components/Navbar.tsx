@@ -11,8 +11,8 @@ const NavBar: React.FC = () => {
   const pathName = usePathname();
 
   return (
-    <Navbar className="custom-navbar fixed-top" expand="lg" style={{ height: '65px' }}>
-      <Container fluid className="px-5">
+    <Navbar className="custom-navbar fixed-top" style={{ height: '65px' }}>
+      <Container fluid className="px-4">
         <div className="d-flex align-items-center">
           {/* <Navbar.Brand>
             <Image
@@ -24,7 +24,7 @@ const NavBar: React.FC = () => {
             />
           </Navbar.Brand> */}
 
-          <Navbar.Brand id="manoa-menu" className="me-auto justify-content-start px-2 text-light" href="/">
+          <Navbar.Brand id="manoa-menu" className="justify-content-start text-light" href="/">
             Manoa Menu
           </Navbar.Brand>
         </div>

@@ -100,7 +100,7 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
       spacing={1}
       alignItems="center"
       key={item}
-      sx={{ py: 0.5, '&:hover': { backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: 0.5 } }}
+      sx={{ py: 0.5, '&:hover': { backgroundColor: 'rgba(0,0,0,0.03)', borderRadius: 0.5 } }}
     >
       <Grid size={userId === -21 ? 12 : 10}>
         <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: 1.3 }}>

@@ -4,8 +4,6 @@
 // import '@/styles/Scrollbar.css';
 
 import CCMenuList from '@/components/CCMenuList';
-import { Translate } from 'react-bootstrap-icons';
-
 import { Container } from 'react-bootstrap';
 import { DayMenu, SdxAPIResponse } from '@/types/menuTypes';
 import { useSession } from 'next-auth/react';
@@ -14,7 +12,7 @@ import { useState, useEffect } from 'react';
 import BlackSpinner from '@/components/BlackSpinner';
 import { fixDayNames } from '@/lib/menuHelper';
 import SdxMenu from '@/components/SdxMenu';
-import { Button, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Button, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 const Page = () => {
@@ -218,23 +216,25 @@ const Page = () => {
           {getDisplayMenuNames(menuState, language)}
           {getMenuSuffix(language)}
         </Typography>
-        <Stack
-          direction="row"
-          sx={{ justifyContent: 'center',
-            alignItems: 'center',
-            flexWrap: 'wrap',
+        <Box
+          sx={{
+            border: '1px solid #ccc',
+            borderRadius: 1,
+            padding: { xs: 1, sm: 1.5 },
+            display: 'flex',
           }}
         >
           <Stack
             direction="row"
-            spacing={1}
             sx={{
-              alignItems: 'center',
+              alignItems: 'stretch',
               flexWrap: 'wrap',
               justifyContent: 'center',
+              gap: { xs: 0.5, sm: 1 },
+              rowGap: { xs: 0.5, sm: 1 },
+              width: '100%',
             }}
           >
-            <Translate className="me-1" />
             {languages.map((lang) => {
               const isActive = language === lang.name;
 
@@ -246,9 +246,13 @@ const Page = () => {
                   size="small"
                   onClick={() => langItemClick(lang.name)}
                   sx={{
-                    minWidth: '92px',
+                    flex: { xs: '0 0 calc(50% - 4px)', sm: '0 0 auto' },
+                    minWidth: { xs: 0, sm: '80px', md: '92px' },
+                    maxWidth: { xs: 'calc(50% - 4px)', sm: 'none' },
                     textTransform: 'none',
                     fontWeight: isActive ? 600 : 500,
+                    fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.875rem' },
+                    padding: { xs: '6px 10px', sm: '8px 18px' },
                   }}
                 >
                   {lang.displayName}
@@ -256,7 +260,7 @@ const Page = () => {
               );
             })}
           </Stack>
-        </Stack>
+        </Box>
       </Stack>
 
       <div className="d-flex flex-column">
