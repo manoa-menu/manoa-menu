@@ -1,10 +1,10 @@
  
  
 import scrapeCCUrl from '@/lib/scrapeCCUrl';
-import { getLatestCCMenu } from '@/lib/dbActions';
+import { getCCMenu } from '@/lib/dbActions';
 import { Location, DayMenu, MenuResponse } from '@/types/menuTypes';
 import fetchOpenAI, { parseCCMenuFromPDF } from '../app/utils/api/openai';
-import { getCurrentWeekOf } from './dateFunctions';
+import { getCurrentWeekOf, getNextWeekOf } from './dateFunctions';
 
 async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
   try {
@@ -45,71 +45,95 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
       }
     }
 
-    console.log(`Attempting to parse PDF from URL: ${menuPdf}`);
-    const parsedMenu: MenuResponse = await parseCCMenuFromPDF(menuPdf);
-    console.log('Successfully parsed menu from PDF');
+    const currentWeekOf = getCurrentWeekOf();
+    const nextWeekOf = getNextWeekOf();
 
-    // console.log(`Parsed menu: ${JSON.stringify(parsedMenu)}`);
+    console.log(`Ensuring English menu exists for week ${currentWeekOf} (source PDF: ${menuPdf})`);
+    await parseCCMenuFromPDF(menuPdf);
 
-    // Gets latest English menu from database
-    const dbLatestMenu = await getLatestCCMenu('English');
+    const englishWeekOneRow = await getCCMenu(currentWeekOf, 'English');
+    if (!englishWeekOneRow) {
+      throw new Error(`English menu is missing in DB for ${currentWeekOf}.`);
+    }
 
-    // Parse the latest menu from the database
-    const dbMenuParsed: DayMenu[] = dbLatestMenu ? JSON.parse(JSON.stringify(dbLatestMenu?.menu)) : [];
+    const englishWeekOne: DayMenu[] = JSON.parse(JSON.stringify(englishWeekOneRow.menu));
+    const englishWeekTwoRow = await getCCMenu(nextWeekOf, 'English');
+    const englishWeekTwo: DayMenu[] = englishWeekTwoRow
+      ? JSON.parse(JSON.stringify(englishWeekTwoRow.menu))
+      : [];
+    const englishMenuFromDb: MenuResponse = {
+      weekOne: englishWeekOne,
+      weekTwo: englishWeekTwo,
+    };
 
-    // console.log(`dbMenuParsed: ${JSON.stringify(dbMenuParsed)}`);
+    if (language === 'English') {
+      return englishMenuFromDb.weekOne;
+    }
 
-    // Check if the latest menu is not up to date
-    if (
-      dbMenuParsed.length === 0 ||
-      (JSON.stringify(dbMenuParsed[0].plateLunch) !== JSON.stringify(parsedMenu.weekOne[0].plateLunch) &&
-        JSON.stringify(dbMenuParsed[2].plateLunch) !== JSON.stringify(parsedMenu.weekOne[2].plateLunch))
-    ) {
-      console.log('Menu is not up to date, parseCCMenuFromPDF already inserted English menu');
-
-      // Fetch the translated menu using OpenAI (DB check + insert handled inside fetchOpenAI)
-      console.log('Translating menu into Japanese');
-
-      const translateLanguage = 'Japanese';
-      const prompt = `You will translate all menu items into ${translateLanguage}. 
-      Translate and word in a way that is easy for native speakers of ${translateLanguage} to understand.
-      In parenthesis provide a brief description of dish contents in ${translateLanguage}
-      or foods that ${translateLanguage} people may not be familiar with,
-      or Chinese food, Uncommon Mexican food, Hawaiian food,
-      or Chicken Parmesan, Cobb Salad, Huli Huli Chicken
-      or foods that are not self-explanatory.
-      Must describe pasta dishes, special salads, non-famous American dishes, and foreign asian dishes.
-      Do not add or create new items that are not on the menu.
-      If there is a special message, provide a translation in ${translateLanguage}.`;
-
-      await fetchOpenAI(
-        prompt,
-        Location.CAMPUS_CENTER,
-        parsedMenu,
-        'Japanese',
-        getCurrentWeekOf(),
-      ) as MenuResponse;
-
-      // If the latest menu is up to date, fetch the menu from the database
-      console.log(`Fetching parsedMenu from database in ${language}`);
-      const dbMenuLanguage = await getLatestCCMenu(language);
-      console.log(`dbMenuLanguage: ${JSON.stringify(dbMenuLanguage)}`);
-      const dbMenuLanguageParsed: DayMenu[] = dbMenuLanguage ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
-
-      // Return the parsed menu if it exists
-      if (dbMenuLanguageParsed) {
-        return dbMenuLanguageParsed;
+    console.log(`Checking ${language} menu for current week: ${currentWeekOf}`);
+    const existingLanguageMenu = await getCCMenu(currentWeekOf, language);
+    if (existingLanguageMenu) {
+      const existingLanguageMenuParsed: DayMenu[] = JSON.parse(JSON.stringify(existingLanguageMenu.menu));
+      if (existingLanguageMenuParsed.length > 0) {
+        return existingLanguageMenuParsed;
       }
-    } else {
-      // If the latest menu is up to date, fetch the menu from the database
-      console.log(`Fetching parsedMenu from database in ${language}`);
-      const dbMenuLanguage = await getLatestCCMenu(language);
-      const dbMenuLanguageParsed: DayMenu[] = dbMenuLanguage ? JSON.parse(JSON.stringify(dbMenuLanguage?.menu)) : [];
+    }
 
-      // Return the parsed menu if it exists
-      if (dbMenuLanguageParsed) {
-        return dbMenuLanguageParsed;
-      }
+    console.log(`No ${language} menu found for ${currentWeekOf}. Translating now.`);
+  const prompt = `You are translating a cafeteria menu into ${language}.
+
+OUTPUT RULES
+1) Preserve the original structure and ordering exactly. Do not add, remove,
+   merge, or invent groups or items.
+2) Translate every group name and every menu item name into natural
+   ${language}.
+   - Group names: do not translate word-for-word. Use a natural equivalent
+     category name in ${language}.
+3) Parentheses notes are OPTIONAL and must be NECESSARY.
+   - Only add a short explanation in parentheses when the dish would still be
+     unclear to an average native speaker of ${language} AFTER
+     translation.
+   - If the translated name already clearly tells what it is, DO NOT add
+     parentheses.
+
+WHEN TO ADD PARENTHESES
+A) The item is culturally specific OR uses an unfamiliar dish name OR a
+   brand/place name OR a cooking style that many people in
+   ${language} would not recognize, AND
+B) The translation alone does not reveal the main ingredients or what kind
+   of dish it is, AND
+C) A one-phrase clarification would reduce confusion.
+
+WHEN NOT TO ADD PARENTHESES
+- If the translated name already makes the dish obvious (wrap, salad, grilled
+  chicken, garlic chicken, steak, lobster tail, fish & chips, Caesar salad,
+  etc.)
+- If it is just a normal combination of common ingredients and cooking
+  methods.
+- If the item name contains the main ingredient and form (example: "Asian
+  chicken wrap", "Garlic chicken", "New York steak", "Lobster tail").
+
+STYLE FOR PARENTHESES (if needed)
+- Keep it to 6 to 12 words in ${language}.
+- Explain what it is using ingredients or dish type, not extra marketing.
+
+SPECIAL CASES
+- Keep proper nouns as-is (example: "Cajun", "Mesquite",
+  "Chimichurri", "Huli Huli") and optionally explain ONLY if
+  needed.
+
+Return ONLY the translated menu text.\n`;
+
+    const translatedMenu = await fetchOpenAI(
+      prompt,
+      Location.CAMPUS_CENTER,
+      englishMenuFromDb,
+      language,
+      currentWeekOf,
+    ) as MenuResponse;
+
+    if (translatedMenu.weekOne && translatedMenu.weekOne.length > 0) {
+      return translatedMenu.weekOne;
     }
 
     // Log an error if fetching the parsed menu from the database fails
