@@ -1,22 +1,15 @@
-import { removeFavoriteItem } from '@/lib/foodTable';
-
- 
 export async function POST(request: Request) {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { userId, item } = await request.json();
 
     if (!item) {
       return new Response('Item is required', { status: 400 });
     }
 
-    const result = await removeFavoriteItem(Number(userId), item);
-
-    if (result) {
-      return new Response('Item starred successfully', { status: 200 });
-    }
-    return new Response('Item is already starred', { status: 400 });
+    return new Response('Remove favorite item functionality not yet implemented', { status: 501 });
   } catch (error) {
-    console.error('Error adding favorite item:', error);
-    return new Response('Error adding favorite item', { status: 500 });
+    console.error('Error removing favorite item:', error);
+    return new Response('Error removing favorite item', { status: 500 });
   }
 }
