@@ -234,26 +234,26 @@ const Page = () => {
           alignItems: 'center',
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant={typographyVariant} className="text-center">
-            {getDisplayMenuNames(menuState, language)}
-            {getMenuSuffix(language)}
-          </Typography>
-          <Tooltip title="Directions">
-            <IconButton
-              onClick={() => openInMaps('2465 Campus Road Honolulu, HI 96822')}
-              color="primary"
-              size="medium"
-              sx={{ marginLeft: '15px', padding: '10px;', border: '1px solid', borderColor: 'primary.light' }}
-            >
-              <FaMapMarkedAlt />
-            </IconButton>
-          </Tooltip>
-        </Box>
+        <Typography variant={typographyVariant} className="text-center">
+          {getDisplayMenuNames(menuState, language)}
+          {getMenuSuffix(language)}
+        </Typography>
         {menuState === 'cc' && ccHours && (
-          <Typography variant="subtitle1" className="text-center mt-1" sx={{ color: 'text.secondary' }}>
-            {getTodaysHoursLabel(language)}: {ccHours}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="subtitle1" className="text-center mt-1" sx={{ color: 'text.secondary' }}>
+              {getTodaysHoursLabel(language)}: {ccHours}
+            </Typography>
+            <Tooltip title="Directions" placement="right" arrow>
+              <IconButton
+                onClick={() => openInMaps('2465 Campus Road Honolulu, HI 96822')}
+                color="primary"
+                size="small"
+                sx={{ border: '1px solid', borderColor: 'primary.light' }}
+              >
+                <FaMapMarkedAlt />
+              </IconButton>
+            </Tooltip>
+          </Box>
         )}
         <Box
           sx={{
