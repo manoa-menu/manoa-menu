@@ -126,3 +126,44 @@ export default async function scrapeCCUrl(url: string): Promise<string> {
   console.error('No anchor elements found in any menu link container');
   throw new Error('Anchor element not found');
 }
+
+export async function scrapeCCHours(url: string): Promise<string | null> {
+  if (typeof window !== 'undefined') {
+    throw new Error('scrapeCCHours can only be run in a Node.js environment');
+  }
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch the URL: ${response.statusText}`);
+  }
+
+  const html = await response.text();
+
+  const virtualConsole = new VirtualConsole();
+  virtualConsole.on('error', () => {});
+
+  const dom = new JSDOM(html, { virtualConsole });
+  const doc = dom.window.document;
+
+  const hoursBlock = doc.querySelector('div.current-open-hours-block');
+  if (!hoursBlock) {
+    console.warn('current-open-hours-block not found');
+    return null;
+  }
+
+  const textDiv = hoursBlock.querySelector('div.text');
+  if (!textDiv) {
+    console.warn('div.text inside current-open-hours-block not found');
+    return null;
+  }
+
+  return (textDiv.textContent || '').trim();
+}

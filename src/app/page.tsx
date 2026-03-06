@@ -6,13 +6,15 @@
 import CCMenuList from '@/components/CCMenuList';
 import { Container } from 'react-bootstrap';
 import { DayMenu, SdxAPIResponse } from '@/types/menuTypes';
+import { openInMaps } from '@/lib/mapFunctions';
+import { FaMapMarkedAlt } from 'react-icons/fa';
 import { useSession } from 'next-auth/react';
 import { getUserLanguage } from '@/lib/dbActions';
 import { useState, useEffect } from 'react';
 import BlackSpinner from '@/components/BlackSpinner';
 import { fixDayNames } from '@/lib/menuHelper';
 import SdxMenu from '@/components/SdxMenu';
-import { Box, Button, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Button, IconButton, Stack, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 const Page = () => {
@@ -63,6 +65,15 @@ const Page = () => {
     }
   };
 
+  const getTodaysHoursLabel = (lang: string): string => {
+    switch (lang) {
+      case 'Japanese': return '本日の営業時間';
+      case 'Korean': return '오늘의 영업시간';
+      case 'Chinese': return '今日营业时间';
+      default: return "Today's Hours";
+    }
+  };
+
   const getMenuSuffix = (lang: string): string => {
     switch (lang) {
       case 'Japanese':
@@ -93,6 +104,8 @@ const Page = () => {
   const [isHALoading, setHALoading] = useState(false);
 
   const [language, setLanguage] = useState<string>('English');
+
+  const [ccHours, setCCHours] = useState<string | null>(null);
 
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
@@ -143,6 +156,15 @@ const Page = () => {
     };
     if (userId !== 21) fetchFav();
   }, [userId]);
+
+  useEffect(() => {
+    if (menuState === 'cc') {
+      fetch('/api/cc-hours')
+        .then((res) => res.json())
+        .then((data) => setCCHours(data.hours ?? null))
+        .catch(() => setCCHours(null));
+    }
+  }, [menuState]);
 
   useEffect(() => {
     const fetchMenu = async (
@@ -212,15 +234,32 @@ const Page = () => {
           alignItems: 'center',
         }}
       >
-        <Typography variant={typographyVariant} className="text-center">
-          {getDisplayMenuNames(menuState, language)}
-          {getMenuSuffix(language)}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant={typographyVariant} className="text-center">
+            {getDisplayMenuNames(menuState, language)}
+            {getMenuSuffix(language)}
+          </Typography>
+          <Tooltip title="Directions">
+            <IconButton
+              onClick={() => openInMaps('2465 Campus Road Honolulu, HI 96822')}
+              color="primary"
+              size="medium"
+              sx={{ marginLeft: '15px', padding: '10px;', border: '1px solid', borderColor: 'primary.light' }}
+            >
+              <FaMapMarkedAlt />
+            </IconButton>
+          </Tooltip>
+        </Box>
+        {menuState === 'cc' && ccHours && (
+          <Typography variant="subtitle1" className="text-center mt-1" sx={{ color: 'text.secondary' }}>
+            {getTodaysHoursLabel(language)}: {ccHours}
+          </Typography>
+        )}
         <Box
           sx={{
             border: '1px solid #ccc',
             borderRadius: 1,
-            padding: { xs: 1, sm: 1.5 },
+            padding: { xs: 1, sm: 1 },
             display: 'flex',
           }}
         >
