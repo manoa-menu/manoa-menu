@@ -37,8 +37,6 @@ export default async function scrapeCCUrl(url: string): Promise<string> {
 
   console.log('Parsing HTML with JSDOM...');
   const dom = new JSDOM(html, {
-    resources: 'usable',
-    runScripts: 'dangerously',
     virtualConsole,
   });
 
@@ -67,7 +65,10 @@ export default async function scrapeCCUrl(url: string): Promise<string> {
 
   const now = new Date();
 
-  // Iterate over all matching divs and find the anchor whose date range covers this week
+  interface Candidate { anchor: HTMLAnchorElement; startDate: Date; endDate: Date; }
+  const candidates: Candidate[] = [];
+
+  // Iterate over all matching divs and collect parsed date ranges
   for (let i = 0; i < divs.length; i++) {
     const anchor = divs[i].querySelector('a') as HTMLAnchorElement | null;
     if (!anchor) continue;
@@ -111,16 +112,30 @@ export default async function scrapeCCUrl(url: string): Promise<string> {
       console.log(`Div ${i} matches the current week. Returning href: ${anchor.href}`);
       return anchor.href;
     }
+
+    candidates.push({ anchor, startDate, endDate });
   }
 
-  // Fallback: if no date range matched, return the first anchor found
-  console.warn('No anchor matched the current week; falling back to the first available anchor');
-  for (let i = 0; i < divs.length; i++) {
-    const anchor = divs[i].querySelector('a') as HTMLAnchorElement | null;
-    if (anchor) {
-      console.log(`Fallback: returning first anchor href: ${anchor.href}`);
-      return anchor.href;
-    }
+  // Fallback: pick the next upcoming range (closest startDate after today),
+  // or if everything is in the past, the most recently ended range.
+  console.warn('No anchor matched the current week; selecting nearest date range as fallback');
+
+  const upcoming = candidates
+    .filter(c => c.startDate > now)
+    .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+
+  if (upcoming.length > 0) {
+    console.log(`Fallback: next upcoming range starts ${upcoming[0].startDate.toDateString()}. Returning href: ${upcoming[0].anchor.href}`);
+    return upcoming[0].anchor.href;
+  }
+
+  const past = candidates
+    .filter(c => c.endDate < now)
+    .sort((a, b) => b.endDate.getTime() - a.endDate.getTime());
+
+  if (past.length > 0) {
+    console.log(`Fallback: most recent past range ended ${past[0].endDate.toDateString()}. Returning href: ${past[0].anchor.href}`);
+    return past[0].anchor.href;
   }
 
   console.error('No anchor elements found in any menu link container');
@@ -128,10 +143,13 @@ export default async function scrapeCCUrl(url: string): Promise<string> {
 }
 
 export async function scrapeCCHours(url: string): Promise<string | null> {
+  console.log(`[scrapeCCHours] Starting for: ${url}`);
+
   if (typeof window !== 'undefined') {
     throw new Error('scrapeCCHours can only be run in a Node.js environment');
   }
 
+  console.log('[scrapeCCHours] Fetching page HTML...');
   const response = await fetch(url, {
     method: 'GET',
     headers: {
@@ -141,29 +159,53 @@ export async function scrapeCCHours(url: string): Promise<string | null> {
     },
   });
 
+  console.log(`[scrapeCCHours] Response status: ${response.status} ${response.statusText}`);
   if (!response.ok) {
+    console.error(`[scrapeCCHours] Fetch failed with status ${response.status}`);
     throw new Error(`Failed to fetch the URL: ${response.statusText}`);
   }
 
   const html = await response.text();
+  console.log(`[scrapeCCHours] HTML received, length: ${html.length} characters`);
 
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('error', () => {});
 
+  console.log('[scrapeCCHours] Parsing HTML with JSDOM...');
   const dom = new JSDOM(html, { virtualConsole });
   const doc = dom.window.document;
 
+  console.log('[scrapeCCHours] Looking for div.current-open-hours-block...');
   const hoursBlock = doc.querySelector('div.current-open-hours-block');
   if (!hoursBlock) {
-    console.warn('current-open-hours-block not found');
+    console.warn('[scrapeCCHours] div.current-open-hours-block not found in page');
+    // Log nearby div class names to help diagnose selector changes
+    const allDivs = doc.querySelectorAll('div[class]');
+    const candidates: string[] = [];
+    allDivs.forEach((d) => {
+      if (d.className && d.className.toLowerCase().includes('hour')) {
+        candidates.push(d.className);
+      }
+    });
+    if (candidates.length > 0) {
+      console.warn('[scrapeCCHours] Divs with "hour" in class name:', candidates);
+    } else {
+      console.warn('[scrapeCCHours] No divs with "hour" in class name found either');
+    }
     return null;
   }
 
+  console.log(`[scrapeCCHours] Found hours block. innerHTML preview: "${hoursBlock.innerHTML.slice(0, 200)}"`);
+
+  console.log('[scrapeCCHours] Looking for div.text inside hours block...');
   const textDiv = hoursBlock.querySelector('div.text');
   if (!textDiv) {
-    console.warn('div.text inside current-open-hours-block not found');
+    console.warn('[scrapeCCHours] div.text inside current-open-hours-block not found');
+    console.warn(`[scrapeCCHours] Hours block child elements: ${Array.from(hoursBlock.children).map(c => `<${c.tagName.toLowerCase()} class="${c.className}">`).join(', ')}`);
     return null;
   }
 
-  return (textDiv.textContent || '').trim();
+  const result = (textDiv.textContent || '').trim();
+  console.log(`[scrapeCCHours] Extracted hours text: "${result}"`);
+  return result;
 }

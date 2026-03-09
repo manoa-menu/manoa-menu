@@ -148,14 +148,7 @@ const Page = () => {
     if (userId !== 21) fetchData();
   }, [session, userId]);
 
-  useEffect(() => {
-    const fetchFav = async () => {
-      const response = await fetch(`/api/userFavorites?userId=${userId}`);
-      const data = await response.json() || [];
-      setFavArr(data);
-    };
-    if (userId !== 21) fetchFav();
-  }, [userId]);
+
 
   useEffect(() => {
     if (menuState === 'cc') {
