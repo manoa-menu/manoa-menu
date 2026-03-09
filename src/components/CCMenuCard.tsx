@@ -136,6 +136,15 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
         '&:hover': {
           boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
         },
+        animation: 'fadeIn 0.3s ease-in',
+        '@keyframes fadeIn': {
+          from: {
+            opacity: 0,
+          },
+          to: {
+            opacity: 1,
+          },
+        },
       }}
     >
       {/* Card Header */}
@@ -156,8 +165,8 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
         <CardContent sx={{ px: 1.75, py: 1.5 }}>
           {/* Plate Lunch Section */}
           <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.75 }}>
-            <UtensilsCrossed size={16} color="#666" />
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#444', fontSize: '0.95rem' }}>
+            <UtensilsCrossed size={16} color="#717171" />
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#363636', fontSize: '0.95rem' }}>
               {headers[0]}
             </Typography>
           </Stack>
@@ -166,7 +175,7 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
               <React.Fragment key={item}>
                 {renderItemRow(item)}
                 {index < plateLunch.length - 1 && (
-                  <Divider sx={{ my: 0.125, borderColor: '#e0e0e0' }} />
+                  <Divider sx={{ my: 0.125, borderColor: '#b7b7b7' }} />
                 )}
               </React.Fragment>
             ))}
@@ -176,8 +185,8 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
 
           {/* Grab and Go Section */}
           <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.75, mt: 1 }}>
-            <ShoppingBag size={16} color="#666" />
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#444', fontSize: '0.95rem' }}>
+            <ShoppingBag size={16} color="#717171" />
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#363636', fontSize: '0.95rem' }}>
               {headers[1]}
             </Typography>
           </Stack>
@@ -186,7 +195,7 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
               <React.Fragment key={item}>
                 {renderItemRow(item)}
                 {index < grabAndGo.length - 1 && (
-                  <Divider sx={{ my: 0.125, borderColor: '#e0e0e0' }} />
+                  <Divider sx={{ my: 0.125, borderColor: '#b7b7b7' }} />
                 )}
               </React.Fragment>
             ))}
@@ -194,7 +203,7 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
         </CardContent>
       ) : (
         <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
-          <Typography variant="h4" sx={{ fontWeight: 600, textAlign: 'center', color: '#666' }}>
+          <Typography variant="h4" sx={{ fontWeight: 600, textAlign: 'center', color: '#242424' }}>
             {`${message} ${checkHoliday(message)}`}
           </Typography>
         </CardContent>

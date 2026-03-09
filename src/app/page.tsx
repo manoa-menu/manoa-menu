@@ -105,6 +105,15 @@ const Page = () => {
     }
   };
 
+  const getAIDisclosure = (lang: string): string => {
+    switch (lang) {
+      case 'Japanese': return '注意：翻訳はAIによって生成されており、間違いが含まれている可能性があります。';
+      case 'Korean': return '주의: 번역은 AI에 의해 생성되었으며 오류가 있을 수 있습니다.';
+      case 'Chinese': return '注意：翻译由AI生成，可能包含错误。';
+      default: return 'Notice: Translations are AI-generated and may contain mistakes.';
+    }
+  };
+
   const { data: session } = useSession();
 
   const [userId, setUserId] = useState<number>(-21);
@@ -143,11 +152,11 @@ const Page = () => {
 
   const containerStyle = () => {
     if (isXs) {
-      return { marginLeft: '0%', marginRight: '0%', paddingTop: '75px' };
+      return { marginLeft: '0%', marginRight: '0%', paddingTop: '15px' };
     } if (isSmUp) {
-      return { paddingTop: '75px' };
+      return { paddingTop: '15px' };
     }
-    return { paddingTop: '75px' };
+    return { paddingTop: '15px' };
   };
 
   const langItemClick = (lang: string) => {
@@ -217,7 +226,7 @@ const Page = () => {
     switch (menuState) {
       case 'cc':
         return (ccMenu === undefined || ccMenu.length === 0)
-          ? <h2 className="text-center">Menu Unavailable</h2>
+          ? <h2 className="text-center mt-2">Menu Unavailable</h2>
           : <CCMenuList menu={ccMenu} language={language} userId={userId} favArr={favArr} />;
       case 'gw':
         return (gwMenu === undefined || gwMenu.length === 0)
@@ -225,7 +234,7 @@ const Page = () => {
           : <SdxMenu weekMenu={gwMenu} language={language} favArr={favArr} userId={userId} />;
       case 'ha':
         return (haMenu === undefined || haMenu.length === 0)
-          ? <h2 className="text-center">Menu Unavailable</h2>
+          ? <h2 className="text-center mt-2">Menu Unavailable</h2>
           : <SdxMenu weekMenu={haMenu} language={language} favArr={favArr} userId={userId} />;
       default:
         return null;
@@ -251,13 +260,13 @@ const Page = () => {
             flexDirection: { xs: 'column', md: 'row' }, 
             alignItems: 'center', 
             justifyContent: 'center',
-            gap: { xs: 1, md: 3 }, 
+            gap: { xs: 1, md: 3 },
             mb: { xs: 1, md: 0 }
           }}
         >
           <Typography
             variant={typographyVariant}
-            className="text-center"
+            className="text-center mt-1"
             sx={{ display: 'flex', alignItems: 'center' }}
           >
             {getDisplayMenuNames(menuState, language)}
@@ -276,7 +285,7 @@ const Page = () => {
                   borderRadius: 2,
                 }}
               />
-              <Tooltip title={getDirectionsTooltip(language)} placement="top" arrow>
+              <Tooltip title={getDirectionsTooltip(language)} placement="right" arrow>
                 <IconButton
                   onClick={() => openInMaps('2465 Campus Road Honolulu, HI 96822')}
                   color="primary"
@@ -351,6 +360,14 @@ const Page = () => {
           </div>
         )}
       </div>
+      
+      {!isCCLoading && !isGWLoading && !isHALoading && language !== 'English' && (
+        <Box sx={{ mt: 4, mb: 2, textAlign: 'center' }}>
+          <Typography variant="body2" color="text.secondary">
+            {getAIDisclosure(language)}
+          </Typography>
+        </Box>
+      )}
 
     </Container>
   );

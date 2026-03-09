@@ -22,15 +22,8 @@ const Footer = () => (
 
         {/* Team info */}
         <Col md={4} className="mb-3 mb-md-0">
-          <p className="mb-1 small">
-            <strong>Built by</strong>
-            <br />
-            Brendan Kuwabara, Adam Graham,
-            <br />
-            Eric Kim, Dat Truong, and Justin Sumiye
-          </p>
-          <p className="mb-0 small">
-            <strong>Maintained by</strong> Justin Sumiye
+          <p className="mb-1">
+            Rebuilt and maintained by Justin Sumiye
           </p>
         </Col>
 
