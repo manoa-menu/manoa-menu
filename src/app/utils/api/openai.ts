@@ -1,34 +1,4 @@
 // import axios from 'axios';
-// Polyfill for canvas/DOMMatrix in serverless environments
-if (typeof window === 'undefined') {
-  try {
-    // Try to load canvas module for Node.js environment
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const canvas = require('canvas');
-    
-    // Set up global polyfills if they don't exist
-    if (!global.DOMMatrix && canvas.DOMMatrix) {
-      global.DOMMatrix = canvas.DOMMatrix;
-    }
-    if (!global.DOMPoint && canvas.DOMPoint) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (global as any).DOMPoint = canvas.DOMPoint;
-    }
-  } catch (error) {
-    console.warn('Canvas module not available in this environment:', (error as Error).message);
-    // Create a minimal polyfill if canvas is not available
-    if (!global.DOMMatrix) {
-      console.warn('Creating minimal DOMMatrix polyfill');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      global.DOMMatrix = class DOMMatrix {
-        constructor() {
-          // Minimal implementation
-        }
-      } as any;
-    }
-  }
-}
-
 import OpenAI from 'openai';
 import { PDFParse } from 'pdf-parse';
 import path from 'node:path';
