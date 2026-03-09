@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import { JSDOM, VirtualConsole } from 'jsdom';
 import fetch from 'node-fetch';
 
