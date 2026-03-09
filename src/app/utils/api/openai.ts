@@ -1,6 +1,5 @@
 // import axios from 'axios';
 import OpenAI from 'openai';
-import { PDFParse } from 'pdf-parse';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -427,6 +426,7 @@ async function parseCCMenuFromPDF(pdfUrl: string): Promise<MenuResponse> {
   let menuText = '';
 
   try {
+    const { PDFParse } = await import('pdf-parse');
     const workerPath = path.join(
       process.cwd(),
       'node_modules',
