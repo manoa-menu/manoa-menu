@@ -31,6 +31,7 @@
     "bcrypt": "^5.1.1",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
+    "canvas": "^3.2.1",
     "dotenv": "^16.4.5",
     "google-search-results-nodejs": "^2.1.0",
     "jsdom": "^25.0.1",
