@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { Container, Nav, Navbar } from 'react-bootstrap';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import Image from 'next/image';
+import { Shop } from 'react-bootstrap-icons';
 import '../app/navbar.css';
 
 const NavBar: React.FC = () => {
@@ -11,20 +12,15 @@ const NavBar: React.FC = () => {
   const pathName = usePathname();
 
   return (
-    <Navbar className="custom-navbar fixed-top" style={{ height: '65px' }}>
+    <Navbar fixed="top" className="custom-navbar" style={{ height: '65px' }}>
       <Container fluid className="px-4">
         <div className="d-flex align-items-center">
-          {/* <Navbar.Brand>
-            <Image
-              src="/manoa-menu-logo.jpg"
-              alt="Manoa Menu Logo"
-              width={50}
-              height={50}
-              className="rounded border border-secondary d-inline-block align-top"
-            />
-          </Navbar.Brand> */}
-
-          <Navbar.Brand id="manoa-menu" className="justify-content-start text-light" href="/">
+          <Navbar.Brand
+            id="manoa-menu"
+            className="justify-content-start text-light d-flex align-items-center gap-3"
+            href="/"
+          >
+            <Shop size={26} />
             Manoa Menu
           </Navbar.Brand>
         </div>

@@ -176,6 +176,15 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
                             height: '100%',
                             maxHeight: getScrollProperties(dayMenu.meals.length)[0],
                             overflow: getScrollProperties(dayMenu.meals.length)[1],
+                            animation: 'fadeIn 0.3s ease-in',
+                            '@keyframes fadeIn': {
+                              from: {
+                                opacity: 0,
+                              },
+                              to: {
+                                opacity: 1,
+                              },
+                            },
                           }}
                         >
                           <CardHeader className="px-3 py-2" style={{ backgroundColor: '#ECECEC' }}>
