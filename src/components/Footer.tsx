@@ -3,7 +3,7 @@ import { FaGithub } from 'react-icons/fa';
 
 /** The Footer appears at the bottom of every page. Rendered by the App Layout component. */
 const Footer = () => (
-  <footer className="mt-auto py-4 bg-dark text-light">
+  <footer className="mt-auto py-5 bg-dark text-light">
     <Container>
       <Row className="align-items-center justify-content-center text-center">
         {/* GitHub link */}
@@ -32,7 +32,7 @@ const Footer = () => (
           <h5 style={{ color: '#1ea468' }}>Resources</h5>
           <a
             className="text-light text-decoration-none"
-            href="https://manoa-menu.github.io/"
+            href="https://github.com/manoa-menu/manoa-menu/blob/main/README.md"
             target="_blank"
             rel="noopener noreferrer"
           >

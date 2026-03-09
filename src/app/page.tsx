@@ -244,7 +244,7 @@ const Page = () => {
   return (
     <Container
       fluid
-      className="my-3 menu-container"
+      className="my-2 mb-5 menu-container"
       style={containerStyle()}
     >
       <Stack
