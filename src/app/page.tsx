@@ -11,7 +11,6 @@ import { FaMapMarkedAlt } from 'react-icons/fa';
 import { useSession } from 'next-auth/react';
 import { getUserLanguage } from '@/lib/dbActions';
 import { useState, useEffect } from 'react';
-import BlackSpinner from '@/components/BlackSpinner';
 import { fixDayNames } from '@/lib/menuHelper';
 import SdxMenu from '@/components/SdxMenu';
 import { Box, Button, IconButton, Stack, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material';
@@ -91,7 +90,7 @@ const Page = () => {
 
   const [userId, setUserId] = useState<number>(-21);
 
-  const [favArr, setFavArr] = useState<string[]>([]);
+  const [favArr] = useState<string[]>([]);
 
   const [menuState] = useState<string>('cc');
 
