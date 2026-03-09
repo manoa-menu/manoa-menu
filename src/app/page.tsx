@@ -13,7 +13,7 @@ import { getUserLanguage } from '@/lib/dbActions';
 import { useState, useEffect } from 'react';
 import { fixDayNames } from '@/lib/menuHelper';
 import SdxMenu from '@/components/SdxMenu';
-import { Box, Button, IconButton, Stack, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Button, Chip, IconButton, Stack, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 const Page = () => {
@@ -64,15 +64,6 @@ const Page = () => {
     }
   };
 
-  const getTodaysHoursLabel = (lang: string): string => {
-    switch (lang) {
-      case 'Japanese': return '本日の営業時間';
-      case 'Korean': return '오늘의 영업시간';
-      case 'Chinese': return '今日营业时间';
-      default: return "Today's Hours";
-    }
-  };
-
   const getMenuSuffix = (lang: string): string => {
     switch (lang) {
       case 'Japanese':
@@ -83,6 +74,34 @@ const Page = () => {
         return ' 菜单';
       default:
         return ' Menu';
+    }
+  };
+
+  const getTranslatedStatus = (status: string, lang: string): string => {
+    const isOpen = status.toLowerCase().includes('open');
+    if (isOpen) {
+      switch (lang) {
+        case 'Japanese': return '営業中';
+        case 'Korean': return '영업중';
+        case 'Chinese': return '营业中';
+        default: return 'Open';
+      }
+    } else {
+      switch (lang) {
+        case 'Japanese': return '準備中';
+        case 'Korean': return '준비중';
+        case 'Chinese': return '休息中';
+        default: return 'Closed';
+      }
+    }
+  };
+
+  const getDirectionsTooltip = (lang: string): string => {
+    switch (lang) {
+      case 'Japanese': return '行き方を見る';
+      case 'Korean': return '길찾기';
+      case 'Chinese': return '导航';
+      default: return 'Directions';
     }
   };
 
@@ -226,27 +245,56 @@ const Page = () => {
           alignItems: 'center',
         }}
       >
-        <Typography variant={typographyVariant} className="text-center">
-          {getDisplayMenuNames(menuState, language)}
-          {getMenuSuffix(language)}
-        </Typography>
-        {menuState === 'cc' && ccHours && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="subtitle1" className="text-center mt-1" sx={{ color: 'text.secondary' }}>
-              {getTodaysHoursLabel(language)}: {ccHours}
-            </Typography>
-            <Tooltip title="Directions" placement="right" arrow>
-              <IconButton
-                onClick={() => openInMaps('2465 Campus Road Honolulu, HI 96822')}
-                color="primary"
-                size="small"
-                sx={{ border: '1px solid', borderColor: 'primary.light' }}
-              >
-                <FaMapMarkedAlt />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        )}
+        <Box 
+          sx={{ 
+            display: 'flex', 
+            flexDirection: { xs: 'column', md: 'row' }, 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            gap: { xs: 1, md: 3 }, 
+            mb: { xs: 1, md: 0 }
+          }}
+        >
+          <Typography
+            variant={typographyVariant}
+            className="text-center"
+            sx={{ display: 'flex', alignItems: 'center' }}
+          >
+            {getDisplayMenuNames(menuState, language)}
+            {getMenuSuffix(language)}
+          </Typography>
+          {menuState === 'cc' && ccHours && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Chip
+                label={getTranslatedStatus(ccHours, language)}
+                color={ccHours.toLowerCase().includes('open') ? 'success' : 'error'}
+                sx={{
+                  fontWeight: 'bold',
+                  fontSize: '0.95rem',
+                  px: 1,
+                  py: 2,
+                  borderRadius: 2,
+                }}
+              />
+              <Tooltip title={getDirectionsTooltip(language)} placement="top" arrow>
+                <IconButton
+                  onClick={() => openInMaps('2465 Campus Road Honolulu, HI 96822')}
+                  color="primary"
+                  sx={{ 
+                    border: '1.5px solid', 
+                    borderColor: 'primary.light',
+                    bgcolor: 'background.paper',
+                    '&:hover': {
+                      bgcolor: 'primary.50'
+                    }
+                  }}
+                >
+                  <FaMapMarkedAlt />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          )}
+        </Box>
         <Box
           sx={{
             border: '1px solid #ccc',

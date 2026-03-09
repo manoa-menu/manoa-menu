@@ -176,37 +176,42 @@ export async function scrapeCCHours(url: string): Promise<string | null> {
   const dom = new JSDOM(html, { virtualConsole });
   const doc = dom.window.document;
 
-  console.log('[scrapeCCHours] Looking for div.current-open-hours-block...');
-  const hoursBlock = doc.querySelector('div.current-open-hours-block');
-  if (!hoursBlock) {
-    console.warn('[scrapeCCHours] div.current-open-hours-block not found in page');
-    // Log nearby div class names to help diagnose selector changes
-    const allDivs = doc.querySelectorAll('div[class]');
-    const candidates: string[] = [];
-    allDivs.forEach((d) => {
-      if (d.className && d.className.toLowerCase().includes('hour')) {
-        candidates.push(d.className);
-      }
-    });
-    if (candidates.length > 0) {
-      console.warn('[scrapeCCHours] Divs with "hour" in class name:', candidates);
-    } else {
-      console.warn('[scrapeCCHours] No divs with "hour" in class name found either');
+  console.log('[scrapeCCHours] Looking for OpenChip status wrapper...');
+  // Find all divs and look for one with a class that starts with "OpenChipstyles__Wrapper"
+  const allDivs = doc.querySelectorAll('div[class]');
+  let statusWrapper = null;
+  
+  for (let i = 0; i < allDivs.length; i++) {
+    const div = allDivs[i];
+    if (div.className && div.className.includes('OpenChipstyles__Wrapper')) {
+      statusWrapper = div;
+      break;
     }
+  }
+
+  if (!statusWrapper) {
+    console.warn('[scrapeCCHours] OpenChip status wrapper not found in page');
     return null;
   }
 
-  console.log(`[scrapeCCHours] Found hours block. innerHTML preview: "${hoursBlock.innerHTML.slice(0, 200)}"`);
+  console.log(`[scrapeCCHours] Found status wrapper. innerHTML preview: "${statusWrapper.innerHTML.slice(0, 200)}"`);
 
-  console.log('[scrapeCCHours] Looking for div.text inside hours block...');
-  const textDiv = hoursBlock.querySelector('div.text');
-  if (!textDiv) {
-    console.warn('[scrapeCCHours] div.text inside current-open-hours-block not found');
-    console.warn(`[scrapeCCHours] Hours block child elements: ${Array.from(hoursBlock.children).map(c => `<${c.tagName.toLowerCase()} class="${c.className}">`).join(', ')}`);
+  // Look for the container div with aria-label
+  const containerDiv = statusWrapper.querySelector('div.container[aria-label]');
+  if (!containerDiv) {
+    console.warn('[scrapeCCHours] div.container with aria-label not found inside status wrapper');
     return null;
   }
 
-  const result = (textDiv.textContent || '').trim();
-  console.log(`[scrapeCCHours] Extracted hours text: "${result}"`);
+  // Extract status from aria-label attribute
+  const status = containerDiv.getAttribute('aria-label');
+  if (!status) {
+    console.warn('[scrapeCCHours] aria-label attribute not found');
+    return null;
+  }
+
+  // Capitalize first letter
+  const result = status.charAt(0).toUpperCase() + status.slice(1);
+  console.log(`[scrapeCCHours] Extracted status: "${result}"`);
   return result;
 }
