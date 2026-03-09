@@ -8,75 +8,64 @@ import { getCurrentWeekOf, getNextWeekOf } from './dateFunctions';
 
 async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
   try {
-    // Log the language parameter
     console.log(`Fetching menu for language: ${language}`);
-
-    const menuURL: string = 'https://uhm.sodexomyway.com/en-us/locations/campus-center-food-court';
-    console.log(`Attempting to scrape PDF URL from: ${menuURL}`);
-    let menuPdf: string | null = null;
-
-    try {
-      menuPdf = await scrapeCCUrl(menuURL);
-      console.log(`Scraped PDF URL: ${menuPdf}`);
-    } catch (scrapeError) {
-      console.warn(`Failed to scrape PDF URL: ${scrapeError}`);
-      console.log('Falling back to static PDF files...');
-
-      // Try to use static PDFs as fallback
-      const staticPdfs = [
-        '/cc-menus/menu.pdf',
-        '/cc-menus/menu2.pdf',
-        '/cc-menus/specialmenu.pdf',
-      ];
-
-      for (const staticPdf of staticPdfs) {
-        try {
-          console.log(`Trying static PDF: ${staticPdf}`);
-          const fullUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}${staticPdf}`;
-          menuPdf = fullUrl;
-          break;
-        } catch (error) {
-          console.warn(`Failed to use static PDF ${staticPdf}: ${error}`);
-        }
-      }
-
-      if (!menuPdf) {
-        throw new Error('Failed to scrape menu PDF URL and no static PDFs available');
-      }
-    }
 
     const currentWeekOf = getCurrentWeekOf();
     const nextWeekOf = getNextWeekOf();
 
-    console.log(`Ensuring English menu exists for week ${currentWeekOf} (source PDF: ${menuPdf})`);
-    await parseCCMenuFromPDF(menuPdf);
-
-    const englishWeekOneRow = await getCCMenu(currentWeekOf, 'English');
-    if (!englishWeekOneRow) {
-      throw new Error(`English menu is missing in DB for ${currentWeekOf}.`);
+    if (language !== 'English') {
+      const existingLanguageMenu = await getCCMenu(currentWeekOf, language);
+      if (existingLanguageMenu) {
+        const existingLanguageMenuParsed = existingLanguageMenu.menu as unknown as DayMenu[];
+        if (existingLanguageMenuParsed.length > 0) {
+          console.log(`Returning cached ${language} menu for ${currentWeekOf}`);
+          return existingLanguageMenuParsed;
+        }
+      }
     }
 
-    const englishWeekOne: DayMenu[] = JSON.parse(JSON.stringify(englishWeekOneRow.menu));
-    const englishWeekTwoRow = await getCCMenu(nextWeekOf, 'English');
-    const englishWeekTwo: DayMenu[] = englishWeekTwoRow
-      ? JSON.parse(JSON.stringify(englishWeekTwoRow.menu))
-      : [];
-    const englishMenuFromDb: MenuResponse = {
-      weekOne: englishWeekOne,
-      weekTwo: englishWeekTwo,
-    };
+    // Check if English menu is already in DB (parallel fetch for both weeks)
+    const [englishWeekOneRow, englishWeekTwoRow] = await Promise.all([
+      getCCMenu(currentWeekOf, 'English'),
+      getCCMenu(nextWeekOf, 'English'),
+    ]);
+
+    let englishMenuFromDb: MenuResponse;
+
+    if (englishWeekOneRow) {
+      // English menu is cached, skip scraping and PDF parsing entirely
+      console.log(`English menu already cached for ${currentWeekOf}, skipping scrape`);
+      const englishWeekOne = englishWeekOneRow.menu as unknown as DayMenu[];
+      const englishWeekTwo = englishWeekTwoRow
+        ? (englishWeekTwoRow.menu as unknown as DayMenu[])
+        : [];
+      englishMenuFromDb = { weekOne: englishWeekOne, weekTwo: englishWeekTwo };
+    } else {
+      // No cached menu, scrape and parse the PDF
+      const menuURL = 'https://uhm.sodexomyway.com/en-us/locations/campus-center-food-court';
+      console.log(`No cached English menu. Scraping PDF URL from: ${menuURL}`);
+      let menuPdf: string | null = null;
+
+      try {
+        menuPdf = await scrapeCCUrl(menuURL);
+        console.log(`Scraped PDF URL: ${menuPdf}`);
+      } catch (scrapeError) {
+        console.warn(`Failed to scrape PDF URL: ${scrapeError}`);
+        const staticPdf = '/cc-menus/menu.pdf';
+        menuPdf = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}${staticPdf}`;
+        console.log(`Falling back to static PDF: ${menuPdf}`);
+      }
+
+      console.log(`Parsing PDF for week ${currentWeekOf}`);
+      englishMenuFromDb = await parseCCMenuFromPDF(menuPdf);
+
+      if (!englishMenuFromDb.weekOne || englishMenuFromDb.weekOne.length === 0) {
+        throw new Error(`English menu is missing after PDF parse for ${currentWeekOf}.`);
+      }
+    }
 
     if (language === 'English') {
       return englishMenuFromDb.weekOne;
-    }
-
-    console.log(`Checking ${language} menu for current week: ${currentWeekOf}`);
-    const existingLanguageMenu = await getCCMenu(currentWeekOf, language);
-    if (existingLanguageMenu) {
-      const existingLanguageMenuParsed: DayMenu[] = JSON.parse(JSON.stringify(existingLanguageMenu.menu));
-      if (existingLanguageMenuParsed.length > 0) {
-        return existingLanguageMenuParsed;
-      }
     }
 
     console.log(`No ${language} menu found for ${currentWeekOf}. Translating now.`);

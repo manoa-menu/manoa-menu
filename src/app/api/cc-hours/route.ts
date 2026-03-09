@@ -12,3 +12,5 @@ export async function GET() {
     return NextResponse.json({ hours: null });
   }
 }
+
+export const maxDuration = 30;

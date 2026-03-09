@@ -1,5 +1,7 @@
 // import axios from 'axios';
 import OpenAI from 'openai';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import jpManualReplace from '@/lib/manualTranslate';
 import { getCCMenu, insertCCMenu, getSdxMenu, insertSdxMenu } from '@/lib/dbActions';
@@ -317,12 +319,14 @@ async function fetchOpenAI(
 ): Promise<MenuResponse | SdxSchemaObject> {
   // --- Check if the translated menu already exists in the DB ---
   if (option === Location.CAMPUS_CENTER) {
-    const existingWeekOne = await getCCMenu(date, language);
+    const nextWeekDate = getNextWeekOf();
+    const [existingWeekOne, existingWeekTwo] = await Promise.all([
+      getCCMenu(date, language),
+      getCCMenu(nextWeekDate, language),
+    ]);
     if (existingWeekOne) {
-      const weekOneMenu: DayMenu[] = JSON.parse(JSON.stringify(existingWeekOne.menu));
-      const nextWeekDate = getNextWeekOf();
-      const existingWeekTwo = await getCCMenu(nextWeekDate, language);
-      const weekTwoMenu: DayMenu[] = existingWeekTwo ? JSON.parse(JSON.stringify(existingWeekTwo.menu)) : [];
+      const weekOneMenu = existingWeekOne.menu as unknown as DayMenu[];
+      const weekTwoMenu = existingWeekTwo ? (existingWeekTwo.menu as unknown as DayMenu[]) : [];
       console.log(`Returning existing ${language} CC menu from DB for ${date}`);
       return { weekOne: weekOneMenu, weekTwo: weekTwoMenu } as MenuResponse;
     }
@@ -330,7 +334,7 @@ async function fetchOpenAI(
     // SDX locations (Gateway / Hale Aloha)
     const existingMenu = await getSdxMenu(date, language, option);
     if (existingMenu) {
-      const meals: FilteredSodexoMeal[] = existingMenu.menu as unknown as FilteredSodexoMeal[];
+      const meals = existingMenu.menu as unknown as FilteredSodexoMeal[];
       console.log(`Returning existing ${language} ${option} menu from DB for ${date}`);
       return { schemaObject: meals } as SdxSchemaObject;
     }
@@ -402,19 +406,51 @@ async function parseCCMenuFromPDF(pdfUrl: string): Promise<MenuResponse> {
 
   // --- Check if the English CC menu for this week already exists in the DB ---
   const currentWeek = getCurrentWeekOf();
-  const existingMenu = await getCCMenu(currentWeek, 'English');
+  const nextWeek = getNextWeekOf();
+  const [existingMenu, existingWeekTwo] = await Promise.all([
+    getCCMenu(currentWeek, 'English'),
+    getCCMenu(nextWeek, 'English'),
+  ]);
   if (existingMenu) {
-    const weekOneMenu: DayMenu[] = JSON.parse(JSON.stringify(existingMenu.menu));
-    const nextWeek = getNextWeekOf();
-    const existingWeekTwo = await getCCMenu(nextWeek, 'English');
-    const weekTwoMenu: DayMenu[] = existingWeekTwo ? JSON.parse(JSON.stringify(existingWeekTwo.menu)) : [];
+    const weekOneMenu = existingMenu.menu as unknown as DayMenu[];
+    const weekTwoMenu = existingWeekTwo ? (existingWeekTwo.menu as unknown as DayMenu[]) : [];
     console.log(`Returning existing English CC menu from DB for week ${currentWeek}`);
     return { weekOne: weekOneMenu, weekTwo: weekTwoMenu };
   }
 
-  // --- No cached menu found, call OpenAI to parse the PDF ---
-  const promptText = `You are a menu parser. 
-Analyze this Campus Center menu PDF and extract the menu items into the specified JSON format.
+  console.log(`Downloading PDF from: ${pdfUrl}`);
+  const pdfResponse = await fetch(pdfUrl);
+  if (!pdfResponse.ok) {
+    throw new Error(`Failed to download PDF: ${pdfResponse.status} ${pdfResponse.statusText}`);
+  }
+  let menuText = '';
+
+  try {
+    const { PDFParse } = await import('pdf-parse');
+    const workerPath = path.join(
+      process.cwd(),
+      'node_modules',
+      'pdf-parse',
+      'dist',
+      'pdf-parse',
+      'esm',
+      'pdf.worker.mjs',
+    );
+    PDFParse.setWorker(pathToFileURL(workerPath).toString());
+
+    const pdfData = new Uint8Array(await pdfResponse.arrayBuffer());
+    const parser = new PDFParse({ data: pdfData });
+    const textResult = await parser.getText();
+    await parser.destroy();
+
+    menuText = textResult.text;
+    console.log(`Extracted ${menuText.length} chars from PDF (${textResult.total} pages)`);
+  } catch (pdfExtractError) {
+    console.warn(`Local PDF extraction failed, falling back to file_url input: ${pdfExtractError}`);
+  }
+
+  const promptText = `You are a menu parser.
+Analyze this Campus Center menu text (extracted from a PDF) and extract the menu items into the specified JSON format.
 
 The menu should be organized by days (Monday through Friday) and include:
 - plateLunch: Array of plate lunch options for each day
@@ -432,23 +468,24 @@ The menu may span 1-2 weeks. Extract weekOne (first 5 days) and weekTwo (next 5 
 
 Return the data in the exact JSON schema format specified.`;
 
-  // Use OpenAI file input API — pass the PDF URL directly, no download needed
   const response = await client.responses.create({
     model: 'gpt-5-mini',
     input: [
       { role: 'system', content: promptText },
       {
         role: 'user',
-        content: [
-          {
-            type: 'input_text',
-            text: 'Please parse this Campus Center menu PDF and return the structured data.',
-          },
-          {
-            type: 'input_file',
-            file_url: pdfUrl,
-          },
-        ],
+        content: menuText.length > 0
+          ? `Here is the menu text extracted from the PDF:\n\n${menuText}`
+          : [
+            {
+              type: 'input_text',
+              text: 'Local PDF text extraction failed. Parse this PDF directly and return the structured menu.',
+            },
+            {
+              type: 'input_file',
+              file_url: pdfUrl,
+            },
+          ],
       },
     ],
     text: {
