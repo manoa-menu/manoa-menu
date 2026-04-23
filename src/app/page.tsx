@@ -13,8 +13,11 @@ import { getUserLanguage } from '@/lib/dbActions';
 import { useState, useEffect } from 'react';
 import { fixDayNames } from '@/lib/menuHelper';
 import SdxMenu from '@/components/SdxMenu';
-import { Box, Button, Chip, IconButton, Stack, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Button, Chip, IconButton, Stack, Tooltip, Typography, useMediaQuery, useTheme, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { LayoutGrid, List as ListIcon } from 'lucide-react';
+import CCMenuGallery from '@/components/CCMenuGallery';
+import SdxMenuGallery from '@/components/SdxMenuGallery';
 
 const Page = () => {
   const languages = [
@@ -131,6 +134,7 @@ const Page = () => {
   const [isHALoading, setHALoading] = useState(false);
 
   const [language, setLanguage] = useState<string>('English');
+  const [viewMode, setViewMode] = useState<'list' | 'gallery'>('list');
 
   const [ccHours, setCCHours] = useState<string | null>(null);
 
@@ -227,15 +231,21 @@ const Page = () => {
       case 'cc':
         return (ccMenu === undefined || ccMenu.length === 0)
           ? <h2 className="text-center mt-2">Menu Unavailable</h2>
-          : <CCMenuList menu={ccMenu} language={language} userId={userId} favArr={favArr} />;
+          : viewMode === 'gallery'
+            ? <CCMenuGallery menu={ccMenu} language={language} userId={userId} favArr={favArr} />
+            : <CCMenuList menu={ccMenu} language={language} userId={userId} favArr={favArr} />;
       case 'gw':
         return (gwMenu === undefined || gwMenu.length === 0)
           ? <h2 className="text-center">Menu Unavailable</h2>
-          : <SdxMenu weekMenu={gwMenu} language={language} favArr={favArr} userId={userId} />;
+          : viewMode === 'gallery'
+            ? <SdxMenuGallery weekMenu={gwMenu} language={language} favArr={favArr} userId={userId} />
+            : <SdxMenu weekMenu={gwMenu} language={language} favArr={favArr} userId={userId} />;
       case 'ha':
         return (haMenu === undefined || haMenu.length === 0)
           ? <h2 className="text-center mt-2">Menu Unavailable</h2>
-          : <SdxMenu weekMenu={haMenu} language={language} favArr={favArr} userId={userId} />;
+          : viewMode === 'gallery'
+            ? <SdxMenuGallery weekMenu={haMenu} language={language} favArr={favArr} userId={userId} />
+            : <SdxMenu weekMenu={haMenu} language={language} favArr={favArr} userId={userId} />;
       default:
         return null;
     }
@@ -349,6 +359,24 @@ const Page = () => {
             })}
           </Stack>
         </Box>
+
+        <ToggleButtonGroup
+          value={viewMode}
+          exclusive
+          onChange={(_e, newMode) => { if (newMode) setViewMode(newMode); }}
+          aria-label="menu view mode"
+          size="small"
+          sx={{ mt: 1, backgroundColor: 'background.paper' }}
+        >
+          <ToggleButton value="list" aria-label="list view">
+            <ListIcon size={20} />
+            <Typography variant="body2" sx={{ ml: 1, display: { xs: 'none', sm: 'block' } }}>List View</Typography>
+          </ToggleButton>
+          <ToggleButton value="gallery" aria-label="gallery view">
+            <LayoutGrid size={20} />
+            <Typography variant="body2" sx={{ ml: 1, display: { xs: 'none', sm: 'block' } }}>Image View</Typography>
+          </ToggleButton>
+        </ToggleButtonGroup>
       </Stack>
 
       <div className="d-flex flex-column">
