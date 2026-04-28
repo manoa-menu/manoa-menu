@@ -42,8 +42,8 @@ export default async function scrapeCCUrl(url: string): Promise<string> {
   });
 
   const doc = dom.window.document;
-  console.log('Looking for divs with class: MenuAppstyles__MenuLinkContainer-sc-hftaq1-1');
-  const divs = doc.querySelectorAll('div.MenuAppstyles__MenuLinkContainer-sc-hftaq1-1');
+  console.log('Looking for menu link container divs...');
+  const divs = doc.querySelectorAll('div[class*="MenuLinkContainer"]');
   if (divs.length === 0) {
     console.error('Menu link container div not found');
     console.log('Available divs with similar classes:');
@@ -68,20 +68,31 @@ export default async function scrapeCCUrl(url: string): Promise<string> {
 
   interface Candidate { anchor: HTMLAnchorElement; startDate: Date; endDate: Date; }
   const candidates: Candidate[] = [];
+  let firstAnchorOnPage: HTMLAnchorElement | null = null;
+  let firstAnchorHasDate = false;
+  const dateRangeRegex = /(\d{1,2})\s+([A-Za-z]{3})\s+to\s+(\d{1,2})\s+([A-Za-z]{3})/;
 
   // Iterate over all matching divs and collect parsed date ranges
   for (let i = 0; i < divs.length; i++) {
     const anchor = divs[i].querySelector('a') as HTMLAnchorElement | null;
     if (!anchor) continue;
 
+    if (!firstAnchorOnPage) {
+      firstAnchorOnPage = anchor;
+    }
+
     const text = anchor.textContent || '';
     console.log(`Div ${i} anchor text: "${text}"`);
 
     // Expected format: "... Menu DD Mon to DD Mon"
-    const dateMatch = text.match(/(\d{1,2})\s+([A-Za-z]{3})\s+to\s+(\d{1,2})\s+([A-Za-z]{3})/);
+    const dateMatch = text.match(dateRangeRegex);
     if (!dateMatch) {
       console.log(`Div ${i}: could not parse date range from anchor text`);
       continue;
+    }
+
+    if (anchor === firstAnchorOnPage) {
+      firstAnchorHasDate = true;
     }
 
     const startDay = parseInt(dateMatch[1], 10);
@@ -115,6 +126,11 @@ export default async function scrapeCCUrl(url: string): Promise<string> {
     }
 
     candidates.push({ anchor, startDate, endDate });
+  }
+
+  if (firstAnchorOnPage && !firstAnchorHasDate) {
+    console.warn('First menu button does not include a date range; returning first menu link on page');
+    return firstAnchorOnPage.href;
   }
 
   // Fallback: pick the next upcoming range (closest startDate after today),
