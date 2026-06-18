@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid2';
-import { Tab, Tabs } from 'react-bootstrap';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import Tab from '@mui/material/Tab';
+import Tabs from '@mui/material/Tabs';
 
 import CCMenuCard from '@/components/CCMenuCard';
+import TabPanelTransition from '@/components/TabPanelTransition';
+import { getShortDayTabLabel } from '@/lib/menuHelper';
+import { premiumTabsSx } from '@/lib/menuUiStyles';
 import { DayMenu } from '@/types/menuTypes';
 
 interface MenuListProps {
@@ -13,16 +16,6 @@ interface MenuListProps {
   userId: number;
   favArr: string[];
 }
-
-/** Extract a short tab label from a full day name like "Monday (3/2)" → "Mon 3/2" */
-const getShortLabel = (name: string): string => {
-  const dateMatch = name.match(/\(([^)]+)\)/);
-  const date = dateMatch ? dateMatch[1] : '';
-  // For CJK languages the "abbreviation" is the first 1-2 chars; for English take 3
-  const isLatin = /^[A-Za-z]/.test(name);
-  const abbr = isLatin ? name.substring(0, 3) : name.substring(0, 1);
-  return date ? `${abbr} ${date}` : abbr;
-};
 
 const CCMenuList: React.FC<MenuListProps> = ({ menu, language, userId, favArr }) => {
   // Determine today's weekday index (Mon=0 … Fri=4) for the default active tab
@@ -47,6 +40,13 @@ const CCMenuList: React.FC<MenuListProps> = ({ menu, language, userId, favArr })
   };
 
   const gridSize = getGridSize(menu.length);
+  const defaultTabIndex = menu.length > 0
+    ? Math.max(0, Math.min(defaultTab, menu.length - 1))
+    : 0;
+  const [selectedTabIndex, setSelectedTabIndex] = useState<number | null>(null);
+  const safeTabIndex = selectedTabIndex !== null
+    ? Math.min(selectedTabIndex, Math.max(menu.length - 1, 0))
+    : defaultTabIndex;
 
   const renderCard = (day: DayMenu, index: number) => (
     <CCMenuCard
@@ -69,23 +69,29 @@ const CCMenuList: React.FC<MenuListProps> = ({ menu, language, userId, favArr })
           display: { xs: 'block', sm: 'none' },
           mx: 0,
           py: 2,
-          '& .nav-link': { fontSize: '0.85rem' },
+          width: '100%',
         }}
       >
         <Tabs
-          variant="underline"
-          defaultActiveKey={defaultTab}
-          id="ccMenuDateTabs"
-          className="mb-2 d-flex justify-content-center"
+          value={safeTabIndex}
+          onChange={(_, nextValue: number) => setSelectedTabIndex(nextValue)}
+          variant="fullWidth"
+          scrollButtons={false}
+          sx={premiumTabsSx}
         >
           {menu.map((day: DayMenu, index: number) => (
-            <Tab eventKey={index} title={getShortLabel(day.name)} key={day.name}>
-              <Box sx={{ mt: 1 }}>
-                {renderCard(day, index)}
-              </Box>
-            </Tab>
+            <Tab value={index} label={getShortDayTabLabel(day.name)} key={`cc-day-tab-${index}`} />
           ))}
         </Tabs>
+        <Box sx={{ mt: 1 }}>
+          {menu.map((day: DayMenu, index: number) => (
+            index === safeTabIndex ? (
+              <TabPanelTransition panelKey={`${index}-${language}`} key={`cc-day-panel-${index}`}>
+                {renderCard(day, index)}
+              </TabPanelTransition>
+            ) : null
+          ))}
+        </Box>
       </Box>
 
       {/*  Desktop / tablet: original grid  */}

@@ -111,4 +111,26 @@ export const getDayHeaders = (language: string): string[] => {
   return englishWeekDays.map((day, index) => `${day} (${weekdayDates[index % 5]})`);
 };
 
+/** Compact tab label from a full day string like "Monday (3/2)" → "Mon 3/2" */
+export const getShortDayTabLabel = (fullDayLabel: string): string => {
+  const dateMatch = fullDayLabel.match(/\(([^)]+)\)/);
+  const date = dateMatch ? dateMatch[1] : '';
+  const dayPart = fullDayLabel.replace(/\s*\([^)]+\)/, '').trim();
+
+  let abbr: string;
+  if (/^[A-Za-zÀ-ÿ]/.test(dayPart)) {
+    abbr = dayPart.substring(0, 3);
+  } else if (dayPart.startsWith('星期')) {
+    abbr = dayPart.slice(-1);
+  } else if (dayPart.endsWith('曜日')) {
+    abbr = dayPart.charAt(0);
+  } else if (dayPart.endsWith('요일')) {
+    abbr = dayPart.charAt(0);
+  } else {
+    abbr = dayPart.charAt(0);
+  }
+
+  return date ? `${abbr} ${date}` : abbr;
+};
+
 export const isFav = (favList: string[], name: string): boolean => favList.includes(name);

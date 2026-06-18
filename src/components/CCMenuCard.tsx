@@ -14,6 +14,7 @@ import { UtensilsCrossed, ShoppingBag } from 'lucide-react';
 import checkHoliday from '@/lib/checkHoliday';
 import StarButton from '@/components/StarButton';
 import { isFav } from '@/lib/menuHelper';
+import { menuCardSx, menuCardTitleSx, menuSectionLabelSx } from '@/lib/menuUiStyles';
 
 interface MenuCardProps {
   name: string;
@@ -25,6 +26,16 @@ interface MenuCardProps {
   userId: number;
   dayIndex: number;
 }
+
+const dayAccentColors = [
+  '#1976d2',
+  '#c2185b',
+  '#2e7d32',
+  '#ed6c02',
+  '#7b1fa2',
+  '#f9a825',
+  '#00897b',
+];
 
 const CCMenuCard: React.FC<MenuCardProps> = ({
   name,
@@ -81,42 +92,23 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
     }
   };
 
-  const getDayColor = (index: number): string => {
-    const colorPalette = [
-      '#E3F2FD', // Light Blue
-      '#FCE4EC', // Light Pink
-      '#E8F5E9', // Light Green
-      '#FFF3E0', // Light Orange
-      '#F3E5F5', // Light Purple
-      '#FFF9C4', // Light Yellow
-      '#E0F2F1', // Light Teal
-    ];
-    return colorPalette[index % colorPalette.length];
-  };
-
   const renderItemRow = (item: string) => (
-    <Grid
-      container
-      spacing={1}
-      alignItems="center"
-      key={item}
-      sx={{ py: 0.5, '&:hover': { backgroundColor: 'rgba(0,0,0,0.03)', borderRadius: 0.5 } }}
-    >
+    <Grid container spacing={1} alignItems="center" key={item} sx={{ py: 0.65 }}>
       <Grid size={userId === -21 ? 12 : 10}>
-        <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: 1.3 }}>
+        <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: 1.45, color: 'text.primary', fontSize: { xs: '0.8125rem', sm: '0.875rem' } }}>
           {item}
         </Typography>
       </Grid>
       {item && userId !== -21 && !sdxFilter.includes(item) && (
         <Grid size={2} sx={{ display: 'flex', justifyContent: 'center' }}>
           <Tooltip title={displayTooltipNames.get(language)} placement="bottom" arrow>
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
               <StarButton
                 item={item}
                 isStarred={isFav(favArray, item)}
                 onToggle={() => handleToggle(item)}
               />
-            </div>
+            </Box>
           </Tooltip>
         </Grid>
       )}
@@ -124,69 +116,50 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
   );
 
   const headers = getSectionHeaders(language);
+  const accentColor = dayAccentColors[dayIndex % dayAccentColors.length];
 
   return (
-    <Card
-      className="custom-scrollbar"
-      sx={{
-        height: '100%',
-        borderRadius: 2,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        transition: 'box-shadow 0.2s ease',
-        '&:hover': {
-          boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-        },
-        animation: 'fadeIn 0.3s ease-in',
-        '@keyframes fadeIn': {
-          from: {
-            opacity: 0,
-          },
-          to: {
-            opacity: 1,
-          },
-        },
-      }}
-    >
-      {/* Card Header */}
+    <Card className="custom-scrollbar" sx={menuCardSx}>
       <Box
         sx={{
-          px: 2,
-          py: 1,
-          backgroundColor: getDayColor(dayIndex),
-          borderBottom: '1px solid #e0e0e0',
+          px: { xs: 1.5, sm: 2 },
+          py: { xs: 0.5, sm: 0.75 },
+          borderBottom: 1,
+          borderColor: 'divider',
+          borderLeft: 4,
+          borderLeftColor: accentColor,
+          bgcolor: (theme) => (theme.palette.mode === 'light' ? 'grey.50' : 'grey.900'),
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 600, textAlign: 'center' }}>
+        <Typography variant="subtitle1" sx={menuCardTitleSx}>
           {name}
         </Typography>
       </Box>
 
       {(grabAndGo.length > 0 && plateLunch.length > 0) ? (
-        <CardContent sx={{ px: 1.75, py: 1.5 }}>
-          {/* Plate Lunch Section */}
-          <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.75 }}>
-            <UtensilsCrossed size={16} color="#717171" />
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#363636', fontSize: '0.95rem' }}>
+        <CardContent sx={{ px: { xs: 1.5, sm: 2 }, py: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+          <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 1 }}>
+            <UtensilsCrossed size={14} strokeWidth={2.25} />
+            <Typography sx={menuSectionLabelSx}>
               {headers[0]}
             </Typography>
           </Stack>
-          <Box sx={{ mb: 1.75 }}>
+          <Box sx={{ mb: 2 }}>
             {plateLunch.map((item, index) => (
               <React.Fragment key={item}>
                 {renderItemRow(item)}
                 {index < plateLunch.length - 1 && (
-                  <Divider sx={{ my: 0.125, borderColor: '#b7b7b7' }} />
+                  <Divider sx={{ borderColor: 'divider' }} />
                 )}
               </React.Fragment>
             ))}
           </Box>
 
-          <Divider sx={{ my: 1.25 }} />
+          <Divider sx={{ mb: 2 }} />
 
-          {/* Grab and Go Section */}
-          <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.75, mt: 1 }}>
-            <ShoppingBag size={16} color="#717171" />
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#363636', fontSize: '0.95rem' }}>
+          <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 1 }}>
+            <ShoppingBag size={14} strokeWidth={2.25} />
+            <Typography sx={menuSectionLabelSx}>
               {headers[1]}
             </Typography>
           </Stack>
@@ -195,15 +168,24 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
               <React.Fragment key={item}>
                 {renderItemRow(item)}
                 {index < grabAndGo.length - 1 && (
-                  <Divider sx={{ my: 0.125, borderColor: '#b7b7b7' }} />
+                  <Divider sx={{ borderColor: 'divider' }} />
                 )}
               </React.Fragment>
             ))}
           </Box>
         </CardContent>
       ) : (
-        <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
-          <Typography variant="h4" sx={{ fontWeight: 600, textAlign: 'center', color: '#242424' }}>
+        <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200, px: 2 }}>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 600,
+              textAlign: 'center',
+              color: 'text.primary',
+              fontSize: { xs: '1.15rem', sm: '1.35rem', md: '1.75rem', lg: '2rem' },
+              lineHeight: 1.3,
+            }}
+          >
             {`${message} ${checkHoliday(message)}`}
           </Typography>
         </CardContent>
