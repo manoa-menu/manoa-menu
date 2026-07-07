@@ -49,12 +49,12 @@ describe('jpManualReplace', () => {
       ),
     ]));
 
-    assert.equal(result.weekOne[0].plateLunch[0], 'お得サイズボウル with chicken');
+    assert.equal(result.weekOne[0].plateLunch[0], 'バリューボウル (ミニボウル) with chicken');
     assert.equal(result.weekOne[0].plateLunch[1], 'ミニまたはボウル');
-    assert.equal(result.weekOne[0].plateLunch[2], 'Turkey with グレイビーソース');
+    assert.equal(result.weekOne[0].plateLunch[2], 'Turkey with グレービー');
     assert.equal(result.weekOne[0].grabAndGo[0], 'ポテトフライド side');
     assert.equal(result.weekOne[0].grabAndGo[1], 'トッピング盛りだくさん fries');
-    assert.equal(result.weekOne[0].grabAndGo[2], '２種類プレート');
+    assert.equal(result.weekOne[0].grabAndGo[2], 'ミックスプレート (選べる2種盛りプレート)');
     assert.equal(result.weekOne[0].grabAndGo[3], 'Turkeyクラブサンドイッチ');
   });
 
@@ -73,12 +73,12 @@ describe('jpManualReplace', () => {
     assert.doesNotMatch(result.weekOne[0].plateLunch[0], /味付鶏肉/);
   });
 
-  it('applies the blackened rule to other items containing ブラック', () => {
+  it('leaves other items containing ブラック unchanged when no rule matches', () => {
     const result = jpManualReplace(makeMenu([
       makeDayMenu([], ['ブラックニングチキン']),
     ]));
 
-    assert.equal(result.weekOne[0].grabAndGo[0], 'ブラック（味付鶏肉）ニングチキン');
+    assert.equal(result.weekOne[0].grabAndGo[0], 'ブラックニングチキン');
   });
 
   it('sets Japanese day names and preserves special messages', () => {
@@ -103,7 +103,7 @@ describe('jpManualReplace', () => {
     });
 
     assert.equal(withWeekTwo.weekTwo[0].name, '月曜日');
-    assert.equal(withWeekTwo.weekTwo[0].plateLunch[0], 'お得サイズボウル');
+    assert.equal(withWeekTwo.weekTwo[0].plateLunch[0], 'バリューボウル (ミニボウル)');
     assert.equal(withoutWeekTwo.weekTwo.length, 0);
   });
 
