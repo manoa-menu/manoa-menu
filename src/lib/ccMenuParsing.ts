@@ -11,19 +11,34 @@ const MONTH_MAP: Record<string, number> = {};
 });
 
 // Primary: "06 July to 10 July", "29 June - 03 July", "6th July to 10th July"
-const DAY_MONTH_RANGE_REGEX = /(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+\.?)\s+(?:to|–|—|-)\s+(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+\.?)/i;
+const DAY_MONTH_RANGE_REGEX = new RegExp(
+  '(\\d{1,2})(?:st|nd|rd|th)?\\s+([A-Za-z]+\\.?)\\s+(?:to|–|—|-)\\s+'
+  + '(\\d{1,2})(?:st|nd|rd|th)?\\s+([A-Za-z]+\\.?)',
+  'i',
+);
 
 // Secondary: "July 6 to July 10", "Jul 6 - Jul 10"
-const MONTH_DAY_RANGE_REGEX = /([A-Za-z]+\.?)\s+(\d{1,2})(?:st|nd|rd|th)?\s+(?:to|–|—|-)\s+([A-Za-z]+\.?)\s+(\d{1,2})(?:st|nd|rd|th)?/i;
+const MONTH_DAY_RANGE_REGEX = new RegExp(
+  '([A-Za-z]+\\.?)\\s+(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:to|–|—|-)\\s+'
+  + '([A-Za-z]+\\.?)\\s+(\\d{1,2})(?:st|nd|rd|th)?',
+  'i',
+);
 
 // Secondary: "7/6 to 7/10", "07/06/2026 to 07/10/2026"
-const NUMERIC_RANGE_REGEX = /(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s+(?:to|–|—|-)\s+(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/;
+const NUMERIC_RANGE_REGEX = new RegExp(
+  '(\\d{1,2})\\/(\\d{1,2})(?:\\/(\\d{2,4}))?\\s+(?:to|–|—|-)\\s+'
+  + '(\\d{1,2})\\/(\\d{1,2})(?:\\/(\\d{2,4}))?',
+);
 
 // Secondary: "2026-07-06 to 2026-07-10"
 const ISO_RANGE_REGEX = /(\d{4})-(\d{1,2})-(\d{1,2})\s+(?:to|–|—|-)\s+(\d{4})-(\d{1,2})-(\d{1,2})/;
 
 const MENU_LABEL_REGEX = /Campus Center Food Court Menu/i;
-const EMBEDDED_MENU_BLOCK_REGEX = /"name":"(Campus Center Food Court Menu [^"]+)"[\s\S]*?"uri":"(\/web\/en-us\/media\/[^"]+\.pdf)"/g;
+const EMBEDDED_MENU_BLOCK_REGEX = new RegExp(
+  '"name":"(Campus Center Food Court Menu [^"]+)"[\\s\\S]*?'
+  + '"uri":"(\\/web\\/en-us\\/media\\/[^"]+\\.pdf)"',
+  'g',
+);
 
 export interface DateParts {
   year: number;

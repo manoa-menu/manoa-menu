@@ -66,49 +66,93 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
     }
 
     console.log(`No ${language} menu found for ${currentWeekOf}. Translating now.`);
-  const prompt = `You are translating a cafeteria menu into ${language}.
 
-OUTPUT RULES
-1) Preserve the original structure and ordering exactly. Do not add, remove,
-   merge, or invent groups or items.
-2) Translate every group name and every menu item name into natural
-   ${language}.
-   - Group names: do not translate word-for-word. Use a natural equivalent
-     category name in ${language}.
-3) Parentheses notes are OPTIONAL and must be NECESSARY.
-   - Only add a short explanation in parentheses when the dish would still be
-     unclear to an average native speaker of ${language} AFTER
-     translation.
-   - If the translated name already clearly tells what it is, DO NOT add
-     parentheses.
+    const prompt =
+      `You are translating a cafeteria menu into ${language} for exchange students `
+      + `who need to quickly understand what each dish is.
 
-WHEN TO ADD PARENTHESES
-A) The item is culturally specific OR uses an unfamiliar dish name OR a
-   brand/place name OR a cooking style that many people in
-   ${language} would not recognize, AND
-B) The translation alone does not reveal the main ingredients or what kind
-   of dish it is, AND
-C) A one-phrase clarification would reduce confusion.
-
-WHEN NOT TO ADD PARENTHESES
-- If the translated name already makes the dish obvious (wrap, salad, grilled
-  chicken, garlic chicken, steak, lobster tail, fish & chips, Caesar salad,
-  etc.)
-- If it is just a normal combination of common ingredients and cooking
-  methods.
-- If the item name contains the main ingredient and form (example: "Asian
-  chicken wrap", "Garlic chicken", "New York steak", "Lobster tail").
-
-STYLE FOR PARENTHESES (if needed)
-- Keep it to 6 to 12 words in ${language}.
-- Explain what it is using ingredients or dish type, not extra marketing.
-
-SPECIAL CASES
-- Keep proper nouns as-is (example: "Cajun", "Mesquite",
-  "Chimichurri", "Huli Huli") and optionally explain ONLY if
-  needed.
-
-Return ONLY the translated menu text.\n`;
+    TARGET READER
+    Assume the reader is a native speaker of ${language}, but may not be familiar with American,
+    Hawaiian, Filipino, local-style plate lunch, cafeteria, or regional restaurant dishes.
+    The goal is not only to translate the name, but to help the student quickly imagine the main food.
+    
+    OUTPUT RULES
+    1) Preserve the original structure, order, and number of groups/items exactly.
+    2) Translate all group names and menu items into natural ${language}.
+    3) Do not add, remove, merge, split, or invent menu items.
+    4) Use familiar, student-friendly wording. Avoid overly literal translations.
+    5) Return only the translated menu in the same format as the input.
+    
+    GROUP NAMES
+    - Use natural cafeteria category names in ${language}, not word-for-word translations.
+    - For example, translate categories by function, such as plate lunches, bowls, value bowls,
+      or takeout/grab-and-go items.
+    
+    TRANSLATION STYLE
+    - Prefer clear, natural, and informal food descriptions over strict literal translation
+      when a literal translation would be confusing.
+    - For unfamiliar dish names, transliterate or keep the established dish name, then add a short explanation.
+    - When helpful, identify the main ingredient, cooking method, and defining sauce/flavor.
+    - Do not over-explain items that are already clear in ${language}.
+    
+    PARENTHESES
+    Add a short parenthetical description only when the dish would likely be unfamiliar or unclear to the target reader.
+    
+    Add parentheses when the item:
+    - Is not commonly recognized by native speakers of ${language} from the target student culture.
+    - Uses an unfamiliar cultural dish name, regional style, brand, place name, or specialized cooking term.
+    - Uses an English/American menu phrase whose meaning is not obvious from the words alone.
+    - Does not clearly show the main ingredient, dish type, sauce, or flavor.
+    - Is a salad, wrap, bowl, or plate item with an unclear style name such as "Black & Blue,"
+      "Mesquite," "Bruschetta," "Adobo," "Lau Lau," or "Kalua."
+    
+    Do not add parentheses when:
+    - The dish is likely familiar to the target reader.
+    - The translated name already identifies the dish clearly.
+    - The description would only repeat the name.
+    - There is not enough reliable information to describe it beyond the translated name.
+    
+    PARENTHESIS STYLE
+    - Write descriptions in ${language}.
+    - Keep them short: about 6 to 16 words.
+    - Describe the basic dish type, main ingredient, cooking method, sauce, or defining flavor.
+    - Be neutral and factual.
+    - Do not add marketing language.
+    - Do not use uncertainty phrases like "usually," "probably," or "may contain."
+    
+    INGREDIENT ACCURACY
+    - Do not invent restaurant-specific ingredients, sauces, toppings, sides, or preparation details.
+    - Only mention ingredients that appear in the name or are essential to the commonly recognized dish.
+    - If recipes vary, give only a broad description.
+    - You may mention the standard defining preparation of a well-known dish, such as fried cutlet,
+      slow-cooked pork, stewed beef, or vinegar-soy braise.
+    - Do not infer allergens, dietary labels, sides, or exact toppings when uncertain.
+    
+    SPECIAL CASES
+    - Keep brand names and proper nouns as-is unless there is an established translation.
+    - Keep style names like "Cajun," "Mesquite," "Black & Blue," or "Bruschetta" only if they are
+      understandable in ${language}; otherwise translate or explain the meaning.
+    - Transliterate unfamiliar cultural dish names when appropriate, then add a basic description.
+    - Preserve numbers, serving sizes, and established abbreviations.
+    - For fish names that may be unfamiliar, add a simple description such as "white fish" when accurate.
+    
+    EXAMPLES
+    Use these as meaning guides. In the actual output, write the names and descriptions naturally in ${language}.
+    
+    - "Country Fried Steak" → translated name + (breaded fried beef with creamy gravy)
+    - "Kalua Pork" → translated name + (Hawaiian-style slow-cooked shredded pork)
+    - "Lau Lau" → translated name + (Hawaiian dish steamed in leaves)
+    - "Pork Adobo" → translated name + (Filipino pork braised with vinegar and soy sauce)
+    - "Black & Blue Chicken Salad" → translated name + (spiced chicken salad with blue cheese)
+    - "Mesquite Chicken Salad" → translated name + (smoky-flavored chicken salad)
+    - "Furikake Swai" → translated name + (white fish seasoned with furikake)
+    - "Loco Moco" → translated name + (rice with hamburger patty, gravy, and egg)
+    - "Chicken Katsu" → translated name + (Japanese-style breaded fried chicken cutlet)
+    - "Bibimbap" → translated name + (Korean rice bowl with vegetables and mixed toppings)
+    - "Pork Lumpia" → translated name + (Filipino fried rolls filled with seasoned pork)
+    - "Teriyaki Chicken" → translated name + (Japanese-style teriyaki chicken)
+    
+    Return ONLY the translated menu text.\n`;
 
     const translatedMenu = await fetchOpenAI(
       prompt,

@@ -341,7 +341,7 @@ async function fetchOpenAI(
   }
 
   // --- No cached menu found, call OpenAI ---
-  const maxTokens = 8000;
+  const maxTokens = 10000;
   const jsonSchema = (option === Location.CAMPUS_CENTER) ? ccJsonSchema : sdxJsonSchema;
 
   const response = await client.responses.create({

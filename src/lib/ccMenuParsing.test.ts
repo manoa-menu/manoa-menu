@@ -217,8 +217,10 @@ describe('isTodayWithinRange', () => {
 describe('collectCandidatesFromEmbeddedJson', () => {
   it('extracts menu labels and PDF URIs from embedded page JSON', () => {
     const html = `
-      "name":"Campus Center Food Court Menu 06 July to 10 July","link":{"media":{"content":{"main":{"uri":"/web/en-us/media/26-0706%20menu_tcm17-89982.pdf"}}}}
-      "name":"Campus Center Food Court Menu 13 July to 17 July","link":{"media":{"content":{"main":{"uri":"/web/en-us/media/26-0713%20menu_tcm17-90068.pdf"}}}}
+      "name":"Campus Center Food Court Menu 06 July to 10 July",
+      "link":{"media":{"content":{"main":{"uri":"/web/en-us/media/26-0706%20menu_tcm17-89982.pdf"}}}}
+      "name":"Campus Center Food Court Menu 13 July to 17 July",
+      "link":{"media":{"content":{"main":{"uri":"/web/en-us/media/26-0713%20menu_tcm17-90068.pdf"}}}}
     `;
 
     const candidates = collectCandidatesFromEmbeddedJson(html, julySix2026);
