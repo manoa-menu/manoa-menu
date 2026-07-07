@@ -44,23 +44,20 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
       // No cached menu, scrape and parse the PDF
       const menuURL = 'https://uhm.sodexomyway.com/en-us/locations/campus-center-food-court';
       console.log(`No cached English menu. Scraping PDF URL from: ${menuURL}`);
-      let menuPdf: string | null = null;
 
-      try {
-        menuPdf = await scrapeCCUrl(menuURL);
-        console.log(`Scraped PDF URL: ${menuPdf}`);
-      } catch (scrapeError) {
-        console.warn(`Failed to scrape PDF URL: ${scrapeError}`);
-        const staticPdf = '/cc-menus/menu.pdf';
-        menuPdf = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}${staticPdf}`;
-        console.log(`Falling back to static PDF: ${menuPdf}`);
+      const menuPdf = await scrapeCCUrl(menuURL);
+      if (!menuPdf) {
+        console.warn(`No Campus Center menu PDF found for the current week (${currentWeekOf})`);
+        return [];
       }
 
+      console.log(`Scraped PDF URL: ${menuPdf}`);
       console.log(`Parsing PDF for week ${currentWeekOf}`);
       englishMenuFromDb = await parseCCMenuFromPDF(menuPdf);
 
       if (!englishMenuFromDb.weekOne || englishMenuFromDb.weekOne.length === 0) {
-        throw new Error(`English menu is missing after PDF parse for ${currentWeekOf}.`);
+        console.warn(`English menu is missing after PDF parse for ${currentWeekOf}`);
+        return [];
       }
     }
 
