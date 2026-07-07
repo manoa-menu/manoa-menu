@@ -2,7 +2,17 @@
 import { JSDOM, VirtualConsole } from 'jsdom';
 import fetch from 'node-fetch';
 
-export default async function scrapeCCUrl(url: string): Promise<string> {
+import {
+  collectCandidatesFromDom,
+  collectCandidatesFromEmbeddedJson,
+  findCurrentWeekMenu,
+  formatDateParts,
+  getTodayInHST,
+  isTodayWithinRange,
+  mergeMenuCandidates,
+} from '@/lib/ccMenuParsing';
+
+export default async function scrapeCCUrl(url: string): Promise<string | null> {
   console.log(`Starting scrapeCCUrl for: ${url}`);
   if (typeof window !== 'undefined') {
     throw new Error('scrapeCCUrl can only be run in a Node.js environment');
@@ -23,7 +33,6 @@ export default async function scrapeCCUrl(url: string): Promise<string> {
     throw new Error(`Failed to fetch the URL: ${response.statusText}`);
   }
 
-  console.log(`Successfully fetched URL, content length: ${response.headers.get('content-length')}`);
   const html = await response.text();
   console.log(`HTML length: ${html.length} characters`);
 
@@ -36,127 +45,40 @@ export default async function scrapeCCUrl(url: string): Promise<string> {
     }
   });
 
-  console.log('Parsing HTML with JSDOM...');
-  const dom = new JSDOM(html, {
-    virtualConsole,
+  const dom = new JSDOM(html, { virtualConsole });
+  const doc = dom.window.document;
+  const today = getTodayInHST();
+  const todayLabel = formatDateParts(today);
+  console.log(
+    `[scrapeCCUrl] Current week (HST): ${todayLabel} (${new Date(today.year, today.month, today.day).toDateString()})`,
+  );
+
+  const candidates = mergeMenuCandidates(
+    collectCandidatesFromDom(doc, today),
+    collectCandidatesFromEmbeddedJson(html, today),
+  );
+
+  console.log(`Found ${candidates.length} menu candidate(s) on page`);
+  candidates.forEach((candidate, index) => {
+    const matchesCurrentWeek = isTodayWithinRange(today, candidate.startDate, candidate.endDate);
+    console.log(
+      `Candidate ${index}: "${candidate.label}" (${candidate.startDate.toDateString()} – ${candidate.endDate.toDateString()}) | current week match: ${matchesCurrentWeek ? 'YES' : 'no'}`,
+    );
   });
 
-  const doc = dom.window.document;
-  console.log('Looking for menu link container divs...');
-  const divs = doc.querySelectorAll('div[class*="MenuLinkContainer"]');
-  if (divs.length === 0) {
-    console.error('Menu link container div not found');
-    console.log('Available divs with similar classes:');
-    const allDivs = doc.querySelectorAll('div');
-    allDivs.forEach((d, index) => {
-      if (d.className && d.className.includes('Menu')) {
-        console.log(`Div ${index}: ${d.className}`);
-      }
-    });
-    throw new Error('Menu link container div not found');
+  const currentMenu = findCurrentWeekMenu(candidates, today);
+  if (!currentMenu) {
+    console.warn(
+      `[scrapeCCUrl] No menu matched the current week in HST (${todayLabel})`,
+    );
+    return null;
   }
 
-  console.log(`Found ${divs.length} menu link container div(s)`);
-
-  // Month abbreviation map for parsing anchor text dates
-  const monthMap: Record<string, number> = {
-    Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
-    Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
-  };
-
-  const now = new Date();
-
-  interface Candidate { anchor: HTMLAnchorElement; startDate: Date; endDate: Date; }
-  const candidates: Candidate[] = [];
-  let firstAnchorOnPage: HTMLAnchorElement | null = null;
-  let firstAnchorHasDate = false;
-  const dateRangeRegex = /(\d{1,2})\s+([A-Za-z]{3})\s+to\s+(\d{1,2})\s+([A-Za-z]{3})/;
-
-  // Iterate over all matching divs and collect parsed date ranges
-  for (let i = 0; i < divs.length; i++) {
-    const anchor = divs[i].querySelector('a') as HTMLAnchorElement | null;
-    if (!anchor) continue;
-
-    if (!firstAnchorOnPage) {
-      firstAnchorOnPage = anchor;
-    }
-
-    const text = anchor.textContent || '';
-    console.log(`Div ${i} anchor text: "${text}"`);
-
-    // Expected format: "... Menu DD Mon to DD Mon"
-    const dateMatch = text.match(dateRangeRegex);
-    if (!dateMatch) {
-      console.log(`Div ${i}: could not parse date range from anchor text`);
-      continue;
-    }
-
-    if (anchor === firstAnchorOnPage) {
-      firstAnchorHasDate = true;
-    }
-
-    const startDay = parseInt(dateMatch[1], 10);
-    const startMonth = monthMap[dateMatch[2]];
-    const endDay = parseInt(dateMatch[3], 10);
-    const endMonth = monthMap[dateMatch[4]];
-
-    if (startMonth === undefined || endMonth === undefined) {
-      console.log(`Div ${i}: unrecognised month abbreviation`);
-      continue;
-    }
-
-    // Build full Date objects; infer the year from the current date
-    const startDate = new Date(now.getFullYear(), startMonth, startDay);
-    const endDate = new Date(now.getFullYear(), endMonth, endDay, 23, 59, 59);
-
-    // Handle year boundary (e.g. range spans Dec-Jan)
-    if (endDate < startDate) {
-      if (now.getMonth() <= endMonth) {
-        startDate.setFullYear(startDate.getFullYear() - 1);
-      } else {
-        endDate.setFullYear(endDate.getFullYear() + 1);
-      }
-    }
-
-    console.log(`Div ${i}: date range ${startDate.toDateString()} – ${endDate.toDateString()}`);
-
-    if (now >= startDate && now <= endDate) {
-      console.log(`Div ${i} matches the current week. Returning href: ${anchor.href}`);
-      return anchor.href;
-    }
-
-    candidates.push({ anchor, startDate, endDate });
-  }
-
-  if (firstAnchorOnPage && !firstAnchorHasDate) {
-    console.warn('First menu button does not include a date range; returning first menu link on page');
-    return firstAnchorOnPage.href;
-  }
-
-  // Fallback: pick the next upcoming range (closest startDate after today),
-  // or if everything is in the past, the most recently ended range.
-  console.warn('No anchor matched the current week; selecting nearest date range as fallback');
-
-  const upcoming = candidates
-    .filter(c => c.startDate > now)
-    .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
-
-  if (upcoming.length > 0) {
-    console.log(`Fallback: next upcoming range starts ${upcoming[0].startDate.toDateString()}. Returning href: ${upcoming[0].anchor.href}`);
-    return upcoming[0].anchor.href;
-  }
-
-  const past = candidates
-    .filter(c => c.endDate < now)
-    .sort((a, b) => b.endDate.getTime() - a.endDate.getTime());
-
-  if (past.length > 0) {
-    console.log(`Fallback: most recent past range ended ${past[0].endDate.toDateString()}. Returning href: ${past[0].anchor.href}`);
-    return past[0].anchor.href;
-  }
-
-  console.error('No anchor elements found in any menu link container');
-  throw new Error('Anchor element not found');
+  console.log(
+    `[scrapeCCUrl] Matched current week ${todayLabel} to "${currentMenu.label}" (${currentMenu.startDate.toDateString()} – ${currentMenu.endDate.toDateString()})`,
+  );
+  console.log(`Current week menu found. Returning href: ${currentMenu.href}`);
+  return currentMenu.href;
 }
 
 export async function scrapeCCHours(url: string): Promise<string | null> {
@@ -193,10 +115,9 @@ export async function scrapeCCHours(url: string): Promise<string | null> {
   const doc = dom.window.document;
 
   console.log('[scrapeCCHours] Looking for OpenChip status wrapper...');
-  // Find all divs and look for one with a class that starts with "OpenChipstyles__Wrapper"
   const allDivs = doc.querySelectorAll('div[class]');
   let statusWrapper = null;
-  
+
   for (let i = 0; i < allDivs.length; i++) {
     const div = allDivs[i];
     if (div.className && div.className.includes('OpenChipstyles__Wrapper')) {
@@ -212,21 +133,18 @@ export async function scrapeCCHours(url: string): Promise<string | null> {
 
   console.log(`[scrapeCCHours] Found status wrapper. innerHTML preview: "${statusWrapper.innerHTML.slice(0, 200)}"`);
 
-  // Look for the container div with aria-label
   const containerDiv = statusWrapper.querySelector('div.container[aria-label]');
   if (!containerDiv) {
     console.warn('[scrapeCCHours] div.container with aria-label not found inside status wrapper');
     return null;
   }
 
-  // Extract status from aria-label attribute
   const status = containerDiv.getAttribute('aria-label');
   if (!status) {
     console.warn('[scrapeCCHours] aria-label attribute not found');
     return null;
   }
 
-  // Capitalize first letter
   const result = status.charAt(0).toUpperCase() + status.slice(1);
   console.log(`[scrapeCCHours] Extracted status: "${result}"`);
   return result;
