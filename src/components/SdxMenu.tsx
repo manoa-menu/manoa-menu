@@ -157,6 +157,7 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
             return (
               (dayMenu.meals.length > 0) ? (
                 <Tab
+                  key={dayMenu.date}
                   eventKey={dayMenu.date}
                   title={
                     getDayHeaders(language)[index + (daysOpen >= 7 ? 0 : 1)]

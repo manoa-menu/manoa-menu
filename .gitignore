@@ -46,3 +46,6 @@ settings.production.json
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# SDX direct script output
+scripts/sdx-response-*.json

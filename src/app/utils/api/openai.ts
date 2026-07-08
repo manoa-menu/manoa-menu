@@ -265,7 +265,10 @@ const sdxJsonSchema = {
                           type: 'string',
                         },
                         course: {
-                          type: 'string',
+                          type: [
+                            'string',
+                            'null',
+                          ],
                         },
                         isVegan: {
                           type: 'boolean',
@@ -288,12 +291,15 @@ const sdxJsonSchema = {
                         'description',
                         'isVegetarian',
                       ],
+                      additionalProperties: false,
                     },
                   },
                 },
                 required: [
+                  'name',
                   'items',
                 ],
+                additionalProperties: false,
               },
             },
           },
@@ -301,13 +307,16 @@ const sdxJsonSchema = {
             'name',
             'groups',
           ],
+          additionalProperties: false,
         },
       },
     },
     required: [
-      'meals',
+      'schemaObject',
     ],
+    additionalProperties: false,
   },
+  strict: true,
 };
 
 async function fetchOpenAI(
