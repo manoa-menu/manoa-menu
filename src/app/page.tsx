@@ -187,9 +187,6 @@ const Page = () => {
 
   const menuItemClick = (menuName: MenuState) => {
     setMenuState(menuName);
-    if (menuName !== 'cc' && language !== 'English' && language !== 'Japanese') {
-      setLanguage('English');
-    }
   };
 
   useEffect(() => {
@@ -427,9 +424,7 @@ const Page = () => {
               width: '100%',
             }}
           >
-            {languages
-              .filter((lang) => menuState === 'cc' || lang.name === 'English' || lang.name === 'Japanese')
-              .map((lang) => {
+            {languages.map((lang) => {
                 const isActive = language === lang.name;
 
                 return (
