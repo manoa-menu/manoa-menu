@@ -252,8 +252,12 @@ export function parseSdxSpecialHours(html: string, now = new Date()): SdxSpecial
     // Prefer longer overlapping windows when multiple match.
     .sort((a, b) => {
       const aFrom = toDateParts(a.from || '')!;
+      const aTo = toDateParts(a.to || '')!;
       const bFrom = toDateParts(b.from || '')!;
-      return compareDateParts(aFrom, bFrom);
+      const bTo = toDateParts(b.to || '')!;
+      const aLen = Date.UTC(aTo.year, aTo.month, aTo.day) - Date.UTC(aFrom.year, aFrom.month, aFrom.day);
+      const bLen = Date.UTC(bTo.year, bTo.month, bTo.day) - Date.UTC(bFrom.year, bFrom.month, bFrom.day);
+      return aLen - bLen;
     });
 
   if (active.length === 0) {

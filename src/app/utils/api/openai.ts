@@ -522,7 +522,13 @@ async function translateSdxStringBatch(
       continue;
     }
 
-    const parsed = JSON.parse(content) as { translations: string[] };
+    let parsed: { translations: string[] };
+    try {
+      parsed = JSON.parse(content) as { translations: string[] };
+    } catch {
+      lastError = new Error('Failed to parse JSON from SDX string translation response');
+      continue;
+    }
     if (parsed.translations.length !== strings.length) {
       console.error(
         `[OpenAI SDX strings] Count mismatch on batch ${batchIndex + 1}/${batchCount}: `
