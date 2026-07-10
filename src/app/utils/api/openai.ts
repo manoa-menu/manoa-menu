@@ -6,8 +6,70 @@ import { pathToFileURL } from 'node:url';
 import jpManualReplace from '@/lib/manualTranslate';
 import { getCCMenu, insertCCMenu, getSdxMenu, insertSdxMenu } from '@/lib/dbActions';
 import { getCurrentWeekOf, getNextWeekOf } from '@/lib/dateFunctions';
+import { recordAiTokenUsage, type AiOperation } from '@/lib/aiTokenUsage';
 
 import { MenuResponse, Location, FilteredSodexoMeal, DayMenu, SdxSchemaObject } from '@/types/menuTypes';
+
+const DEFAULT_OPENAI_MODEL = 'gpt-5.4-mini';
+
+type ReasoningEffort = 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
+
+type OpenAiModelConfig = {
+  model: string;
+  reasoningEffort: ReasoningEffort;
+};
+
+function normalizeLanguage(language?: string): string {
+  if (!language) {
+    return '';
+  }
+  const trimmed = language.trim();
+  if (!trimmed) {
+    return '';
+  }
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+}
+
+/** Pick model + reasoning effort by task and language. */
+function selectOpenAiConfig(operation: AiOperation, language?: string): OpenAiModelConfig {
+  const lang = normalizeLanguage(language);
+
+  switch (operation) {
+    case 'cc_pdf_parse':
+      return { model: 'gpt-5-mini', reasoningEffort: 'medium' };
+
+    case 'cc_translate':
+    case 'sdx_translate':
+    case 'sdx_translate_batch':
+      switch (lang) {
+        case 'Japanese':
+          return { model: 'gpt-5.4-mini', reasoningEffort: 'low' };
+        case 'Korean':
+          return { model: 'gpt-5.4-mini', reasoningEffort: 'low' };
+        case 'Chinese':
+          return { model: 'gpt-5.4-mini', reasoningEffort: 'none' };
+        case 'English':
+        case 'Spanish':
+        case '':
+          return { model: 'gpt-5.4-mini', reasoningEffort: 'none' };
+        default:
+          console.warn(
+            `[OpenAI] No explicit model mapping for language="${language}"; `
+            + `using ${DEFAULT_OPENAI_MODEL} / none`,
+          );
+          return { model: DEFAULT_OPENAI_MODEL, reasoningEffort: 'none' };
+      }
+
+    default: {
+      const _exhaustive: never = operation;
+      console.warn(
+        `[OpenAI] Unhandled operation "${_exhaustive}"; `
+        + `using ${DEFAULT_OPENAI_MODEL} / none`,
+      );
+      return { model: DEFAULT_OPENAI_MODEL, reasoningEffort: 'low' };
+    }
+  }
+}
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -346,7 +408,6 @@ async function fetchOpenAI(
   language: string,
   date: string,
 ): Promise<MenuResponse | SdxSchemaObject> {
-  // --- Check if the translated menu already exists in the DB ---
   if (option === Location.CAMPUS_CENTER) {
     const nextWeekDate = getNextWeekOf();
     const [existingWeekOne, existingWeekTwo] = await Promise.all([
@@ -360,7 +421,6 @@ async function fetchOpenAI(
       return { weekOne: weekOneMenu, weekTwo: weekTwoMenu } as MenuResponse;
     }
   } else {
-    // SDX locations (Gateway / Hale Aloha)
     const existingMenu = await getSdxMenu(date, language, option);
     if (existingMenu) {
       const meals = existingMenu.menu as unknown as FilteredSodexoMeal[];
@@ -369,12 +429,14 @@ async function fetchOpenAI(
     }
   }
 
-  // --- No cached menu found, call OpenAI ---
   const maxTokens = 10000;
   const jsonSchema = (option === Location.CAMPUS_CENTER) ? ccJsonSchema : sdxJsonSchema;
+  const operation = option === Location.CAMPUS_CENTER ? 'cc_translate' : 'sdx_translate';
+  const { model, reasoningEffort } = selectOpenAiConfig(operation, language);
 
   const response = await client.responses.create({
-    model: 'gpt-5-mini',
+    model,
+    reasoning: { effort: reasoningEffort },
     input: [
       { role: 'system', content: prompt },
       { role: 'user', content: `This week's menu: ${JSON.stringify(weeklyMenu)}` },
@@ -390,8 +452,22 @@ async function fetchOpenAI(
   const rId = response.id;
   const rStatus = response.status;
   const rModel = response.model;
-  console.log(`[OpenAI] id: ${rId}, status: ${rStatus}, model: ${rModel}`);
+  console.log(
+    `[OpenAI] id: ${rId}, status: ${rStatus}, model: ${rModel}, reasoning=${reasoningEffort}`,
+  );
   console.log(`Total tokens used: ${response.usage?.total_tokens}`);
+
+  await recordAiTokenUsage({
+    operation,
+    model: rModel || model,
+    language,
+    inputTokens: response.usage?.input_tokens ?? 0,
+    outputTokens: response.usage?.output_tokens ?? 0,
+    reasoningTokens: response.usage?.output_tokens_details?.reasoning_tokens ?? 0,
+    cachedInputTokens: response.usage?.input_tokens_details?.cached_tokens ?? 0,
+    totalTokens: response.usage?.total_tokens,
+    responseId: rId,
+  });
 
   if (response.status === 'incomplete') {
     console.error(`OpenAI response was incomplete (likely truncated). Increase max_output_tokens or reduce menu size.`);
@@ -411,7 +487,6 @@ async function fetchOpenAI(
           break;
       }
 
-      // Insert the translated CC menu into the DB
       const menuResp = parsed as MenuResponse;
       await insertCCMenu(menuResp.weekOne, option, language, date);
       if (menuResp.weekTwo && menuResp.weekTwo.length > 0) {
@@ -421,7 +496,6 @@ async function fetchOpenAI(
       return menuResp;
     }
 
-    // SDX locations – insert the translated menu into the DB
     const sdxResult = parsed as SdxSchemaObject;
     await insertSdxMenu(sdxResult.schemaObject, option, language, date);
     console.log(`Inserted ${language} ${option} menu into DB for ${date}`);
@@ -447,9 +521,8 @@ async function translateSdxStringBatch(
   batchIndex: number,
   batchCount: number,
 ): Promise<SdxBatchUsage> {
-  // gpt-5-mini counts reasoning toward max_output_tokens; keep headroom for
-  // Japanese/Korean/Chinese names plus optional parenthetical notes.
   const maxTokens = Math.min(16000, 4000 + strings.length * 80);
+  const { model, reasoningEffort } = selectOpenAiConfig('sdx_translate_batch', language);
   let inputTokens = 0;
   let outputTokens = 0;
   let totalTokens = 0;
@@ -458,12 +531,14 @@ async function translateSdxStringBatch(
   for (let attempt = 1; attempt <= SDX_STRING_MAX_ATTEMPTS; attempt += 1) {
     console.log(
       `[OpenAI SDX strings] Starting batch ${batchIndex + 1}/${batchCount} `
-      + `(language=${language}, strings=${strings.length}, attempt=${attempt}/${SDX_STRING_MAX_ATTEMPTS}, `
+      + `(language=${language}, model=${model}, reasoning=${reasoningEffort}, `
+      + `strings=${strings.length}, attempt=${attempt}/${SDX_STRING_MAX_ATTEMPTS}, `
       + `max_output_tokens=${maxTokens})`,
     );
 
     const response = await client.responses.create({
-      model: 'gpt-5-mini',
+      model,
+      reasoning: { effort: reasoningEffort },
       input: [
         { role: 'system', content: prompt },
         {
@@ -486,12 +561,24 @@ async function translateSdxStringBatch(
     const batchInputTokens = response.usage?.input_tokens ?? 0;
     const batchOutputTokens = response.usage?.output_tokens ?? 0;
     const batchTotalTokens = response.usage?.total_tokens ?? batchInputTokens + batchOutputTokens;
-    const cachedInputTokens = response.usage?.input_tokens_details?.cached_tokens;
-    const reasoningTokens = response.usage?.output_tokens_details?.reasoning_tokens;
+    const cachedInputTokens = response.usage?.input_tokens_details?.cached_tokens ?? 0;
+    const reasoningTokens = response.usage?.output_tokens_details?.reasoning_tokens ?? 0;
 
     inputTokens += batchInputTokens;
     outputTokens += batchOutputTokens;
     totalTokens += batchTotalTokens;
+
+    await recordAiTokenUsage({
+      operation: 'sdx_translate_batch',
+      model: response.model || model,
+      language,
+      inputTokens: batchInputTokens,
+      outputTokens: batchOutputTokens,
+      reasoningTokens,
+      cachedInputTokens,
+      totalTokens: batchTotalTokens,
+      responseId: response.id,
+    });
 
     console.log(
       `[OpenAI SDX strings] Finished batch ${batchIndex + 1}/${batchCount} `
@@ -500,8 +587,8 @@ async function translateSdxStringBatch(
     console.log(
       `[OpenAI SDX strings] Batch ${batchIndex + 1}/${batchCount} tokens: `
       + `input=${batchInputTokens}, output=${batchOutputTokens}, total=${batchTotalTokens}`
-      + (cachedInputTokens != null ? `, cached_input=${cachedInputTokens}` : '')
-      + (reasoningTokens != null ? `, reasoning=${reasoningTokens}` : '')
+      + `, cached_input=${cachedInputTokens}`
+      + `, reasoning=${reasoningTokens}`
       + ` | cumulative_input=${inputTokens}, cumulative_output=${outputTokens}, cumulative_total=${totalTokens}`,
     );
 
@@ -596,7 +683,6 @@ async function translateSdxStrings(
 async function parseCCMenuFromPDF(pdfUrl: string): Promise<MenuResponse> {
   console.log(`Starting PDF parsing for URL: ${pdfUrl}`);
 
-  // --- Check if the English CC menu for this week already exists in the DB ---
   const currentWeek = getCurrentWeekOf();
   const nextWeek = getNextWeekOf();
   const [existingMenu, existingWeekTwo] = await Promise.all([
@@ -660,8 +746,12 @@ The menu may span 1-2 weeks. Extract weekOne (first 5 days) and weekTwo (next 5 
 
 Return the data in the exact JSON schema format specified.`;
 
+  const { model, reasoningEffort } = selectOpenAiConfig('cc_pdf_parse', 'English');
+  const maxTokens = 12000;
+
   const response = await client.responses.create({
-    model: 'gpt-5-mini',
+    model,
+    reasoning: { effort: reasoningEffort },
     input: [
       { role: 'system', content: promptText },
       {
@@ -686,26 +776,61 @@ Return the data in the exact JSON schema format specified.`;
         ...ccJsonSchema,
       },
     },
-    max_output_tokens: 2000,
+    max_output_tokens: maxTokens,
   });
 
-  console.log(`Total tokens used for PDF parsing: ${response.usage?.total_tokens}`);
+  const reasoningTokens = response.usage?.output_tokens_details?.reasoning_tokens ?? 0;
+  console.log(
+    `Total tokens used for PDF parsing: ${response.usage?.total_tokens} `
+    + `(model=${response.model || model}, reasoning=${reasoningEffort}, `
+    + `status=${response.status}, reasoning_tokens=${reasoningTokens})`,
+  );
 
-  const content = response.output_text;
-  if (content) {
-    const parsed: MenuResponse = JSON.parse(content);
+  await recordAiTokenUsage({
+    operation: 'cc_pdf_parse',
+    model: response.model || model,
+    language: 'English',
+    inputTokens: response.usage?.input_tokens ?? 0,
+    outputTokens: response.usage?.output_tokens ?? 0,
+    reasoningTokens,
+    cachedInputTokens: response.usage?.input_tokens_details?.cached_tokens ?? 0,
+    totalTokens: response.usage?.total_tokens,
+    responseId: response.id,
+  });
 
-    // Insert the parsed English menu into the DB
-    await insertCCMenu(parsed.weekOne, Location.CAMPUS_CENTER, 'English', currentWeek);
-    if (parsed.weekTwo && parsed.weekTwo.length > 0) {
-      await insertCCMenu(parsed.weekTwo, Location.CAMPUS_CENTER, 'English', getNextWeekOf());
-    }
-    console.log(`Inserted English CC menu into DB for week ${currentWeek}`);
-
-    return parsed;
+  if (response.status === 'incomplete') {
+    console.error('OpenAI PDF parse was incomplete.', {
+      incompleteDetails: response.incomplete_details,
+      usage: response.usage,
+    });
+    throw new Error(
+      'OpenAI PDF parse was incomplete – increase max_output_tokens or lower reasoning effort.',
+    );
   }
 
-  throw new Error('Failed to parse CC menu from PDF using OpenAI');
+  const content = response.output_text;
+  if (!content) {
+    throw new Error('Failed to parse CC menu from PDF using OpenAI (empty response)');
+  }
+
+  let parsed: MenuResponse;
+  try {
+    parsed = JSON.parse(content) as MenuResponse;
+  } catch (parseError) {
+    console.error('Failed to parse CC PDF JSON. Preview:', content.slice(0, 500));
+    throw new Error(
+      `Failed to parse CC menu JSON from OpenAI: `
+      + `${parseError instanceof Error ? parseError.message : String(parseError)}`,
+    );
+  }
+
+  await insertCCMenu(parsed.weekOne, Location.CAMPUS_CENTER, 'English', currentWeek);
+  if (parsed.weekTwo && parsed.weekTwo.length > 0) {
+    await insertCCMenu(parsed.weekTwo, Location.CAMPUS_CENTER, 'English', getNextWeekOf());
+  }
+  console.log(`Inserted English CC menu into DB for week ${currentWeek}`);
+
+  return parsed;
 }
 
 export { parseCCMenuFromPDF, translateSdxStrings };
