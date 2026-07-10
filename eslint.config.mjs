@@ -18,7 +18,7 @@ const eslintConfig = tseslint.config(
 
   // Ignore config file itself and other non-src files from type-checked linting
   {
-    ignores: ['eslint.config.mjs', 'next.config.mjs'],
+    ignores: ['eslint.config.mjs', 'next.config.mjs', 'scripts/**/*.mjs'],
   },
 
   // Custom rules (ported from .eslintrc.json)

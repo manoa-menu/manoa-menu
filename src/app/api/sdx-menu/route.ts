@@ -21,7 +21,8 @@ import {
 
 const SUPPORTED_LANGUAGES = ['english', 'japanese', 'korean', 'chinese'];
 
-const getSdxTranslationPrompt = (translateLanguage: string): string => `You are translating a cafeteria menu into ${translateLanguage}.
+const getSdxTranslationPrompt = (translateLanguage: string): string => (
+  `You are translating a cafeteria menu into ${translateLanguage}.
 
 INPUT/OUTPUT
 - You will receive a JSON object with "expectedCount" and a "strings" array of English menu text.
@@ -67,7 +68,8 @@ SPECIAL CASES
   "Chimichurri", "Huli Huli", "Mochiko") and optionally explain ONLY if
   needed.
 
-Return ONLY the JSON object with the translations array.\n`;
+Return ONLY the JSON object with the translations array.\n`
+);
 
 const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => ({
   name: rootObject.name,
@@ -184,8 +186,7 @@ export async function GET(req: NextRequest) {
 
   const currentWeekDates = getCurrentWeekDates();
 
-  let resolvedDays: ResolvedDay[];
-  resolvedDays = await Promise.all(
+  const resolvedDays: ResolvedDay[] = await Promise.all(
     currentWeekDates.map(async (day): Promise<ResolvedDay> => {
       try {
         console.log(`Attempting to get menu for ${day} from database`);
@@ -243,7 +244,8 @@ export async function GET(req: NextRequest) {
       const uniqueStrings = collectSdxTranslatableStrings(englishMenus);
 
       console.log(
-        `Translating ${uniqueStrings.length} unique strings across ${pendingTranslations.length} day(s) into ${language}`,
+        `Translating ${uniqueStrings.length} unique strings across `
+          + `${pendingTranslations.length} day(s) into ${language}`,
       );
 
       const translatedStrings = await translateSdxStrings(
@@ -263,10 +265,8 @@ export async function GET(req: NextRequest) {
     } catch (error) {
       console.error('Error translating SDX menus for the week:', error);
       return NextResponse.json(
-        resolvedDays.map((day) => ({
-          date: day.date,
-          meals: day.meals,
-        })),
+        { error: 'Failed to translate SDX menus for the week.' },
+        { status: 500 },
       );
     }
   }
