@@ -7,26 +7,32 @@ import {
   SodexoMeal,
   FilteredSodexoMeal,
   Location,
-  FilteredSodexoModRoot,
-  FilteredSodexoMenuRow,
   SdxAPIResponse,
-  SdxSchemaObject,
 } from '@/types/menuTypes';
 
-import fetchOpenAI from '@/app/utils/api/openai';
+import { translateSdxStrings } from '@/app/utils/api/openai';
 import { getSdxMenu, insertSdxMenu } from '@/lib/dbActions';
-import { getSevenDayDate, getCurrentWeekDates } from '@/lib/dateFunctions';
+import { getCurrentWeekDates } from '@/lib/dateFunctions';
+import {
+  applySdxTranslations,
+  buildSdxTranslationMap,
+  collectSdxTranslatableStrings,
+} from '@/lib/sdxTranslation';
 
 const SUPPORTED_LANGUAGES = ['english', 'japanese', 'korean', 'chinese'];
 
 const getSdxTranslationPrompt = (translateLanguage: string): string => `You are translating a cafeteria menu into ${translateLanguage}.
 
+INPUT/OUTPUT
+- You will receive a JSON object with "expectedCount" and a "strings" array of English menu text.
+- Return JSON with a "translations" array of EXACTLY expectedCount entries, in the same order.
+- translations.length MUST equal strings.length. Never skip, merge, or drop an entry.
+- Each entry is the ${translateLanguage} translation of the corresponding input string.
+
 OUTPUT RULES
-1) Preserve the original structure and ordering exactly. Do not add, remove,
-   merge, or invent groups or items.
-2) Translate every group name and every menu item name into natural
-   ${translateLanguage}.
-   - Group names: do not translate word-for-word. Use a natural equivalent
+1) Preserve ordering exactly. Do not add, remove, merge, or invent strings.
+2) Translate every string into natural ${translateLanguage}.
+   - Group/category names: do not translate word-for-word. Use a natural equivalent
      category name in ${translateLanguage}.
 3) Parentheses notes are OPTIONAL and must be NECESSARY.
    - Only add a short explanation in parentheses when the dish would still be
@@ -61,7 +67,7 @@ SPECIAL CASES
   "Chimichurri", "Huli Huli", "Mochiko") and optionally explain ONLY if
   needed.
 
-Return ONLY the translated menu text.\n`;
+Return ONLY the JSON object with the translations array.\n`;
 
 const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => ({
   name: rootObject.name,
@@ -74,7 +80,7 @@ const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => (
         .filter(
           (item) =>
             // Filter out items with the name 'Have a nice day'
-             
+
             item.formalName.toLowerCase() !== 'have a nice day',
         )
         .map((item) => {
@@ -112,7 +118,12 @@ const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => (
     })),
 });
 
- 
+type ResolvedDay = {
+  date: string;
+  meals: FilteredSodexoMeal[];
+  englishMenu?: FilteredSodexoMeal[];
+};
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
@@ -136,7 +147,6 @@ export async function GET(req: NextRequest) {
   const haURL = process.env.HA_API_URL;
 
   const url = location === 'gw' ? gwURL : haURL;
-  // console.log(`URL: ${url}`);
 
   const apiKey = process.env.MMR_API_KEY;
 
@@ -172,48 +182,17 @@ export async function GET(req: NextRequest) {
     return filteredData;
   };
 
-  const getOrTranslateSdxMenu = async (
-    day: string,
-    englishMenu: FilteredSodexoMeal[],
-  ): Promise<FilteredSodexoMeal[]> => {
-    if (language.toLowerCase() === 'english') {
-      return englishMenu;
-    }
-
-    const cachedMenu = await getSdxMenu(day, language, locationOption);
-    if (cachedMenu) {
-      return (cachedMenu.menu as unknown as FilteredSodexoMeal[]) || [];
-    }
-
-    if (englishMenu.length === 0) {
-      console.log(`Inserting blank menu for ${day} in ${language}`);
-      await insertSdxMenu([], locationOption, language, day);
-      return [];
-    }
-
-    console.log(`Translating menu for ${day} into ${language}`);
-    const translatedMenuSchemaObj: SdxSchemaObject = (await fetchOpenAI(
-      getSdxTranslationPrompt(language),
-      locationOption,
-      englishMenu,
-      language,
-      day,
-    )) as SdxSchemaObject;
-
-    return translatedMenuSchemaObj.schemaObject;
-  };
-
-  // Check if menu for next 7 days is available
   const currentWeekDates = getCurrentWeekDates();
 
-  const nextSevenDaysMenu: SdxAPIResponse[] = await Promise.all(
-    currentWeekDates.map(async (day) => {
+  let resolvedDays: ResolvedDay[];
+  resolvedDays = await Promise.all(
+    currentWeekDates.map(async (day): Promise<ResolvedDay> => {
       try {
         console.log(`Attempting to get menu for ${day} from database`);
 
-        const dayMenuRow = await getSdxMenu(day, language, locationOption);
-        if (dayMenuRow) {
-          const dayMenu = (dayMenuRow.menu as unknown as FilteredSodexoMeal[]) || [];
+        const cachedMenu = await getSdxMenu(day, language, locationOption);
+        if (cachedMenu) {
+          const dayMenu = (cachedMenu.menu as unknown as FilteredSodexoMeal[]) || [];
           console.log(`Returning cached ${language} menu for ${day}`);
           return {
             date: day,
@@ -222,11 +201,27 @@ export async function GET(req: NextRequest) {
         }
 
         const englishMenu = await fetchEnglishSdxMenu(day);
-        const meals = await getOrTranslateSdxMenu(day, englishMenu);
+
+        if (language.toLowerCase() === 'english') {
+          return {
+            date: day,
+            meals: englishMenu,
+          };
+        }
+
+        if (englishMenu.length === 0) {
+          console.log(`Inserting blank menu for ${day} in ${language}`);
+          await insertSdxMenu([], locationOption, language, day);
+          return {
+            date: day,
+            meals: [],
+          };
+        }
 
         return {
           date: day,
-          meals,
+          meals: [],
+          englishMenu,
         };
       } catch (error) {
         console.error(`Error fetching menu for ${day}:`, error);
@@ -237,6 +232,49 @@ export async function GET(req: NextRequest) {
       }
     }),
   );
+
+  const pendingTranslations = resolvedDays.filter(
+    (day): day is ResolvedDay & { englishMenu: FilteredSodexoMeal[] } => Boolean(day.englishMenu),
+  );
+
+  if (pendingTranslations.length > 0) {
+    try {
+      const englishMenus = pendingTranslations.map((day) => day.englishMenu);
+      const uniqueStrings = collectSdxTranslatableStrings(englishMenus);
+
+      console.log(
+        `Translating ${uniqueStrings.length} unique strings across ${pendingTranslations.length} day(s) into ${language}`,
+      );
+
+      const translatedStrings = await translateSdxStrings(
+        getSdxTranslationPrompt(language),
+        uniqueStrings,
+        language,
+      );
+      const translationMap = buildSdxTranslationMap(uniqueStrings, translatedStrings);
+
+      await Promise.all(
+        pendingTranslations.map(async (day) => {
+          const translatedMenu = applySdxTranslations(day.englishMenu, translationMap);
+          await insertSdxMenu(translatedMenu, locationOption, language, day.date);
+          day.meals = translatedMenu;
+        }),
+      );
+    } catch (error) {
+      console.error('Error translating SDX menus for the week:', error);
+      return NextResponse.json(
+        resolvedDays.map((day) => ({
+          date: day.date,
+          meals: day.meals,
+        })),
+      );
+    }
+  }
+
+  const nextSevenDaysMenu: SdxAPIResponse[] = resolvedDays.map(({ date, meals }) => ({
+    date,
+    meals,
+  }));
 
   return NextResponse.json(nextSevenDaysMenu);
 }

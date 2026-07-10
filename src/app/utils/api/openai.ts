@@ -319,6 +319,26 @@ const sdxJsonSchema = {
   strict: true,
 };
 
+const sdxStringsJsonSchema = {
+  name: 'sdx_string_translations',
+  schema: {
+    type: 'object',
+    properties: {
+      translations: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+    },
+    required: [
+      'translations',
+    ],
+    additionalProperties: false,
+  },
+  strict: true,
+};
+
 async function fetchOpenAI(
   prompt: string,
   option: Location,
@@ -408,6 +428,163 @@ async function fetchOpenAI(
     return sdxResult;
   }
   throw new Error('Failed to parse the response from OpenAI');
+}
+
+const SDX_STRING_BATCH_SIZE = 40;
+const SDX_STRING_MAX_ATTEMPTS = 2;
+
+type SdxBatchUsage = {
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  translations: string[];
+};
+
+async function translateSdxStringBatch(
+  prompt: string,
+  strings: string[],
+  language: string,
+  batchIndex: number,
+  batchCount: number,
+): Promise<SdxBatchUsage> {
+  // gpt-5-mini counts reasoning toward max_output_tokens; keep headroom for
+  // Japanese/Korean/Chinese names plus optional parenthetical notes.
+  const maxTokens = Math.min(16000, 4000 + strings.length * 80);
+  let inputTokens = 0;
+  let outputTokens = 0;
+  let totalTokens = 0;
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= SDX_STRING_MAX_ATTEMPTS; attempt += 1) {
+    console.log(
+      `[OpenAI SDX strings] Starting batch ${batchIndex + 1}/${batchCount} `
+      + `(language=${language}, strings=${strings.length}, attempt=${attempt}/${SDX_STRING_MAX_ATTEMPTS}, `
+      + `max_output_tokens=${maxTokens})`,
+    );
+
+    const response = await client.responses.create({
+      model: 'gpt-5-mini',
+      input: [
+        { role: 'system', content: prompt },
+        {
+          role: 'user',
+          content: JSON.stringify({
+            expectedCount: strings.length,
+            strings,
+          }),
+        },
+      ],
+      text: {
+        format: {
+          type: 'json_schema',
+          ...sdxStringsJsonSchema,
+        },
+      },
+      max_output_tokens: maxTokens,
+    });
+
+    const batchInputTokens = response.usage?.input_tokens ?? 0;
+    const batchOutputTokens = response.usage?.output_tokens ?? 0;
+    const batchTotalTokens = response.usage?.total_tokens ?? batchInputTokens + batchOutputTokens;
+    const cachedInputTokens = response.usage?.input_tokens_details?.cached_tokens;
+    const reasoningTokens = response.usage?.output_tokens_details?.reasoning_tokens;
+
+    inputTokens += batchInputTokens;
+    outputTokens += batchOutputTokens;
+    totalTokens += batchTotalTokens;
+
+    console.log(
+      `[OpenAI SDX strings] Finished batch ${batchIndex + 1}/${batchCount} `
+      + `(language=${language}, strings=${strings.length}, attempt=${attempt}, status=${response.status})`,
+    );
+    console.log(
+      `[OpenAI SDX strings] Batch ${batchIndex + 1}/${batchCount} tokens: `
+      + `input=${batchInputTokens}, output=${batchOutputTokens}, total=${batchTotalTokens}`
+      + (cachedInputTokens != null ? `, cached_input=${cachedInputTokens}` : '')
+      + (reasoningTokens != null ? `, reasoning=${reasoningTokens}` : '')
+      + ` | cumulative_input=${inputTokens}, cumulative_output=${outputTokens}, cumulative_total=${totalTokens}`,
+    );
+
+    if (response.status === 'incomplete') {
+      console.error('OpenAI SDX string translation was incomplete.', {
+        incompleteDetails: response.incomplete_details,
+        usage: response.usage,
+      });
+      lastError = new Error(
+        'OpenAI response was incomplete – the translated strings were too long for the token limit.',
+      );
+      continue;
+    }
+
+    const content = response.output_text;
+    if (!content) {
+      lastError = new Error('Failed to parse the SDX string translation response from OpenAI');
+      continue;
+    }
+
+    const parsed = JSON.parse(content) as { translations: string[] };
+    if (parsed.translations.length !== strings.length) {
+      console.error(
+        `[OpenAI SDX strings] Count mismatch on batch ${batchIndex + 1}/${batchCount}: `
+        + `expected ${strings.length}, got ${parsed.translations.length}`,
+      );
+      lastError = new Error(
+        `Translation count mismatch: expected ${strings.length}, got ${parsed.translations.length}`,
+      );
+      continue;
+    }
+
+    return {
+      inputTokens,
+      outputTokens,
+      totalTokens,
+      translations: parsed.translations,
+    };
+  }
+
+  throw lastError ?? new Error('Failed to translate SDX strings');
+}
+
+async function translateSdxStrings(
+  prompt: string,
+  strings: string[],
+  language: string,
+): Promise<string[]> {
+  if (strings.length === 0) {
+    return [];
+  }
+
+  const batches: string[][] = [];
+  for (let i = 0; i < strings.length; i += SDX_STRING_BATCH_SIZE) {
+    batches.push(strings.slice(i, i + SDX_STRING_BATCH_SIZE));
+  }
+
+  console.log(
+    `[OpenAI SDX strings] Starting translation: language=${language}, `
+    + `totalStrings=${strings.length}, batches=${batches.length}, batchSize=${SDX_STRING_BATCH_SIZE}`,
+  );
+
+  const translatedBatches = await Promise.all(
+    batches.map((batch, index) => translateSdxStringBatch(
+      prompt,
+      batch,
+      language,
+      index,
+      batches.length,
+    )),
+  );
+
+  const inputTokens = translatedBatches.reduce((sum, batch) => sum + batch.inputTokens, 0);
+  const outputTokens = translatedBatches.reduce((sum, batch) => sum + batch.outputTokens, 0);
+  const totalTokens = translatedBatches.reduce((sum, batch) => sum + batch.totalTokens, 0);
+
+  console.log(
+    `[OpenAI SDX strings] Week translation complete: language=${language}, `
+    + `batches=${batches.length}, strings=${strings.length}, `
+    + `input=${inputTokens}, output=${outputTokens}, total=${totalTokens}`,
+  );
+
+  return translatedBatches.flatMap((batch) => batch.translations);
 }
 
 async function parseCCMenuFromPDF(pdfUrl: string): Promise<MenuResponse> {
@@ -525,5 +702,5 @@ Return the data in the exact JSON schema format specified.`;
   throw new Error('Failed to parse CC menu from PDF using OpenAI');
 }
 
-export { parseCCMenuFromPDF };
+export { parseCCMenuFromPDF, translateSdxStrings };
 export default fetchOpenAI;
