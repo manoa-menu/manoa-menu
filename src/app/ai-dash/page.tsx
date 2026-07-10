@@ -50,7 +50,7 @@ function timingSafeEqual(a: string, b: string): boolean {
 }
 
 function isAuthorized(providedKey: string | undefined): boolean {
-  const expected = process.env['AI-DASH'];
+  const expected = process.env.AI_DASH;
   if (!expected || !providedKey) {
     return false;
   }
