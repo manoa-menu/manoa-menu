@@ -15,23 +15,27 @@ import { fixDayNames } from '@/lib/menuHelper';
 import SdxMenu from '@/components/SdxMenu';
 import SdxSpecialHoursNotice from '@/components/SdxSpecialHoursNotice';
 import { isSdxMenuBlank, SdxSpecialHours } from '@/lib/sdxSpecialHours';
-import { Box, Button, Chip, IconButton, Stack, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material';
+import {
+  Box,
+  Button,
+  Chip,
+  Collapse,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { useMenu } from '@/lib/MenuContext';
 
 const Page = () => {
-  type MenuState = 'cc' | 'gw' | 'ha';
-
   const languages = [
     { name: 'English', displayName: 'English' },
     { name: 'Japanese', displayName: '日本語' },
     { name: 'Korean', displayName: '한국어' },
     { name: 'Chinese', displayName: '中文' },
-  ];
-
-  const menuOptions: { name: MenuState; label: string }[] = [
-    { name: 'cc', label: 'Campus Center' },
-    { name: 'gw', label: 'Gateway Cafe' },
-    { name: 'ha', label: 'Hale Aloha Cafe' },
   ];
 
   const getDisplayMenuNames = (menuName: string, language: string): string => {
@@ -124,13 +128,22 @@ const Page = () => {
     }
   };
 
+  const getLanguageLabel = (lang: string): string => {
+    switch (lang) {
+      case 'Japanese': return '言語';
+      case 'Korean': return '언어';
+      case 'Chinese': return '语言';
+      default: return 'Language';
+    }
+  };
+
   const { data: session } = useSession();
 
   const [userId, setUserId] = useState<number>(-21);
 
   const [favArr] = useState<string[]>([]);
 
-  const [menuState, setMenuState] = useState<MenuState>('cc');
+  const { menuState } = useMenu();
 
   const [ccMenu, setCCMenu] = useState<DayMenu[]>([]);
   const [gwMenu, setGWMenu] = useState<SdxAPIResponse[]>([]);
@@ -157,36 +170,11 @@ const Page = () => {
       : '2573 Dole St Honolulu, HI 96822';
 
   const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
-  const isSmUp = useMediaQuery(theme.breakpoints.up('sm'));
-  const isXsUp = useMediaQuery(theme.breakpoints.up('xs'));
-
-  let typographyVariant: 'h3' | 'h4' | 'h5' = 'h3';
-  if (isMdUp) {
-    typographyVariant = 'h3';
-  } else if (isSmUp) {
-    typographyVariant = 'h3';
-  } else if (isXsUp) {
-    typographyVariant = 'h4';
-  }
-
-  const isXs = useMediaQuery(theme.breakpoints.only('xs'));
-
-  const containerStyle = () => {
-    if (isXs) {
-      return { marginLeft: '0%', marginRight: '0%', paddingTop: '15px' };
-    } if (isSmUp) {
-      return { paddingTop: '15px' };
-    }
-    return { paddingTop: '15px' };
-  };
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [showAiDisclosure, setShowAiDisclosure] = useState(false);
 
   const langItemClick = (lang: string) => {
     setLanguage(lang);
-  };
-
-  const menuItemClick = (menuName: MenuState) => {
-    setMenuState(menuName);
   };
 
   useEffect(() => {
@@ -297,176 +285,208 @@ const Page = () => {
     }
   };
 
+  const statusControls = locationHours ? (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0 }}>
+      <Chip
+        label={getTranslatedStatus(locationHours, language)}
+        color={locationHours.toLowerCase().includes('open') ? 'success' : 'error'}
+        size="small"
+        sx={{
+          fontWeight: 700,
+          fontSize: { xs: '0.72rem', sm: '1rem' },
+          height: { xs: 24, sm: 40 },
+        }}
+      />
+      <Tooltip title={getDirectionsTooltip(language)} placement="bottom" arrow>
+        <IconButton
+          onClick={() => openInMaps(locationAddress)}
+          color="primary"
+          size="small"
+          aria-label={getDirectionsTooltip(language)}
+          sx={{
+            border: '1.5px solid',
+            borderColor: 'primary.light',
+            bgcolor: 'background.paper',
+            width: { xs: 28, sm: 40 },
+            height: { xs: 28, sm: 40 },
+            '&:hover': {
+              bgcolor: 'primary.50',
+            },
+          }}
+        >
+          <FaMapMarkedAlt size={isMobile ? 13 : 18} />
+        </IconButton>
+      </Tooltip>
+    </Box>
+  ) : null;
+
+  const languageSwitcher = (
+    <Box
+      sx={{
+        width: { xs: '100%', sm: 'auto' },
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: { xs: 'stretch', sm: 'center' },
+        gap: 0.5,
+      }}
+    >
+      <Box
+        sx={{
+          display: { xs: 'flex', sm: 'none' },
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 1,
+          px: 0.5,
+          minHeight: 28,
+        }}
+      >
+        <Typography
+          variant="caption"
+          sx={{
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            color: 'text.secondary',
+          }}
+        >
+          {getLanguageLabel(language)}
+        </Typography>
+        {statusControls}
+      </Box>
+      <Box
+        role="tablist"
+        aria-label="Language"
+        sx={{
+          display: 'flex',
+          alignItems: 'stretch',
+          width: { xs: '100%', sm: 'auto' },
+          maxWidth: { xs: '100%', sm: 'none' },
+          p: '4px',
+          borderRadius: '999px',
+          backgroundColor: 'rgba(3, 90, 62, 0.08)',
+        }}
+      >
+        {languages.map((lang) => {
+          const isActive = language === lang.name;
+
+          return (
+            <Button
+              key={lang.name}
+              role="tab"
+              aria-selected={isActive}
+              disableElevation
+              disableRipple
+              size="small"
+              onClick={() => langItemClick(lang.name)}
+              sx={{
+                flex: { xs: 1, sm: '0 0 auto' },
+                minWidth: 0,
+                px: { xs: 1.25, sm: 2.25, md: 2.5 },
+                py: { xs: 0.9, sm: 1.05 },
+                borderRadius: '999px',
+                textTransform: 'none',
+                whiteSpace: 'nowrap',
+                fontSize: { xs: '0.85rem', sm: '0.925rem' },
+                fontWeight: isActive ? 700 : 600,
+                letterSpacing: '0.01em',
+                lineHeight: 1.2,
+                color: isActive ? '#fff' : 'rgba(3, 90, 62, 0.78)',
+                backgroundColor: isActive ? '#035a3e' : 'transparent',
+                boxShadow: 'none',
+                transition: 'background-color 0.2s ease, color 0.2s ease',
+                '&:hover': {
+                  backgroundColor: isActive ? '#024a33' : 'rgba(3, 90, 62, 0.08)',
+                  boxShadow: 'none',
+                },
+              }}
+            >
+              {lang.displayName}
+            </Button>
+          );
+        })}
+      </Box>
+    </Box>
+  );
+
   return (
     <Container
       fluid
-      className="my-2 mb-5 menu-container"
-      style={containerStyle()}
+      className="mb-4 mb-md-5 menu-container px-2 px-sm-3 pt-2 pt-sm-3"
     >
       <Stack
-        spacing={2}
+        spacing={{ xs: 1, sm: 2 }}
         sx={{
           justifyContent: 'center',
           alignItems: 'center',
+          width: '100%',
+          px: 0,
+          mb: { xs: 0.25, sm: 0 },
         }}
       >
+        {/* Desktop/tablet: title + status */}
         <Box
           sx={{
-            border: '1px solid #ccc',
-            borderRadius: 1,
-            padding: { xs: 1, sm: 1 },
-            display: 'flex',
-          }}
-        >
-          <Stack
-            direction="row"
-            sx={{
-              alignItems: 'stretch',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              gap: { xs: 0.5, sm: 1 },
-              rowGap: { xs: 0.5, sm: 1 },
-              width: '100%',
-            }}
-          >
-            {menuOptions.map((menu) => {
-              const isActive = menuState === menu.name;
-
-              return (
-                <Button
-                  key={menu.name}
-                  variant={isActive ? 'contained' : 'outlined'}
-                  color="primary"
-                  size="small"
-                  onClick={() => menuItemClick(menu.name)}
-                  sx={{
-                    flex: { xs: '0 0 calc(50% - 4px)', sm: '0 0 auto' },
-                    minWidth: { xs: 0, sm: '120px', md: '150px' },
-                    maxWidth: { xs: 'calc(50% - 4px)', sm: 'none' },
-                    textTransform: 'none',
-                    fontWeight: isActive ? 600 : 500,
-                    fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.875rem' },
-                    padding: { xs: '6px 10px', sm: '8px 18px' },
-                  }}
-                >
-                  {menu.label}
-                </Button>
-              );
-            })}
-          </Stack>
-        </Box>
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', md: 'row' },
+            display: { xs: 'none', sm: 'flex' },
+            flexDirection: { md: 'row' },
             alignItems: 'center',
             justifyContent: 'center',
-            gap: { xs: 1, md: 3 },
-            mb: { xs: 1, md: 0 },
+            gap: { sm: 2, md: 3 },
+            width: '100%',
+            px: 0,
           }}
         >
           <Typography
-            variant={typographyVariant}
-            className="text-center mt-1"
-            sx={{ display: 'flex', alignItems: 'center' }}
+            variant="h3"
+            component="h1"
+            className="text-center"
+            sx={{
+              fontSize: { sm: '2rem', md: '2.25rem' },
+              lineHeight: 1.25,
+              wordBreak: 'break-word',
+              px: 0,
+            }}
           >
             {getDisplayMenuNames(menuState, language)}
             {getMenuSuffix(language)}
           </Typography>
-          {locationHours && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Chip
-                label={getTranslatedStatus(locationHours, language)}
-                color={locationHours.toLowerCase().includes('open') ? 'success' : 'error'}
-                sx={{
-                  fontWeight: 'bold',
-                  fontSize: '0.95rem',
-                  px: 1,
-                  py: 2,
-                  borderRadius: 2,
-                }}
-              />
-              <Tooltip title={getDirectionsTooltip(language)} placement="right" arrow>
-                <IconButton
-                  onClick={() => openInMaps(locationAddress)}
-                  color="primary"
-                  sx={{
-                    border: '1.5px solid',
-                    borderColor: 'primary.light',
-                    bgcolor: 'background.paper',
-                    '&:hover': {
-                      bgcolor: 'primary.50',
-                    },
-                  }}
-                >
-                  <FaMapMarkedAlt />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          )}
+          {statusControls}
         </Box>
-        <Box
-          sx={{
-            border: '1px solid #ccc',
-            borderRadius: 1,
-            padding: { xs: 1, sm: 1 },
-            display: 'flex',
-          }}
-        >
-          <Stack
-            direction="row"
-            sx={{
-              alignItems: 'stretch',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              gap: { xs: 0.5, sm: 1 },
-              rowGap: { xs: 0.5, sm: 1 },
-              width: '100%',
-            }}
-          >
-            {languages.map((lang) => {
-                const isActive = language === lang.name;
 
-                return (
-                  <Button
-                    key={lang.name}
-                    variant={isActive ? 'contained' : 'outlined'}
-                    color="primary"
-                    size="small"
-                    onClick={() => langItemClick(lang.name)}
-                    sx={{
-                      flex: { xs: '0 0 calc(50% - 4px)', sm: '0 0 auto' },
-                      minWidth: { xs: 0, sm: '80px', md: '92px' },
-                      maxWidth: { xs: 'calc(50% - 4px)', sm: 'none' },
-                      textTransform: 'none',
-                      fontWeight: isActive ? 600 : 500,
-                      fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.875rem' },
-                      padding: { xs: '6px 10px', sm: '8px 18px' },
-                    }}
-                  >
-                    {lang.displayName}
-                  </Button>
-                );
-              })}
-          </Stack>
-        </Box>
+        {languageSwitcher}
       </Stack>
 
       <div className="d-flex flex-column">
         {(isCCLoading || isGWLoading || isHALoading) ? (
           <LoadingSpinner />
         ) : (
-          <div className="m-2">
+          <Box sx={{ mx: { xs: 0, sm: 1 }, my: { xs: 0.5, sm: 1 } }}>
             {renderMenu()}
-          </div>
+          </Box>
         )}
       </div>
-      
+
       {!isCCLoading && !isGWLoading && !isHALoading && language !== 'English' && (
-        <Box sx={{ mt: 4, mb: 2, textAlign: 'center' }}>
-          <Typography variant="body2" color="text.secondary">
-            {getAIDisclosure(language)}
-          </Typography>
+        <Box sx={{ mt: { xs: 2, sm: 4 }, mb: 2, textAlign: 'center' }}>
+          {isMobile ? (
+            <>
+              <Button
+                size="small"
+                onClick={() => setShowAiDisclosure((prev) => !prev)}
+                sx={{ textTransform: 'none', color: 'text.secondary', fontSize: '0.8rem' }}
+              >
+                {showAiDisclosure ? 'Hide translation notice' : 'About translations'}
+              </Button>
+              <Collapse in={showAiDisclosure}>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, px: 1 }}>
+                  {getAIDisclosure(language)}
+                </Typography>
+              </Collapse>
+            </>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              {getAIDisclosure(language)}
+            </Typography>
+          )}
         </Box>
       )}
 

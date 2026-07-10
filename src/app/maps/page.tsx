@@ -7,7 +7,7 @@ import './maps.css';
 import { openInMaps } from '@/lib/mapFunctions';
 
 const Maps = () => (
-  <Container className="my-5" style={{ paddingTop: '120px' }}>
+  <Container className="py-4 mb-5">
     <h1>Dining Locations and Hours</h1>
 
     <Row className="my-3">

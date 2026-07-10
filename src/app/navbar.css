@@ -1,5 +1,14 @@
 .custom-navbar {
   background-color: #212529;
+  min-height: 65px;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.custom-navbar .navbar-inner {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.55rem;
 }
 
 .custom-navbar .nav-link:hover,
@@ -9,13 +18,38 @@
   background-color: transparent;
 }
 
-@media (max-width: 700px) {
-  .navbar-toggler {
-    background-color: #818181;
-    border-radius: 5px;
-    border-color: #212529;
+.custom-navbar .navbar-brand {
+  white-space: nowrap;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.custom-navbar .navbar-inner .navbar-brand {
+  width: 100%;
+  text-align: center;
+}
+
+.wrapper {
+  padding-top: 65px;
+}
+
+@media (max-width: 575.98px) {
+  .wrapper.has-menu-switcher {
+    padding-top: 84px;
   }
-  #basic-navbar-nav {
-    background-color: #2a3452;
+}
+
+@media (min-width: 576px) {
+  .custom-navbar .navbar-inner {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .custom-navbar .navbar-inner .navbar-brand {
+    width: auto;
+    text-align: left;
   }
 }

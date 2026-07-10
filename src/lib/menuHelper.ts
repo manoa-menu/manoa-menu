@@ -1,5 +1,8 @@
 import { DayMenu } from '@/types/menuTypes';
 
+const ENGLISH_DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const ENGLISH_WEEKDAYS_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
 const getWeekdayDates = (language: string): string[] => {
   const weekdays = [];
   const today = new Date();
@@ -46,7 +49,7 @@ const getWeekdayDates = (language: string): string[] => {
 export const fixDayNames = (menu: DayMenu[], language: string) => {
   const weekdayDates = getWeekdayDates(language);
 
-  const englishWeekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  const englishWeekDays = ENGLISH_WEEKDAYS_FULL;
   const japaneseWeekDays = ['月曜日', '火曜日', '水曜日', '木曜日', '金曜日'];
   const koreanWeekDays = ['월요일', '화요일', '수요일', '목요일', '금요일'];
   const chineseWeekDays = ['星期一', '星期二', '星期三', '星期四', '星期五'];
@@ -86,7 +89,7 @@ export const fixDayNames = (menu: DayMenu[], language: string) => {
 };
 
 export const getDayHeaders = (language: string): string[] => {
-  const englishWeekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const englishWeekDays = ENGLISH_DAY_ABBR;
   const japaneseWeekDays = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
   const koreanWeekDays = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
   const chineseWeekDays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];

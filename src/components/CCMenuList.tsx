@@ -1,10 +1,17 @@
-import React from 'react';
+'use client';
+
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid2';
+import { useMediaQuery, useTheme } from '@mui/material';
 import { Tab, Tabs } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 import CCMenuCard from '@/components/CCMenuCard';
+import {
+  getMenuDayTabsScrollSx,
+  menuDayTabFadeSx,
+  menuDayTabsDesktopSx,
+} from '@/components/menuDayTabStyles';
 import { DayMenu } from '@/types/menuTypes';
 
 interface MenuListProps {
@@ -25,28 +32,60 @@ const getShortLabel = (name: string): string => {
 };
 
 const CCMenuList: React.FC<MenuListProps> = ({ menu, language, userId, favArr }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   // Determine today's weekday index (Mon=0 … Fri=4) for the default active tab
   const dayOfWeek = new Date().getDay(); // 0=Sun … 6=Sat
+  const todayIndex = dayOfWeek >= 1 && dayOfWeek <= 5 ? dayOfWeek - 1 : -1;
   const defaultTab = Math.max(0, Math.min(dayOfWeek - 1, menu.length - 1));
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [tabsOverflow, setTabsOverflow] = useState(false);
 
-  const getGridSize = (count: number) => {
-    switch (count) {
-      case 1:
-        return { xs: 12, md: 8, lg: 6 };
-      case 2:
-        return { xs: 12, md: 6, lg: 6 };
-      case 3:
-        return { xs: 12, md: 6, lg: 4 };
-      case 4:
-        return { xs: 12, md: 6, lg: 3 };
-      case 5:
-        return { xs: 12, sm: 6, md: 6, lg: 4 };
-      default:
-        return { xs: 12, sm: 6, md: 4 };
+  const updateScrollFades = useCallback(() => {
+    const nav = tabsRef.current?.querySelector<HTMLElement>('.nav');
+    if (!nav) {
+      setCanScrollLeft(false);
+      setCanScrollRight(false);
+      setTabsOverflow(false);
+      return;
     }
-  };
 
-  const gridSize = getGridSize(menu.length);
+    const { scrollLeft, scrollWidth, clientWidth } = nav;
+    setTabsOverflow(scrollWidth > clientWidth + 2);
+    setCanScrollLeft(scrollLeft > 2);
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 2);
+  }, []);
+
+  const scrollFadeOverlaySx = menuDayTabFadeSx;
+
+  useEffect(() => {
+    const root = tabsRef.current;
+    const nav = root?.querySelector<HTMLElement>('.nav');
+    if (!nav) return undefined;
+
+    updateScrollFades();
+
+    const activeTab = nav.querySelector<HTMLElement>('.nav-link.active');
+    activeTab?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'instant' as ScrollBehavior });
+    updateScrollFades();
+
+    nav.addEventListener('scroll', updateScrollFades, { passive: true });
+    window.addEventListener('resize', updateScrollFades);
+
+    const resizeObserver = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(updateScrollFades)
+      : null;
+    resizeObserver?.observe(nav);
+
+    return () => {
+      nav.removeEventListener('scroll', updateScrollFades);
+      window.removeEventListener('resize', updateScrollFades);
+      resizeObserver?.disconnect();
+    };
+  }, [menu, updateScrollFades]);
 
   const renderCard = (day: DayMenu, index: number) => (
     <CCMenuCard
@@ -58,53 +97,56 @@ const CCMenuList: React.FC<MenuListProps> = ({ menu, language, userId, favArr })
       favArr={favArr}
       userId={userId}
       dayIndex={index}
+      isToday={index === todayIndex}
+      useDaySwitcher
     />
   );
 
   return (
-    <>
-      {/*  Mobile: day-picker tabs */}
+    <Box
+      sx={{
+        pt: { xs: 1.25, sm: 0 },
+        pb: 0.25,
+        mx: { sm: 2, md: 3, lg: 1 },
+        py: { sm: 2 },
+        px: { sm: 1, md: 1, lg: 0.5 },
+      }}
+    >
       <Box
-        sx={{
-          display: { xs: 'block', sm: 'none' },
-          mx: 0,
-          py: 2,
-          '& .nav-link': { fontSize: '0.85rem' },
-        }}
+        ref={tabsRef}
+        sx={isMobile ? getMenuDayTabsScrollSx(tabsOverflow) : menuDayTabsDesktopSx}
       >
+        <Box
+          sx={{
+            display: { xs: 'block', sm: 'none' },
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 44,
+            pointerEvents: 'none',
+            zIndex: 2,
+          }}
+        >
+          <Box sx={scrollFadeOverlaySx('left', canScrollLeft)} aria-hidden />
+          <Box sx={scrollFadeOverlaySx('right', canScrollRight)} aria-hidden />
+        </Box>
         <Tabs
           variant="underline"
           defaultActiveKey={defaultTab}
           id="ccMenuDateTabs"
-          className="mb-2 d-flex justify-content-center"
+          className="mb-0"
         >
           {menu.map((day: DayMenu, index: number) => (
             <Tab eventKey={index} title={getShortLabel(day.name)} key={day.name}>
-              <Box sx={{ mt: 1 }}>
+              <Box sx={{ mt: 0.75, maxWidth: { sm: 560, md: 640 }, mx: 'auto' }}>
                 {renderCard(day, index)}
               </Box>
             </Tab>
           ))}
         </Tabs>
       </Box>
-
-      {/*  Desktop / tablet: original grid  */}
-      <Box sx={{
-        display: { xs: 'none', sm: 'block' },
-        mx: { xs: 1, sm: 2, md: 5 },
-        py: 2,
-        px: { xs: 0, sm: 1, md: 2 },
-      }}
-      >
-        <Grid container spacing={2} justifyContent="center">
-          {menu.map((day: DayMenu, index: number) => (
-            <Grid size={gridSize} key={day.name}>
-              {renderCard(day, index)}
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
-    </>
+    </Box>
   );
 };
 
