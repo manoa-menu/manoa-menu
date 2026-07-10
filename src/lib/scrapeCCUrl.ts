@@ -11,6 +11,8 @@ import {
   isTodayWithinRange,
   mergeMenuCandidates,
 } from '@/lib/ccMenuParsing';
+import { parseOpenChipStatus } from '@/lib/openChipStatus';
+import { parseSdxSpecialHours, SdxSpecialHours } from '@/lib/sdxSpecialHours';
 
 export default async function scrapeCCUrl(url: string): Promise<string | null> {
   console.log(`Starting scrapeCCUrl for: ${url}`);
@@ -107,45 +109,47 @@ export async function scrapeCCHours(url: string): Promise<string | null> {
   const html = await response.text();
   console.log(`[scrapeCCHours] HTML received, length: ${html.length} characters`);
 
-  const virtualConsole = new VirtualConsole();
-  virtualConsole.on('error', () => {});
-
-  console.log('[scrapeCCHours] Parsing HTML with JSDOM...');
-  const dom = new JSDOM(html, { virtualConsole });
-  const doc = dom.window.document;
-
-  console.log('[scrapeCCHours] Looking for OpenChip status wrapper...');
-  const allDivs = doc.querySelectorAll('div[class]');
-  let statusWrapper = null;
-
-  for (let i = 0; i < allDivs.length; i++) {
-    const div = allDivs[i];
-    if (div.className && div.className.includes('OpenChipstyles__Wrapper')) {
-      statusWrapper = div;
-      break;
-    }
-  }
-
-  if (!statusWrapper) {
-    console.warn('[scrapeCCHours] OpenChip status wrapper not found in page');
+  console.log('[scrapeCCHours] Parsing OpenChip status from HTML...');
+  const result = parseOpenChipStatus(html);
+  if (!result) {
+    console.warn('[scrapeCCHours] Could not determine open/closed status from page');
     return null;
   }
 
-  console.log(`[scrapeCCHours] Found status wrapper. innerHTML preview: "${statusWrapper.innerHTML.slice(0, 200)}"`);
-
-  const containerDiv = statusWrapper.querySelector('div.container[aria-label]');
-  if (!containerDiv) {
-    console.warn('[scrapeCCHours] div.container with aria-label not found inside status wrapper');
-    return null;
-  }
-
-  const status = containerDiv.getAttribute('aria-label');
-  if (!status) {
-    console.warn('[scrapeCCHours] aria-label attribute not found');
-    return null;
-  }
-
-  const result = status.charAt(0).toUpperCase() + status.slice(1);
   console.log(`[scrapeCCHours] Extracted status: "${result}"`);
   return result;
+}
+
+export async function scrapeSdxLocationHours(url: string): Promise<{
+  hours: string | null;
+  specialHours: SdxSpecialHours | null;
+}> {
+  console.log(`[scrapeSdxLocationHours] Starting for: ${url}`);
+
+  if (typeof window !== 'undefined') {
+    throw new Error('scrapeSdxLocationHours can only be run in a Node.js environment');
+  }
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch the URL: ${response.statusText}`);
+  }
+
+  const html = await response.text();
+  const hours = parseOpenChipStatus(html);
+  const specialHours = parseSdxSpecialHours(html);
+
+  console.log(
+    `[scrapeSdxLocationHours] status="${hours}" specialHours=${specialHours ? specialHours.dateRangeLabel : 'none'}`,
+  );
+
+  return { hours, specialHours };
 }

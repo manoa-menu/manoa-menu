@@ -13,15 +13,25 @@ import { getUserLanguage } from '@/lib/dbActions';
 import { useState, useEffect } from 'react';
 import { fixDayNames } from '@/lib/menuHelper';
 import SdxMenu from '@/components/SdxMenu';
+import SdxSpecialHoursNotice from '@/components/SdxSpecialHoursNotice';
+import { isSdxMenuBlank, SdxSpecialHours } from '@/lib/sdxSpecialHours';
 import { Box, Button, Chip, IconButton, Stack, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 const Page = () => {
+  type MenuState = 'cc' | 'gw' | 'ha';
+
   const languages = [
     { name: 'English', displayName: 'English' },
     { name: 'Japanese', displayName: '日本語' },
     { name: 'Korean', displayName: '한국어' },
     { name: 'Chinese', displayName: '中文' },
+  ];
+
+  const menuOptions: { name: MenuState; label: string }[] = [
+    { name: 'cc', label: 'Campus Center' },
+    { name: 'gw', label: 'Gateway Cafe' },
+    { name: 'ha', label: 'Hale Aloha Cafe' },
   ];
 
   const getDisplayMenuNames = (menuName: string, language: string): string => {
@@ -120,7 +130,7 @@ const Page = () => {
 
   const [favArr] = useState<string[]>([]);
 
-  const [menuState] = useState<string>('cc');
+  const [menuState, setMenuState] = useState<MenuState>('cc');
 
   const [ccMenu, setCCMenu] = useState<DayMenu[]>([]);
   const [gwMenu, setGWMenu] = useState<SdxAPIResponse[]>([]);
@@ -133,6 +143,18 @@ const Page = () => {
   const [language, setLanguage] = useState<string>('English');
 
   const [ccHours, setCCHours] = useState<string | null>(null);
+  const [gwHours, setGWHours] = useState<string | null>(null);
+  const [haHours, setHAHours] = useState<string | null>(null);
+  const [gwSpecialHours, setGWSpecialHours] = useState<SdxSpecialHours | null>(null);
+  const [haSpecialHours, setHASpecialHours] = useState<SdxSpecialHours | null>(null);
+
+  const locationHours = menuState === 'cc' ? ccHours : menuState === 'gw' ? gwHours : haHours;
+  const locationSpecialHours = menuState === 'gw' ? gwSpecialHours : menuState === 'ha' ? haSpecialHours : null;
+  const locationAddress = menuState === 'cc'
+    ? '2465 Campus Road Honolulu, HI 96822'
+    : menuState === 'gw'
+      ? '2563 Dole St Honolulu, HI 96822'
+      : '2573 Dole St Honolulu, HI 96822';
 
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
@@ -163,6 +185,10 @@ const Page = () => {
     setLanguage(lang);
   };
 
+  const menuItemClick = (menuName: MenuState) => {
+    setMenuState(menuName);
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       if (session?.user?.email) {
@@ -178,12 +204,36 @@ const Page = () => {
 
 
   useEffect(() => {
-    if (menuState === 'cc') {
-      fetch('/api/cc-hours')
-        .then((res) => res.json())
-        .then((data) => setCCHours(data.hours ?? null))
-        .catch(() => setCCHours(null));
-    }
+    const hoursEndpoint = menuState === 'cc'
+      ? '/api/cc-hours'
+      : menuState === 'gw'
+        ? '/api/gw-hours'
+        : '/api/ha-hours';
+    const setHours = menuState === 'cc'
+      ? setCCHours
+      : menuState === 'gw'
+        ? setGWHours
+        : setHAHours;
+    const setSpecialHours = menuState === 'gw'
+      ? setGWSpecialHours
+      : menuState === 'ha'
+        ? setHASpecialHours
+        : null;
+
+    fetch(hoursEndpoint)
+      .then((res) => res.json())
+      .then((data) => {
+        setHours(data.hours ?? null);
+        if (setSpecialHours) {
+          setSpecialHours(data.specialHours ?? null);
+        }
+      })
+      .catch(() => {
+        setHours(null);
+        if (setSpecialHours) {
+          setSpecialHours(null);
+        }
+      });
   }, [menuState]);
 
   useEffect(() => {
@@ -222,6 +272,12 @@ const Page = () => {
     }
   }, [language, menuState]);
 
+  const renderBlankSdxFallback = (specialHours: SdxSpecialHours | null) => (
+    specialHours
+      ? <SdxSpecialHoursNotice specialHours={specialHours} language={language} />
+      : <h2 className="text-center mt-2">Menu Unavailable</h2>
+  );
+
   const renderMenu = () => {
     switch (menuState) {
       case 'cc':
@@ -229,12 +285,12 @@ const Page = () => {
           ? <h2 className="text-center mt-2">Menu Unavailable</h2>
           : <CCMenuList menu={ccMenu} language={language} userId={userId} favArr={favArr} />;
       case 'gw':
-        return (gwMenu === undefined || gwMenu.length === 0)
-          ? <h2 className="text-center">Menu Unavailable</h2>
+        return isSdxMenuBlank(gwMenu)
+          ? renderBlankSdxFallback(locationSpecialHours)
           : <SdxMenu weekMenu={gwMenu} language={language} favArr={favArr} userId={userId} />;
       case 'ha':
-        return (haMenu === undefined || haMenu.length === 0)
-          ? <h2 className="text-center mt-2">Menu Unavailable</h2>
+        return isSdxMenuBlank(haMenu)
+          ? renderBlankSdxFallback(locationSpecialHours)
           : <SdxMenu weekMenu={haMenu} language={language} favArr={favArr} userId={userId} />;
       default:
         return null;
@@ -254,14 +310,59 @@ const Page = () => {
           alignItems: 'center',
         }}
       >
-        <Box 
-          sx={{ 
-            display: 'flex', 
-            flexDirection: { xs: 'column', md: 'row' }, 
-            alignItems: 'center', 
+        <Box
+          sx={{
+            border: '1px solid #ccc',
+            borderRadius: 1,
+            padding: { xs: 1, sm: 1 },
+            display: 'flex',
+          }}
+        >
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: 'stretch',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              gap: { xs: 0.5, sm: 1 },
+              rowGap: { xs: 0.5, sm: 1 },
+              width: '100%',
+            }}
+          >
+            {menuOptions.map((menu) => {
+              const isActive = menuState === menu.name;
+
+              return (
+                <Button
+                  key={menu.name}
+                  variant={isActive ? 'contained' : 'outlined'}
+                  color="primary"
+                  size="small"
+                  onClick={() => menuItemClick(menu.name)}
+                  sx={{
+                    flex: { xs: '0 0 calc(50% - 4px)', sm: '0 0 auto' },
+                    minWidth: { xs: 0, sm: '120px', md: '150px' },
+                    maxWidth: { xs: 'calc(50% - 4px)', sm: 'none' },
+                    textTransform: 'none',
+                    fontWeight: isActive ? 600 : 500,
+                    fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.875rem' },
+                    padding: { xs: '6px 10px', sm: '8px 18px' },
+                  }}
+                >
+                  {menu.label}
+                </Button>
+              );
+            })}
+          </Stack>
+        </Box>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            alignItems: 'center',
             justifyContent: 'center',
             gap: { xs: 1, md: 3 },
-            mb: { xs: 1, md: 0 }
+            mb: { xs: 1, md: 0 },
           }}
         >
           <Typography
@@ -272,11 +373,11 @@ const Page = () => {
             {getDisplayMenuNames(menuState, language)}
             {getMenuSuffix(language)}
           </Typography>
-          {menuState === 'cc' && ccHours && (
+          {locationHours && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Chip
-                label={getTranslatedStatus(ccHours, language)}
-                color={ccHours.toLowerCase().includes('open') ? 'success' : 'error'}
+                label={getTranslatedStatus(locationHours, language)}
+                color={locationHours.toLowerCase().includes('open') ? 'success' : 'error'}
                 sx={{
                   fontWeight: 'bold',
                   fontSize: '0.95rem',
@@ -287,15 +388,15 @@ const Page = () => {
               />
               <Tooltip title={getDirectionsTooltip(language)} placement="right" arrow>
                 <IconButton
-                  onClick={() => openInMaps('2465 Campus Road Honolulu, HI 96822')}
+                  onClick={() => openInMaps(locationAddress)}
                   color="primary"
-                  sx={{ 
-                    border: '1.5px solid', 
+                  sx={{
+                    border: '1.5px solid',
                     borderColor: 'primary.light',
                     bgcolor: 'background.paper',
                     '&:hover': {
-                      bgcolor: 'primary.50'
-                    }
+                      bgcolor: 'primary.50',
+                    },
                   }}
                 >
                   <FaMapMarkedAlt />
@@ -324,29 +425,29 @@ const Page = () => {
             }}
           >
             {languages.map((lang) => {
-              const isActive = language === lang.name;
+                const isActive = language === lang.name;
 
-              return (
-                <Button
-                  key={lang.name}
-                  variant={isActive ? 'contained' : 'outlined'}
-                  color="primary"
-                  size="small"
-                  onClick={() => langItemClick(lang.name)}
-                  sx={{
-                    flex: { xs: '0 0 calc(50% - 4px)', sm: '0 0 auto' },
-                    minWidth: { xs: 0, sm: '80px', md: '92px' },
-                    maxWidth: { xs: 'calc(50% - 4px)', sm: 'none' },
-                    textTransform: 'none',
-                    fontWeight: isActive ? 600 : 500,
-                    fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.875rem' },
-                    padding: { xs: '6px 10px', sm: '8px 18px' },
-                  }}
-                >
-                  {lang.displayName}
-                </Button>
-              );
-            })}
+                return (
+                  <Button
+                    key={lang.name}
+                    variant={isActive ? 'contained' : 'outlined'}
+                    color="primary"
+                    size="small"
+                    onClick={() => langItemClick(lang.name)}
+                    sx={{
+                      flex: { xs: '0 0 calc(50% - 4px)', sm: '0 0 auto' },
+                      minWidth: { xs: 0, sm: '80px', md: '92px' },
+                      maxWidth: { xs: 'calc(50% - 4px)', sm: 'none' },
+                      textTransform: 'none',
+                      fontWeight: isActive ? 600 : 500,
+                      fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.875rem' },
+                      padding: { xs: '6px 10px', sm: '8px 18px' },
+                    }}
+                  >
+                    {lang.displayName}
+                  </Button>
+                );
+              })}
           </Stack>
         </Box>
       </Stack>
