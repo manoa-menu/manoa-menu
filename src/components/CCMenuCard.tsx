@@ -8,6 +8,7 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
+import { useMediaQuery, useTheme } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import { UtensilsCrossed, ShoppingBag } from 'lucide-react';
 
@@ -24,6 +25,8 @@ interface MenuCardProps {
   favArr: string[];
   userId: number;
   dayIndex: number;
+  isToday?: boolean;
+  useDaySwitcher?: boolean;
 }
 
 const CCMenuCard: React.FC<MenuCardProps> = ({
@@ -35,7 +38,12 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
   favArr = [],
   userId,
   dayIndex,
+  isToday = false,
+  useDaySwitcher = false,
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const displayTooltipNames = new Map<string, string>([
     ['English', 'Favorite?'],
     ['Japanese', 'お気に？'],
@@ -83,13 +91,13 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
 
   const getDayColor = (index: number): string => {
     const colorPalette = [
-      '#E3F2FD', // Light Blue
-      '#FCE4EC', // Light Pink
-      '#E8F5E9', // Light Green
-      '#FFF3E0', // Light Orange
-      '#F3E5F5', // Light Purple
-      '#FFF9C4', // Light Yellow
-      '#E0F2F1', // Light Teal
+      '#E3F2FD',
+      '#FCE4EC',
+      '#E0F2F1',
+      '#FFF3E0',
+      '#F3E5F5',
+      '#FFF9C4',
+      '#E0F2F1',
     ];
     return colorPalette[index % colorPalette.length];
   };
@@ -100,7 +108,7 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
       spacing={1}
       alignItems="center"
       key={item}
-      sx={{ py: 0.5, '&:hover': { backgroundColor: 'rgba(0,0,0,0.03)', borderRadius: 0.5 } }}
+      sx={{ py: 0.5 }}
     >
       <Grid size={userId === -21 ? 12 : 10}>
         <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: 1.3 }}>
@@ -124,6 +132,7 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
   );
 
   const headers = getSectionHeaders(language);
+  const dayColor = getDayColor(dayIndex);
 
   return (
     <Card
@@ -131,39 +140,40 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
       sx={{
         height: '100%',
         borderRadius: 2,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        transition: 'box-shadow 0.2s ease',
-        '&:hover': {
-          boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-        },
-        animation: 'fadeIn 0.3s ease-in',
-        '@keyframes fadeIn': {
-          from: {
-            opacity: 0,
-          },
-          to: {
-            opacity: 1,
-          },
-        },
+        ...(useDaySwitcher
+          ? {
+            border: `4px solid ${dayColor}`,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          }
+          : isToday
+            ? {
+              border: `2px solid ${dayColor}`,
+              boxShadow: isMobile
+                ? `0 0 14px 3px ${dayColor}`
+                : '0 2px 8px rgba(0,0,0,0.08)',
+            }
+            : {
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            }),
       }}
     >
-      {/* Card Header */}
-      <Box
-        sx={{
-          px: 2,
-          py: 1,
-          backgroundColor: getDayColor(dayIndex),
-          borderBottom: '1px solid #e0e0e0',
-        }}
-      >
-        <Typography variant="h6" sx={{ fontWeight: 600, textAlign: 'center' }}>
-          {name}
-        </Typography>
-      </Box>
+      {!useDaySwitcher && !isMobile && (
+        <Box
+          sx={{
+            px: 2,
+            py: 1,
+            backgroundColor: dayColor,
+            borderBottom: '1px solid #e0e0e0',
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 600, textAlign: 'center' }}>
+            {name}
+          </Typography>
+        </Box>
+      )}
 
       {(grabAndGo.length > 0 && plateLunch.length > 0) ? (
         <CardContent sx={{ px: 1.75, py: 1.5 }}>
-          {/* Plate Lunch Section */}
           <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.75 }}>
             <UtensilsCrossed size={16} color="#717171" />
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#363636', fontSize: '0.95rem' }}>
@@ -183,7 +193,6 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
 
           <Divider sx={{ my: 1.25 }} />
 
-          {/* Grab and Go Section */}
           <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.75, mt: 1 }}>
             <ShoppingBag size={16} color="#717171" />
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#363636', fontSize: '0.95rem' }}>

@@ -2,6 +2,7 @@
 
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { SessionProvider } from 'next-auth/react';
+import { MenuProvider } from '@/lib/MenuContext';
 
 type Props = {
   children?: React.ReactNode;
@@ -17,7 +18,9 @@ const theme = createTheme({
 
 const Providers = ({ children }: Props) => (
   <SessionProvider>
-    <ThemeProvider theme={theme}>{children}</ThemeProvider>
+    <ThemeProvider theme={theme}>
+      <MenuProvider>{children}</MenuProvider>
+    </ThemeProvider>
   </SessionProvider>
 );
 

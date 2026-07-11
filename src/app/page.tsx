@@ -10,70 +10,33 @@ import { openInMaps } from '@/lib/mapFunctions';
 import { FaMapMarkedAlt } from 'react-icons/fa';
 import { useSession } from 'next-auth/react';
 import { getUserLanguage } from '@/lib/dbActions';
-import { useState, useEffect } from 'react';
-import { fixDayNames } from '@/lib/menuHelper';
+import {
+  useState, useEffect, useRef, useCallback, useLayoutEffect,
+} from 'react';
+import { fixDayNames, getDisplayMenuNames, getLocationSwitcherLabel } from '@/lib/menuHelper';
 import SdxMenu from '@/components/SdxMenu';
 import SdxSpecialHoursNotice from '@/components/SdxSpecialHoursNotice';
 import { isSdxMenuBlank, SdxSpecialHours } from '@/lib/sdxSpecialHours';
-import { Box, Button, Chip, IconButton, Stack, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material';
+import {
+  Box,
+  Button,
+  ButtonBase,
+  Chip,
+  Collapse,
+  Fade,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { menuOptions, useMenu } from '@/lib/MenuContext';
+
+const MENU_SPINNER_DELAY_MS = 300;
 
 const Page = () => {
-  type MenuState = 'cc' | 'gw' | 'ha';
-
-  const languages = [
-    { name: 'English', displayName: 'English' },
-    { name: 'Japanese', displayName: '日本語' },
-    { name: 'Korean', displayName: '한국어' },
-    { name: 'Chinese', displayName: '中文' },
-  ];
-
-  const menuOptions: { name: MenuState; label: string }[] = [
-    { name: 'cc', label: 'Campus Center' },
-    { name: 'gw', label: 'Gateway Cafe' },
-    { name: 'ha', label: 'Hale Aloha Cafe' },
-  ];
-
-  const getDisplayMenuNames = (menuName: string, language: string): string => {
-    const isEnglish = language === 'English';
-    const isJapanese = language === 'Japanese';
-
-    switch (menuName) {
-      case 'cc':
-        if (isEnglish) {
-          return 'Campus Center Food Court';
-        }
-        if (isJapanese) {
-          return 'キャンパスセンター';
-        }
-        if (language === 'Korean') {
-          return '캠퍼스 센터 푸드 코트';
-        }
-        if (language === 'Chinese') {
-          return '校园中心美食广场';
-        }
-        return 'Campus Center Food Court';
-      case 'gw':
-        if (isEnglish) {
-          return 'Gateway Cafe';
-        }
-        if (isJapanese) {
-          return 'ゲートウェイカフェ';
-        }
-        return 'Gateway Cafe';
-      case 'ha':
-        if (isEnglish) {
-          return 'Hale Aloha Cafe';
-        }
-        if (isJapanese) {
-          return 'ハレアロハカフェ';
-        }
-        return 'Hale Aloha Cafe';
-      default:
-        return '';
-    }
-  };
-
   const getMenuSuffix = (lang: string): string => {
     switch (lang) {
       case 'Japanese':
@@ -124,13 +87,22 @@ const Page = () => {
     }
   };
 
+  const getLocationLabel = (lang: string): string => {
+    switch (lang) {
+      case 'Japanese': return '食堂';
+      case 'Korean': return '식당';
+      case 'Chinese': return '餐厅';
+      default: return 'Location';
+    }
+  };
+
   const { data: session } = useSession();
 
   const [userId, setUserId] = useState<number>(-21);
 
   const [favArr] = useState<string[]>([]);
 
-  const [menuState, setMenuState] = useState<MenuState>('cc');
+  const { menuState, setMenuState, language, setLanguage } = useMenu();
 
   const [ccMenu, setCCMenu] = useState<DayMenu[]>([]);
   const [gwMenu, setGWMenu] = useState<SdxAPIResponse[]>([]);
@@ -139,8 +111,45 @@ const Page = () => {
   const [isCCLoading, setCCLoading] = useState(false);
   const [isGWLoading, setGWLoading] = useState(false);
   const [isHALoading, setHALoading] = useState(false);
+  const [showMenuSpinner, setShowMenuSpinner] = useState(false);
 
-  const [language, setLanguage] = useState<string>('English');
+  const locationTabListRef = useRef<HTMLDivElement>(null);
+  const locationTabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [locationIndicator, setLocationIndicator] = useState({ left: 0, width: 0 });
+
+  const activeLocationIndex = menuOptions.findIndex((menu) => menu.name === menuState);
+
+  const updateLocationIndicator = useCallback(() => {
+    const activeEl = locationTabRefs.current[activeLocationIndex];
+    const container = locationTabListRef.current;
+    if (!activeEl || !container) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const activeRect = activeEl.getBoundingClientRect();
+    setLocationIndicator({
+      left: activeRect.left - containerRect.left,
+      width: activeRect.width,
+    });
+  }, [activeLocationIndex]);
+
+  useLayoutEffect(() => {
+    updateLocationIndicator();
+  }, [updateLocationIndicator, menuState, language]);
+
+  useEffect(() => {
+    window.addEventListener('resize', updateLocationIndicator);
+
+    const container = locationTabListRef.current;
+    const resizeObserver = typeof ResizeObserver !== 'undefined' && container
+      ? new ResizeObserver(updateLocationIndicator)
+      : null;
+    if (container) resizeObserver?.observe(container);
+
+    return () => {
+      window.removeEventListener('resize', updateLocationIndicator);
+      resizeObserver?.disconnect();
+    };
+  }, [updateLocationIndicator]);
 
   const [ccHours, setCCHours] = useState<string | null>(null);
   const [gwHours, setGWHours] = useState<string | null>(null);
@@ -157,37 +166,8 @@ const Page = () => {
       : '2573 Dole St Honolulu, HI 96822';
 
   const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
-  const isSmUp = useMediaQuery(theme.breakpoints.up('sm'));
-  const isXsUp = useMediaQuery(theme.breakpoints.up('xs'));
-
-  let typographyVariant: 'h3' | 'h4' | 'h5' = 'h3';
-  if (isMdUp) {
-    typographyVariant = 'h3';
-  } else if (isSmUp) {
-    typographyVariant = 'h3';
-  } else if (isXsUp) {
-    typographyVariant = 'h4';
-  }
-
-  const isXs = useMediaQuery(theme.breakpoints.only('xs'));
-
-  const containerStyle = () => {
-    if (isXs) {
-      return { marginLeft: '0%', marginRight: '0%', paddingTop: '15px' };
-    } if (isSmUp) {
-      return { paddingTop: '15px' };
-    }
-    return { paddingTop: '15px' };
-  };
-
-  const langItemClick = (lang: string) => {
-    setLanguage(lang);
-  };
-
-  const menuItemClick = (menuName: MenuState) => {
-    setMenuState(menuName);
-  };
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [showAiDisclosure, setShowAiDisclosure] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -199,7 +179,7 @@ const Page = () => {
       }
     };
     if (userId !== 21) fetchData();
-  }, [session, userId]);
+  }, [session, userId, setLanguage]);
 
 
 
@@ -272,6 +252,21 @@ const Page = () => {
     }
   }, [language, menuState]);
 
+  const isMenuFetching = isCCLoading || isGWLoading || isHALoading;
+
+  useEffect(() => {
+    if (!isMenuFetching) {
+      setShowMenuSpinner(false);
+      return undefined;
+    }
+
+    const timer = setTimeout(() => {
+      setShowMenuSpinner(true);
+    }, MENU_SPINNER_DELAY_MS);
+
+    return () => clearTimeout(timer);
+  }, [isMenuFetching]);
+
   const renderBlankSdxFallback = (specialHours: SdxSpecialHours | null) => (
     specialHours
       ? <SdxSpecialHoursNotice specialHours={specialHours} language={language} />
@@ -297,176 +292,278 @@ const Page = () => {
     }
   };
 
+  const statusControls = locationHours ? (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0 }}>
+      <Chip
+        label={getTranslatedStatus(locationHours, language)}
+        color={locationHours.toLowerCase().includes('open') ? 'success' : 'error'}
+        size="small"
+        sx={{
+          fontWeight: 700,
+          fontSize: { xs: '0.72rem', sm: '1rem' },
+          height: { xs: 24, sm: 40 },
+        }}
+      />
+      <Tooltip title={getDirectionsTooltip(language)} placement="bottom" arrow>
+        <IconButton
+          onClick={() => openInMaps(locationAddress)}
+          color="primary"
+          size="small"
+          aria-label={getDirectionsTooltip(language)}
+          sx={{
+            border: '1.5px solid',
+            borderColor: 'primary.light',
+            bgcolor: 'background.paper',
+            width: { xs: 28, sm: 40 },
+            height: { xs: 28, sm: 40 },
+            '&:hover': {
+              bgcolor: 'primary.50',
+            },
+          }}
+        >
+          <FaMapMarkedAlt size={isMobile ? 13 : 18} />
+        </IconButton>
+      </Tooltip>
+    </Box>
+  ) : null;
+
+  const locationSwitcher = (
+    <Box
+      sx={{
+        width: { xs: '100%', sm: 'auto' },
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: { xs: 'stretch', sm: 'center' },
+        gap: 0.5,
+      }}
+    >
+      <Box
+        sx={{
+          display: { xs: 'flex', sm: 'none' },
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 1,
+          px: 0.5,
+          minHeight: 28,
+        }}
+      >
+        <Typography
+          variant="caption"
+          sx={{
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            color: 'text.secondary',
+          }}
+        >
+          {getLocationLabel(language)}
+        </Typography>
+        {statusControls}
+      </Box>
+      <Box
+        ref={locationTabListRef}
+        role="tablist"
+        aria-label="Dining location"
+        sx={{
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'stretch',
+          width: { xs: '100%', sm: 'auto' },
+          maxWidth: { xs: '100%', sm: 'none' },
+          minWidth: 0,
+          p: '4px',
+          borderRadius: '999px',
+          backgroundColor: 'rgba(3, 90, 62, 0.08)',
+        }}
+      >
+        {locationIndicator.width > 0 && (
+          <Box
+            aria-hidden
+            sx={{
+              position: 'absolute',
+              top: 4,
+              left: locationIndicator.left,
+              width: locationIndicator.width,
+              height: 'calc(100% - 8px)',
+              borderRadius: '999px',
+              backgroundColor: '#035a3e',
+              boxShadow: '0 1px 3px rgba(3, 90, 62, 0.25)',
+              transition: 'left 0.28s cubic-bezier(0.4, 0, 0.2, 1), width 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+              zIndex: 0,
+            }}
+          />
+        )}
+        {menuOptions.map((menu, index) => {
+          const isActive = menuState === menu.name;
+          const label = getLocationSwitcherLabel(menu.name, language);
+
+          return (
+            <ButtonBase
+              key={menu.name}
+              ref={(el) => { locationTabRefs.current[index] = el; }}
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => setMenuState(menu.name)}
+              sx={{
+                position: 'relative',
+                zIndex: 1,
+                flex: { xs: '1 1 0', sm: '0 0 auto' },
+                minWidth: 0,
+                px: { xs: 1, sm: 2.25, md: 2.5 },
+                py: { xs: 0.9, sm: 1.05 },
+                borderRadius: '999px',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                fontSize: { xs: '0.82rem', sm: '0.925rem' },
+                fontWeight: isActive ? 700 : 600,
+                letterSpacing: '0.01em',
+                lineHeight: 1.2,
+                color: isActive ? '#fff' : 'rgba(3, 90, 62, 0.78)',
+                transition: 'color 0.2s ease',
+                '&:hover': {
+                  backgroundColor: isActive ? 'transparent' : 'rgba(3, 90, 62, 0.08)',
+                },
+              }}
+            >
+              {label}
+            </ButtonBase>
+          );
+        })}
+      </Box>
+    </Box>
+  );
+
+  const menuContentKey = `${menuState}-${language}`;
+  const hasDisplayableMenu = (() => {
+    switch (menuState) {
+      case 'cc':
+        return ccMenu.length > 0;
+      case 'gw':
+        return !isSdxMenuBlank(gwMenu);
+      case 'ha':
+        return !isSdxMenuBlank(haMenu);
+      default:
+        return false;
+    }
+  })();
+  const showMenuContent = !showMenuSpinner && (!isMenuFetching || hasDisplayableMenu);
+
   return (
     <Container
       fluid
-      className="my-2 mb-5 menu-container"
-      style={containerStyle()}
+      className="mb-4 mb-md-5 menu-container px-2 px-sm-3 pt-2 pt-sm-3"
     >
       <Stack
-        spacing={2}
+        spacing={{ xs: 1, sm: 2 }}
         sx={{
           justifyContent: 'center',
           alignItems: 'center',
+          width: '100%',
+          px: 0,
+          mb: { xs: 0.25, sm: 0 },
         }}
       >
+        {/* Desktop/tablet: title + status */}
         <Box
           sx={{
-            border: '1px solid #ccc',
-            borderRadius: 1,
-            padding: { xs: 1, sm: 1 },
-            display: 'flex',
-          }}
-        >
-          <Stack
-            direction="row"
-            sx={{
-              alignItems: 'stretch',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              gap: { xs: 0.5, sm: 1 },
-              rowGap: { xs: 0.5, sm: 1 },
-              width: '100%',
-            }}
-          >
-            {menuOptions.map((menu) => {
-              const isActive = menuState === menu.name;
-
-              return (
-                <Button
-                  key={menu.name}
-                  variant={isActive ? 'contained' : 'outlined'}
-                  color="primary"
-                  size="small"
-                  onClick={() => menuItemClick(menu.name)}
-                  sx={{
-                    flex: { xs: '0 0 calc(50% - 4px)', sm: '0 0 auto' },
-                    minWidth: { xs: 0, sm: '120px', md: '150px' },
-                    maxWidth: { xs: 'calc(50% - 4px)', sm: 'none' },
-                    textTransform: 'none',
-                    fontWeight: isActive ? 600 : 500,
-                    fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.875rem' },
-                    padding: { xs: '6px 10px', sm: '8px 18px' },
-                  }}
-                >
-                  {menu.label}
-                </Button>
-              );
-            })}
-          </Stack>
-        </Box>
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', md: 'row' },
+            display: { xs: 'none', sm: 'flex' },
+            flexDirection: { md: 'row' },
             alignItems: 'center',
             justifyContent: 'center',
-            gap: { xs: 1, md: 3 },
-            mb: { xs: 1, md: 0 },
+            gap: { sm: 2, md: 3 },
+            width: '100%',
+            px: 0,
           }}
         >
           <Typography
-            variant={typographyVariant}
-            className="text-center mt-1"
-            sx={{ display: 'flex', alignItems: 'center' }}
+            variant="h3"
+            component="h1"
+            className="text-center"
+            sx={{
+              fontSize: { sm: '2rem', md: '2.25rem' },
+              lineHeight: 1.25,
+              wordBreak: 'break-word',
+              px: 0,
+            }}
           >
             {getDisplayMenuNames(menuState, language)}
             {getMenuSuffix(language)}
           </Typography>
-          {locationHours && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Chip
-                label={getTranslatedStatus(locationHours, language)}
-                color={locationHours.toLowerCase().includes('open') ? 'success' : 'error'}
-                sx={{
-                  fontWeight: 'bold',
-                  fontSize: '0.95rem',
-                  px: 1,
-                  py: 2,
-                  borderRadius: 2,
-                }}
-              />
-              <Tooltip title={getDirectionsTooltip(language)} placement="right" arrow>
-                <IconButton
-                  onClick={() => openInMaps(locationAddress)}
-                  color="primary"
-                  sx={{
-                    border: '1.5px solid',
-                    borderColor: 'primary.light',
-                    bgcolor: 'background.paper',
-                    '&:hover': {
-                      bgcolor: 'primary.50',
-                    },
-                  }}
-                >
-                  <FaMapMarkedAlt />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          )}
+          {statusControls}
         </Box>
-        <Box
-          sx={{
-            border: '1px solid #ccc',
-            borderRadius: 1,
-            padding: { xs: 1, sm: 1 },
-            display: 'flex',
-          }}
-        >
-          <Stack
-            direction="row"
-            sx={{
-              alignItems: 'stretch',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              gap: { xs: 0.5, sm: 1 },
-              rowGap: { xs: 0.5, sm: 1 },
-              width: '100%',
-            }}
-          >
-            {languages.map((lang) => {
-                const isActive = language === lang.name;
 
-                return (
-                  <Button
-                    key={lang.name}
-                    variant={isActive ? 'contained' : 'outlined'}
-                    color="primary"
-                    size="small"
-                    onClick={() => langItemClick(lang.name)}
-                    sx={{
-                      flex: { xs: '0 0 calc(50% - 4px)', sm: '0 0 auto' },
-                      minWidth: { xs: 0, sm: '80px', md: '92px' },
-                      maxWidth: { xs: 'calc(50% - 4px)', sm: 'none' },
-                      textTransform: 'none',
-                      fontWeight: isActive ? 600 : 500,
-                      fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.875rem' },
-                      padding: { xs: '6px 10px', sm: '8px 18px' },
-                    }}
-                  >
-                    {lang.displayName}
-                  </Button>
-                );
-              })}
-          </Stack>
-        </Box>
+        {locationSwitcher}
       </Stack>
 
-      <div className="d-flex flex-column">
-        {(isCCLoading || isGWLoading || isHALoading) ? (
-          <LoadingSpinner />
-        ) : (
-          <div className="m-2">
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: '1fr',
+          width: '100%',
+          maxWidth: '100%',
+          minWidth: 0,
+          '& > *': {
+            gridArea: '1 / 1',
+            minWidth: 0,
+            maxWidth: '100%',
+          },
+        }}
+      >
+        <Fade
+          in={showMenuSpinner}
+          appear
+          timeout={{ enter: 150, exit: 120 }}
+          unmountOnExit
+        >
+          <Box sx={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
+            <LoadingSpinner />
+          </Box>
+        </Fade>
+        <Fade
+          in={showMenuContent}
+          appear
+          timeout={{ enter: 350, exit: 150 }}
+          unmountOnExit
+        >
+          <Box
+            key={menuContentKey}
+            sx={{
+              mx: { xs: 0, sm: 1 },
+              my: { xs: 0.5, sm: 1 },
+              width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
+              overflowX: 'clip',
+            }}
+          >
             {renderMenu()}
-          </div>
-        )}
-      </div>
-      
-      {!isCCLoading && !isGWLoading && !isHALoading && language !== 'English' && (
-        <Box sx={{ mt: 4, mb: 2, textAlign: 'center' }}>
-          <Typography variant="body2" color="text.secondary">
-            {getAIDisclosure(language)}
-          </Typography>
+          </Box>
+        </Fade>
+      </Box>
+
+      {!isMenuFetching && language !== 'English' && (
+        <Box sx={{ mt: { xs: 2, sm: 4 }, mb: 2, textAlign: 'center' }}>
+          {isMobile ? (
+            <>
+              <Button
+                size="small"
+                onClick={() => setShowAiDisclosure((prev) => !prev)}
+                sx={{ textTransform: 'none', color: 'text.secondary', fontSize: '0.8rem' }}
+              >
+                {showAiDisclosure ? 'Hide translation notice' : 'About translations'}
+              </Button>
+              <Collapse in={showAiDisclosure}>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, px: 1 }}>
+                  {getAIDisclosure(language)}
+                </Typography>
+              </Collapse>
+            </>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              {getAIDisclosure(language)}
+            </Typography>
+          )}
         </Box>
       )}
 
