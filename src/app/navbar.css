@@ -3,6 +3,8 @@
   min-height: 65px;
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 .custom-navbar .navbar-inner {

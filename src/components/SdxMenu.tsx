@@ -138,7 +138,12 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
     updateScrollFades();
 
     const activeTab = nav.querySelector<HTMLElement>('.nav-link.active');
-    activeTab?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'instant' as ScrollBehavior });
+    if (activeTab) {
+      const navRect = nav.getBoundingClientRect();
+      const tabRect = activeTab.getBoundingClientRect();
+      const delta = (tabRect.left + tabRect.width / 2) - (navRect.left + navRect.width / 2);
+      nav.scrollLeft += delta;
+    }
     updateScrollFades();
 
     nav.addEventListener('scroll', updateScrollFades, { passive: true });
@@ -157,7 +162,7 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
   }, [weekMenu, updateScrollFades]);
 
   return (
-    <Box sx={{ mt: { xs: 1.25, sm: 0 } }}>
+    <Box sx={{ mt: { xs: 1.25, sm: 0 }, width: '100%', maxWidth: '100%', minWidth: 0 }}>
       <Box
         ref={tabsRef}
         sx={isMobile ? getMenuDayTabsScrollSx(tabsOverflow) : menuDayTabsDesktopSx}
@@ -342,7 +347,12 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
                                           >
                                             <Typography
                                               variant={isMobile ? 'body2' : 'subtitle1'}
-                                              sx={{ fontWeight: 600, lineHeight: 1.35 }}
+                                              sx={{
+                                                fontWeight: 600,
+                                                lineHeight: 1.35,
+                                                overflowWrap: 'anywhere',
+                                                wordBreak: 'break-word',
+                                              }}
                                             >
                                               {item.formalName}
                                             </Typography>

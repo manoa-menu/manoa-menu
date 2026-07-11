@@ -513,7 +513,14 @@ const Page = () => {
         sx={{
           display: 'grid',
           gridTemplateColumns: '1fr',
-          '& > *': { gridArea: '1 / 1' },
+          width: '100%',
+          maxWidth: '100%',
+          minWidth: 0,
+          '& > *': {
+            gridArea: '1 / 1',
+            minWidth: 0,
+            maxWidth: '100%',
+          },
         }}
       >
         <Fade
@@ -522,7 +529,7 @@ const Page = () => {
           timeout={{ enter: 150, exit: 120 }}
           unmountOnExit
         >
-          <Box sx={{ width: '100%' }}>
+          <Box sx={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
             <LoadingSpinner />
           </Box>
         </Fade>
@@ -534,7 +541,14 @@ const Page = () => {
         >
           <Box
             key={menuContentKey}
-            sx={{ mx: { xs: 0, sm: 1 }, my: { xs: 0.5, sm: 1 } }}
+            sx={{
+              mx: { xs: 0, sm: 1 },
+              my: { xs: 0.5, sm: 1 },
+              width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
+              overflowX: 'clip',
+            }}
           >
             {renderMenu()}
           </Box>

@@ -36,12 +36,17 @@ export const getMenuDayTabsScrollSx = (tabsOverflow: boolean): SxProps<Theme> =>
   position: 'relative',
   display: 'flex',
   flexDirection: 'column',
-  alignItems: tabsOverflow ? 'stretch' : 'center',
+  alignItems: 'stretch',
+  width: '100%',
+  maxWidth: '100%',
+  minWidth: 0,
+  overflow: 'hidden',
   '& .nav': {
     flexWrap: 'nowrap',
     justifyContent: tabsOverflow ? 'flex-start' : 'center',
-    width: tabsOverflow ? '100%' : 'fit-content',
+    width: '100%',
     maxWidth: '100%',
+    minWidth: 0,
     overflowX: 'auto',
     overflowY: 'hidden',
     WebkitOverflowScrolling: 'touch',
@@ -60,6 +65,9 @@ export const getMenuDayTabsScrollSx = (tabsOverflow: boolean): SxProps<Theme> =>
   '& .tab-content': {
     mt: 1,
     width: '100%',
+    maxWidth: '100%',
+    minWidth: 0,
+    overflowX: 'clip',
   },
 });
 
@@ -70,11 +78,15 @@ export const menuDayTabsDesktopSx: SxProps<Theme> = {
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
+  width: '100%',
+  maxWidth: '100%',
+  minWidth: 0,
   '& .nav': {
     flexWrap: 'wrap',
     justifyContent: 'center',
     width: 'fit-content',
     maxWidth: '100%',
+    minWidth: 0,
     gap: 0.25,
     px: 0.5,
     py: 0.35,
@@ -87,6 +99,8 @@ export const menuDayTabsDesktopSx: SxProps<Theme> = {
   '& .tab-content': {
     mt: 1,
     width: '100%',
+    maxWidth: '100%',
+    minWidth: 0,
   },
 };
 

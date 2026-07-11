@@ -83,7 +83,12 @@ const CCMenuList: React.FC<MenuListProps> = ({ menu, language, userId, favArr })
     updateScrollFades();
 
     const activeTab = nav.querySelector<HTMLElement>('.nav-link.active');
-    activeTab?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'instant' as ScrollBehavior });
+    if (activeTab) {
+      const navRect = nav.getBoundingClientRect();
+      const tabRect = activeTab.getBoundingClientRect();
+      const delta = (tabRect.left + tabRect.width / 2) - (navRect.left + navRect.width / 2);
+      nav.scrollLeft += delta;
+    }
     updateScrollFades();
 
     nav.addEventListener('scroll', updateScrollFades, { passive: true });
@@ -129,6 +134,9 @@ const CCMenuList: React.FC<MenuListProps> = ({ menu, language, userId, favArr })
           mx: { xs: 0, sm: 1, md: 0.5 },
           py: { sm: 1.5, md: 1 },
           px: { xs: 0, sm: 0.5, md: 0 },
+          width: '100%',
+          maxWidth: '100%',
+          minWidth: 0,
         }}
       >
         <Box
