@@ -5,11 +5,12 @@ import { usePathname } from 'next/navigation';
 import { Container, Navbar } from 'react-bootstrap';
 import { Box, ButtonBase } from '@mui/material';
 import { menuOptions, useMenu } from '@/lib/MenuContext';
+import { getLocationSwitcherLabel } from '@/lib/menuHelper';
 import '../app/navbar.css';
 
 const NavBar: React.FC = () => {
   const pathName = usePathname();
-  const { menuState, setMenuState } = useMenu();
+  const { menuState, setMenuState, language } = useMenu();
   const showMenuSwitcher = pathName === '/';
 
   useEffect(() => {
@@ -49,6 +50,7 @@ const NavBar: React.FC = () => {
           >
             {menuOptions.map((menu) => {
               const isActive = menuState === menu.name;
+              const label = getLocationSwitcherLabel(menu.name, language);
 
               return (
                 <ButtonBase
@@ -72,24 +74,14 @@ const NavBar: React.FC = () => {
                     color: isActive ? '#fff' : 'rgba(255, 255, 255, 0.55)',
                     backgroundColor: 'transparent',
                     transition: 'color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease',
+                    whiteSpace: 'nowrap',
                     '&:hover': {
                       color: '#fff',
                       backgroundColor: 'rgba(255, 255, 255, 0.05)',
                     },
                   }}
                 >
-                  <Box
-                    component="span"
-                    sx={{ display: { xs: 'inline', sm: 'none' } }}
-                  >
-                    {menu.shortLabel}
-                  </Box>
-                  <Box
-                    component="span"
-                    sx={{ display: { xs: 'none', sm: 'inline' }, whiteSpace: 'nowrap' }}
-                  >
-                    {menu.label}
-                  </Box>
+                  {label}
                 </ButtonBase>
               );
             })}

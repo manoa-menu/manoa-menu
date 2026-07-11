@@ -34,9 +34,14 @@ const dayTabLinkSx = {
 /** Horizontally scrollable day tabs — mobile */
 export const getMenuDayTabsScrollSx = (tabsOverflow: boolean): SxProps<Theme> => ({
   position: 'relative',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: tabsOverflow ? 'stretch' : 'center',
   '& .nav': {
     flexWrap: 'nowrap',
     justifyContent: tabsOverflow ? 'flex-start' : 'center',
+    width: tabsOverflow ? '100%' : 'fit-content',
+    maxWidth: '100%',
     overflowX: 'auto',
     overflowY: 'hidden',
     WebkitOverflowScrolling: 'touch',
@@ -54,16 +59,22 @@ export const getMenuDayTabsScrollSx = (tabsOverflow: boolean): SxProps<Theme> =>
   '& .nav-link': dayTabLinkSx,
   '& .tab-content': {
     mt: 1,
+    width: '100%',
   },
 });
 
-/** Wrapped day tabs — desktop / tablet */
+/** Wrapped day tabs — tablet / larger sm */
 export const menuDayTabsDesktopSx: SxProps<Theme> = {
   position: 'relative',
   backgroundColor: '#fff',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
   '& .nav': {
     flexWrap: 'wrap',
     justifyContent: 'center',
+    width: 'fit-content',
+    maxWidth: '100%',
     gap: 0.25,
     px: 0.5,
     py: 0.35,
@@ -75,6 +86,7 @@ export const menuDayTabsDesktopSx: SxProps<Theme> = {
   '& .nav-link': dayTabLinkSx,
   '& .tab-content': {
     mt: 1,
+    width: '100%',
   },
 };
 

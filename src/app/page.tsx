@@ -10,8 +10,10 @@ import { openInMaps } from '@/lib/mapFunctions';
 import { FaMapMarkedAlt } from 'react-icons/fa';
 import { useSession } from 'next-auth/react';
 import { getUserLanguage } from '@/lib/dbActions';
-import { useState, useEffect } from 'react';
-import { fixDayNames } from '@/lib/menuHelper';
+import {
+  useState, useEffect, useRef, useCallback, useLayoutEffect,
+} from 'react';
+import { fixDayNames, getDisplayMenuNames } from '@/lib/menuHelper';
 import SdxMenu from '@/components/SdxMenu';
 import SdxSpecialHoursNotice from '@/components/SdxSpecialHoursNotice';
 import { isSdxMenuBlank, SdxSpecialHours } from '@/lib/sdxSpecialHours';
@@ -20,6 +22,7 @@ import {
   Button,
   Chip,
   Collapse,
+  Fade,
   IconButton,
   Stack,
   Tooltip,
@@ -30,6 +33,8 @@ import {
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useMenu } from '@/lib/MenuContext';
 
+const MENU_SPINNER_DELAY_MS = 300;
+
 const Page = () => {
   const languages = [
     { name: 'English', displayName: 'English' },
@@ -37,46 +42,6 @@ const Page = () => {
     { name: 'Korean', displayName: '한국어' },
     { name: 'Chinese', displayName: '中文' },
   ];
-
-  const getDisplayMenuNames = (menuName: string, language: string): string => {
-    const isEnglish = language === 'English';
-    const isJapanese = language === 'Japanese';
-
-    switch (menuName) {
-      case 'cc':
-        if (isEnglish) {
-          return 'Campus Center Food Court';
-        }
-        if (isJapanese) {
-          return 'キャンパスセンター';
-        }
-        if (language === 'Korean') {
-          return '캠퍼스 센터 푸드 코트';
-        }
-        if (language === 'Chinese') {
-          return '校园中心美食广场';
-        }
-        return 'Campus Center Food Court';
-      case 'gw':
-        if (isEnglish) {
-          return 'Gateway Cafe';
-        }
-        if (isJapanese) {
-          return 'ゲートウェイカフェ';
-        }
-        return 'Gateway Cafe';
-      case 'ha':
-        if (isEnglish) {
-          return 'Hale Aloha Cafe';
-        }
-        if (isJapanese) {
-          return 'ハレアロハカフェ';
-        }
-        return 'Hale Aloha Cafe';
-      default:
-        return '';
-    }
-  };
 
   const getMenuSuffix = (lang: string): string => {
     switch (lang) {
@@ -143,7 +108,7 @@ const Page = () => {
 
   const [favArr] = useState<string[]>([]);
 
-  const { menuState } = useMenu();
+  const { menuState, language, setLanguage } = useMenu();
 
   const [ccMenu, setCCMenu] = useState<DayMenu[]>([]);
   const [gwMenu, setGWMenu] = useState<SdxAPIResponse[]>([]);
@@ -152,8 +117,45 @@ const Page = () => {
   const [isCCLoading, setCCLoading] = useState(false);
   const [isGWLoading, setGWLoading] = useState(false);
   const [isHALoading, setHALoading] = useState(false);
+  const [showMenuSpinner, setShowMenuSpinner] = useState(false);
 
-  const [language, setLanguage] = useState<string>('English');
+  const langTabListRef = useRef<HTMLDivElement>(null);
+  const langTabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [langIndicator, setLangIndicator] = useState({ left: 0, width: 0 });
+
+  const activeLangIndex = languages.findIndex((lang) => lang.name === language);
+
+  const updateLangIndicator = useCallback(() => {
+    const activeEl = langTabRefs.current[activeLangIndex];
+    const container = langTabListRef.current;
+    if (!activeEl || !container) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const activeRect = activeEl.getBoundingClientRect();
+    setLangIndicator({
+      left: activeRect.left - containerRect.left,
+      width: activeRect.width,
+    });
+  }, [activeLangIndex]);
+
+  useLayoutEffect(() => {
+    updateLangIndicator();
+  }, [updateLangIndicator, language]);
+
+  useEffect(() => {
+    window.addEventListener('resize', updateLangIndicator);
+
+    const container = langTabListRef.current;
+    const resizeObserver = typeof ResizeObserver !== 'undefined' && container
+      ? new ResizeObserver(updateLangIndicator)
+      : null;
+    if (container) resizeObserver?.observe(container);
+
+    return () => {
+      window.removeEventListener('resize', updateLangIndicator);
+      resizeObserver?.disconnect();
+    };
+  }, [updateLangIndicator]);
 
   const [ccHours, setCCHours] = useState<string | null>(null);
   const [gwHours, setGWHours] = useState<string | null>(null);
@@ -187,7 +189,7 @@ const Page = () => {
       }
     };
     if (userId !== 21) fetchData();
-  }, [session, userId]);
+  }, [session, userId, setLanguage]);
 
 
 
@@ -259,6 +261,21 @@ const Page = () => {
       fetchMenu('sdx', language, setHAMenu, setHALoading, menuState);
     }
   }, [language, menuState]);
+
+  const isMenuFetching = isCCLoading || isGWLoading || isHALoading;
+
+  useEffect(() => {
+    if (!isMenuFetching) {
+      setShowMenuSpinner(false);
+      return undefined;
+    }
+
+    const timer = setTimeout(() => {
+      setShowMenuSpinner(true);
+    }, MENU_SPINNER_DELAY_MS);
+
+    return () => clearTimeout(timer);
+  }, [isMenuFetching]);
 
   const renderBlankSdxFallback = (specialHours: SdxSpecialHours | null) => (
     specialHours
@@ -354,9 +371,11 @@ const Page = () => {
         {statusControls}
       </Box>
       <Box
+        ref={langTabListRef}
         role="tablist"
         aria-label="Language"
         sx={{
+          position: 'relative',
           display: 'flex',
           alignItems: 'stretch',
           width: { xs: '100%', sm: 'auto' },
@@ -366,12 +385,30 @@ const Page = () => {
           backgroundColor: 'rgba(3, 90, 62, 0.08)',
         }}
       >
-        {languages.map((lang) => {
+        {langIndicator.width > 0 && (
+          <Box
+            aria-hidden
+            sx={{
+              position: 'absolute',
+              top: 4,
+              left: langIndicator.left,
+              width: langIndicator.width,
+              height: 'calc(100% - 8px)',
+              borderRadius: '999px',
+              backgroundColor: '#035a3e',
+              boxShadow: '0 1px 3px rgba(3, 90, 62, 0.25)',
+              transition: 'left 0.28s cubic-bezier(0.4, 0, 0.2, 1), width 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+              zIndex: 0,
+            }}
+          />
+        )}
+        {languages.map((lang, index) => {
           const isActive = language === lang.name;
 
           return (
             <Button
               key={lang.name}
+              ref={(el) => { langTabRefs.current[index] = el; }}
               role="tab"
               aria-selected={isActive}
               disableElevation
@@ -379,6 +416,8 @@ const Page = () => {
               size="small"
               onClick={() => langItemClick(lang.name)}
               sx={{
+                position: 'relative',
+                zIndex: 1,
                 flex: { xs: 1, sm: '0 0 auto' },
                 minWidth: 0,
                 px: { xs: 1.25, sm: 2.25, md: 2.5 },
@@ -391,11 +430,11 @@ const Page = () => {
                 letterSpacing: '0.01em',
                 lineHeight: 1.2,
                 color: isActive ? '#fff' : 'rgba(3, 90, 62, 0.78)',
-                backgroundColor: isActive ? '#035a3e' : 'transparent',
+                backgroundColor: 'transparent',
                 boxShadow: 'none',
-                transition: 'background-color 0.2s ease, color 0.2s ease',
+                transition: 'color 0.2s ease',
                 '&:hover': {
-                  backgroundColor: isActive ? '#024a33' : 'rgba(3, 90, 62, 0.08)',
+                  backgroundColor: isActive ? 'transparent' : 'rgba(3, 90, 62, 0.08)',
                   boxShadow: 'none',
                 },
               }}
@@ -407,6 +446,21 @@ const Page = () => {
       </Box>
     </Box>
   );
+
+  const menuContentKey = `${menuState}-${language}`;
+  const hasDisplayableMenu = (() => {
+    switch (menuState) {
+      case 'cc':
+        return ccMenu.length > 0;
+      case 'gw':
+        return !isSdxMenuBlank(gwMenu);
+      case 'ha':
+        return !isSdxMenuBlank(haMenu);
+      default:
+        return false;
+    }
+  })();
+  const showMenuContent = !showMenuSpinner && (!isMenuFetching || hasDisplayableMenu);
 
   return (
     <Container
@@ -455,17 +509,39 @@ const Page = () => {
         {languageSwitcher}
       </Stack>
 
-      <div className="d-flex flex-column">
-        {(isCCLoading || isGWLoading || isHALoading) ? (
-          <LoadingSpinner />
-        ) : (
-          <Box sx={{ mx: { xs: 0, sm: 1 }, my: { xs: 0.5, sm: 1 } }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: '1fr',
+          '& > *': { gridArea: '1 / 1' },
+        }}
+      >
+        <Fade
+          in={showMenuSpinner}
+          appear
+          timeout={{ enter: 150, exit: 120 }}
+          unmountOnExit
+        >
+          <Box sx={{ width: '100%' }}>
+            <LoadingSpinner />
+          </Box>
+        </Fade>
+        <Fade
+          in={showMenuContent}
+          appear
+          timeout={{ enter: 350, exit: 150 }}
+          unmountOnExit
+        >
+          <Box
+            key={menuContentKey}
+            sx={{ mx: { xs: 0, sm: 1 }, my: { xs: 0.5, sm: 1 } }}
+          >
             {renderMenu()}
           </Box>
-        )}
-      </div>
+        </Fade>
+      </Box>
 
-      {!isCCLoading && !isGWLoading && !isHALoading && language !== 'English' && (
+      {!isMenuFetching && language !== 'English' && (
         <Box sx={{ mt: { xs: 2, sm: 4 }, mb: 2, textAlign: 'center' }}>
           {isMobile ? (
             <>

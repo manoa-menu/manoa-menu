@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid2';
 import { useMediaQuery, useTheme } from '@mui/material';
 import { Tab, Tabs } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -29,6 +30,19 @@ const getShortLabel = (name: string): string => {
   const isLatin = /^[A-Za-z]/.test(name);
   const abbr = isLatin ? name.substring(0, 3) : name.substring(0, 1);
   return date ? `${abbr} ${date}` : abbr;
+};
+
+const getGridSize = (count: number) => {
+  switch (count) {
+    case 1:
+      return { lg: 6 };
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    default:
+      return { lg: 'grow' as const };
+  }
 };
 
 const CCMenuList: React.FC<MenuListProps> = ({ menu, language, userId, favArr }) => {
@@ -87,7 +101,9 @@ const CCMenuList: React.FC<MenuListProps> = ({ menu, language, userId, favArr })
     };
   }, [menu, updateScrollFades]);
 
-  const renderCard = (day: DayMenu, index: number) => (
+  const gridSize = getGridSize(menu.length);
+
+  const renderCard = (day: DayMenu, index: number, useDaySwitcher: boolean) => (
     <CCMenuCard
       name={day.name}
       plateLunch={day.plateLunch}
@@ -98,55 +114,82 @@ const CCMenuList: React.FC<MenuListProps> = ({ menu, language, userId, favArr })
       userId={userId}
       dayIndex={index}
       isToday={index === todayIndex}
-      useDaySwitcher
+      useDaySwitcher={useDaySwitcher}
     />
   );
 
   return (
-    <Box
-      sx={{
-        pt: { xs: 1.25, sm: 0 },
-        pb: 0.25,
-        mx: { sm: 2, md: 3, lg: 1 },
-        py: { sm: 2 },
-        px: { sm: 1, md: 1, lg: 0.5 },
-      }}
-    >
+    <>
+      {/* Below desktop: day switcher */}
       <Box
-        ref={tabsRef}
-        sx={isMobile ? getMenuDayTabsScrollSx(tabsOverflow) : menuDayTabsDesktopSx}
+        sx={{
+          display: { xs: 'block', lg: 'none' },
+          pt: 1.25,
+          pb: 0.25,
+          mx: { xs: 0, sm: 1, md: 0.5 },
+          py: { sm: 1.5, md: 1 },
+          px: { xs: 0, sm: 0.5, md: 0 },
+        }}
       >
         <Box
-          sx={{
-            display: { xs: 'block', sm: 'none' },
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 44,
-            pointerEvents: 'none',
-            zIndex: 2,
-          }}
+          ref={tabsRef}
+          sx={isMobile ? getMenuDayTabsScrollSx(tabsOverflow) : menuDayTabsDesktopSx}
         >
-          <Box sx={scrollFadeOverlaySx('left', canScrollLeft)} aria-hidden />
-          <Box sx={scrollFadeOverlaySx('right', canScrollRight)} aria-hidden />
+          <Box
+            sx={{
+              display: { xs: 'block', sm: 'none' },
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 44,
+              pointerEvents: 'none',
+              zIndex: 2,
+            }}
+          >
+            <Box sx={scrollFadeOverlaySx('left', canScrollLeft)} aria-hidden />
+            <Box sx={scrollFadeOverlaySx('right', canScrollRight)} aria-hidden />
+          </Box>
+          <Tabs
+            variant="underline"
+            defaultActiveKey={defaultTab}
+            id="ccMenuDateTabs"
+            className="mb-0"
+          >
+            {menu.map((day: DayMenu, index: number) => (
+              <Tab eventKey={index} title={getShortLabel(day.name)} key={day.name}>
+                <Box sx={{ mt: 0.75, maxWidth: { sm: 560, md: '100%' }, mx: 'auto' }}>
+                  {renderCard(day, index, true)}
+                </Box>
+              </Tab>
+            ))}
+          </Tabs>
         </Box>
-        <Tabs
-          variant="underline"
-          defaultActiveKey={defaultTab}
-          id="ccMenuDateTabs"
-          className="mb-0"
+      </Box>
+
+      {/* Desktop: all 5 day cards in one row */}
+      <Box
+        sx={{
+          display: { xs: 'none', lg: 'block' },
+          mx: 1,
+          py: 2,
+          px: 0.5,
+        }}
+      >
+        <Grid
+          container
+          spacing={2}
+          justifyContent="center"
+          sx={{ flexWrap: menu.length > 1 ? 'nowrap' : 'wrap' }}
         >
           {menu.map((day: DayMenu, index: number) => (
-            <Tab eventKey={index} title={getShortLabel(day.name)} key={day.name}>
-              <Box sx={{ mt: 0.75, maxWidth: { sm: 560, md: 640 }, mx: 'auto' }}>
-                {renderCard(day, index)}
-              </Box>
-            </Tab>
+            <Grid size={gridSize} key={day.name} sx={{ minWidth: 0 }}>
+              {renderCard(day, index, false)}
+            </Grid>
           ))}
-        </Tabs>
+        </Grid>
       </Box>
-    </Box>
+    </>
   );
 };
 

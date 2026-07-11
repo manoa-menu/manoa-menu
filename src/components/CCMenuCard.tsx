@@ -93,7 +93,7 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
     const colorPalette = [
       '#E3F2FD',
       '#FCE4EC',
-      '#E8F5E9',
+      '#E0F2F1',
       '#FFF3E0',
       '#F3E5F5',
       '#FFF9C4',

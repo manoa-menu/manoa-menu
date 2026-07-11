@@ -115,3 +115,72 @@ export const getDayHeaders = (language: string): string[] => {
 };
 
 export const isFav = (favList: string[], name: string): boolean => favList.includes(name);
+
+export const getDisplayMenuNames = (menuName: string, language: string): string => {
+  const isEnglish = language === 'English';
+  const isJapanese = language === 'Japanese';
+
+  switch (menuName) {
+    case 'cc':
+      if (isEnglish) {
+        return 'Campus Center Food Court';
+      }
+      if (isJapanese) {
+        return 'キャンパスセンター';
+      }
+      if (language === 'Korean') {
+        return '캠퍼스 센터 푸드 코트';
+      }
+      if (language === 'Chinese') {
+        return '校园中心美食广场';
+      }
+      return 'Campus Center Food Court';
+    case 'gw':
+      if (isEnglish) {
+        return 'Gateway Cafe';
+      }
+      if (isJapanese) {
+        return 'ゲートウェイカフェ';
+      }
+      if (language === 'Korean') {
+        return '게이트웨이 카페';
+      }
+      if (language === 'Chinese') {
+        return '盖特威咖啡厅';
+      }
+      return 'Gateway Cafe';
+    case 'ha':
+      if (isEnglish) {
+        return 'Hale Aloha Cafe';
+      }
+      if (isJapanese) {
+        return 'ハレアロハカフェ';
+      }
+      if (language === 'Korean') {
+        return '할레 알로하 카페';
+      }
+      if (language === 'Chinese') {
+        return '哈雷阿洛哈咖啡厅';
+      }
+      return 'Hale Aloha Cafe';
+    default:
+      return '';
+  }
+};
+
+const LOCATION_SWITCHER_SUFFIXES = [
+  ' Food Court',
+  ' 푸드 코트',
+  '美食广场',
+  '咖啡厅',
+  ' Cafe',
+  ' 카페',
+  'カフェ',
+];
+
+/** Navbar labels — same as the page title, without cafe / food court suffixes. */
+export const getLocationSwitcherLabel = (menuName: string, language: string): string => {
+  const fullName = getDisplayMenuNames(menuName, language);
+  const suffix = LOCATION_SWITCHER_SUFFIXES.find((part) => fullName.endsWith(part));
+  return suffix ? fullName.slice(0, -suffix.length) : fullName;
+};
