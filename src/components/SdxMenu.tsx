@@ -164,30 +164,30 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
             const getScrollProperties = (mealCount: number) => {
               switch (mealCount) {
                 case 1:
-                  return [
-                    { xs: 'none', md: 'none', lg: 'none' },
-                    { xs: 'visible', md: 'visible', lg: 'visible' },
-                  ];
+                  return {
+                    maxHeight: { xs: 'none', md: 'none', lg: 'none' as const },
+                    overflow: { xs: 'visible', md: 'visible', lg: 'visible' as const },
+                  };
                 case 2:
-                  return [
-                    { xs: 'none', md: 'none', lg: 820 },
-                    { xs: 'visible', md: 'visible', lg: 'auto' },
-                  ];
+                  return {
+                    maxHeight: { xs: 'none', md: 'none', lg: 820 },
+                    overflow: { xs: 'visible', md: 'visible', lg: 'auto' as const },
+                  };
                 case 3:
-                  return [
-                    { xs: 'none', md: 'none', lg: 840 },
-                    { xs: 'visible', md: 'visible', lg: 'auto' },
-                  ];
+                  return {
+                    maxHeight: { xs: 'none', md: 'none', lg: 840 },
+                    overflow: { xs: 'visible', md: 'visible', lg: 'auto' as const },
+                  };
                 case 4:
-                  return [
-                    { xs: 'none', md: 'none', lg: 840 },
-                    { xs: 'visible', md: 'visible', lg: 'auto' },
-                  ];
+                  return {
+                    maxHeight: { xs: 'none', md: 'none', lg: 840 },
+                    overflow: { xs: 'visible', md: 'visible', lg: 'auto' as const },
+                  };
                 default:
-                  return [
-                    { xs: 'none', md: 'none', lg: 840 },
-                    { xs: 'visible', md: 'visible', lg: 'auto' },
-                  ];
+                  return {
+                    maxHeight: { xs: 'none', md: 'none', lg: 840 },
+                    overflow: { xs: 'visible', md: 'visible', lg: 'auto' as const },
+                  };
               }
             };
 
@@ -215,8 +215,9 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
                           sx={{
                             m: isMobile ? 0 : 2,
                             height: '100%',
-                            maxHeight: isMobile ? 'none' : getScrollProperties(dayMenu.meals.length)[0],
-                            overflow: isMobile ? 'visible' : getScrollProperties(dayMenu.meals.length)[1],
+                            ...(isMobile
+                              ? { maxHeight: 'none', overflow: 'visible' }
+                              : getScrollProperties(dayMenu.meals.length)),
                             borderRadius: isMobile ? 0 : undefined,
                             animation: 'fadeIn 0.3s ease-in',
                             '@keyframes fadeIn': {
