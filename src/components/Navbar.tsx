@@ -1,28 +1,67 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Container, Navbar } from 'react-bootstrap';
 import { Box, ButtonBase } from '@mui/material';
-import { menuOptions, useMenu } from '@/lib/MenuContext';
-import { getLocationSwitcherLabel } from '@/lib/menuHelper';
+import { languageOptions, useMenu } from '@/lib/MenuContext';
 import '../app/navbar.css';
 
 const NavBar: React.FC = () => {
   const pathName = usePathname();
-  const { menuState, setMenuState, language } = useMenu();
-  const showMenuSwitcher = pathName === '/';
+  const { language, setLanguage } = useMenu();
+  const showLangSwitcher = pathName === '/';
+
+  const langTabListRef = useRef<HTMLDivElement>(null);
+  const langTabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [langIndicator, setLangIndicator] = useState({ left: 0, width: 0 });
+
+  const activeLangIndex = languageOptions.findIndex((lang) => lang.name === language);
+
+  const updateLangIndicator = useCallback(() => {
+    const activeEl = langTabRefs.current[activeLangIndex];
+    const container = langTabListRef.current;
+    if (!activeEl || !container) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const activeRect = activeEl.getBoundingClientRect();
+    setLangIndicator({
+      left: activeRect.left - containerRect.left,
+      width: activeRect.width,
+    });
+  }, [activeLangIndex]);
+
+  useLayoutEffect(() => {
+    if (!showLangSwitcher) return;
+    updateLangIndicator();
+  }, [updateLangIndicator, language, showLangSwitcher]);
 
   useEffect(() => {
-    document.body.classList.toggle('has-menu-switcher', showMenuSwitcher);
-    return () => document.body.classList.remove('has-menu-switcher');
-  }, [showMenuSwitcher]);
+    if (!showLangSwitcher) return undefined;
+
+    window.addEventListener('resize', updateLangIndicator);
+    const container = langTabListRef.current;
+    const resizeObserver = typeof ResizeObserver !== 'undefined' && container
+      ? new ResizeObserver(updateLangIndicator)
+      : null;
+    if (container) resizeObserver?.observe(container);
+
+    return () => {
+      window.removeEventListener('resize', updateLangIndicator);
+      resizeObserver?.disconnect();
+    };
+  }, [updateLangIndicator, showLangSwitcher]);
+
+  useEffect(() => {
+    document.body.classList.toggle('has-lang-switcher', showLangSwitcher);
+    return () => document.body.classList.remove('has-lang-switcher');
+  }, [showLangSwitcher]);
 
   return (
     <Navbar fixed="top" className="custom-navbar">
       <Container
         fluid
-        className={`px-3 px-md-4 d-flex ${showMenuSwitcher ? 'navbar-inner' : 'align-items-center'}`}
+        className={`px-3 px-md-4 d-flex ${showLangSwitcher ? 'navbar-inner' : 'align-items-center'}`}
         style={{ minWidth: 0, maxWidth: '100%', overflowX: 'clip' }}
       >
         <Navbar.Brand
@@ -33,63 +72,78 @@ const NavBar: React.FC = () => {
           Manoa Menu
         </Navbar.Brand>
 
-        {showMenuSwitcher && (
+        {showLangSwitcher && (
           <Box
-            className="menu-switcher"
+            ref={langTabListRef}
+            className="lang-switcher"
             role="tablist"
-            aria-label="Dining location"
+            aria-label="Language"
             sx={{
+              position: 'relative',
               display: 'flex',
               alignItems: 'stretch',
-              width: '100%',
+              width: { xs: '100%', sm: 'auto' },
               maxWidth: '100%',
               minWidth: 0,
               ml: { xs: 0, sm: 'auto' },
-              flex: { sm: '1 1 auto' },
-              overflowX: { sm: 'auto' },
-              WebkitOverflowScrolling: 'touch',
-              scrollbarWidth: 'none',
-              '&::-webkit-scrollbar': { display: 'none' },
-              borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
-              gap: { xs: 0, sm: 0.25 },
+              flexShrink: 1,
+              p: { xs: '4px', sm: '3px' },
+              borderRadius: '999px',
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
             }}
           >
-            {menuOptions.map((menu) => {
-              const isActive = menuState === menu.name;
-              const label = getLocationSwitcherLabel(menu.name, language);
+            {langIndicator.width > 0 && (
+              <Box
+                aria-hidden
+                sx={{
+                  position: 'absolute',
+                  top: { xs: 4, sm: 3 },
+                  left: langIndicator.left,
+                  width: langIndicator.width,
+                  height: { xs: 'calc(100% - 8px)', sm: 'calc(100% - 6px)' },
+                  borderRadius: '999px',
+                  backgroundColor: 'rgba(74, 222, 128, 0.22)',
+                  boxShadow: 'inset 0 0 0 1px rgba(74, 222, 128, 0.45)',
+                  transition: 'left 0.28s cubic-bezier(0.4, 0, 0.2, 1), width 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+                  zIndex: 0,
+                }}
+              />
+            )}
+            {languageOptions.map((lang, index) => {
+              const isActive = language === lang.name;
 
               return (
                 <ButtonBase
-                  key={menu.name}
+                  key={lang.name}
+                  ref={(el) => { langTabRefs.current[index] = el; }}
                   role="tab"
                   aria-selected={isActive}
-                  onClick={() => setMenuState(menu.name)}
+                  onClick={() => setLanguage(lang.name)}
                   sx={{
+                    position: 'relative',
+                    zIndex: 1,
                     flex: { xs: '1 1 0', sm: '0 0 auto' },
                     minWidth: 0,
-                    overflow: 'hidden',
-                    px: { xs: 0.35, sm: 1.5, md: 2 },
-                    py: { xs: 0.65, sm: 0.7 },
-                    mb: '-1px',
-                    borderRadius: '6px 6px 0 0',
-                    borderBottom: '2px solid',
-                    borderColor: isActive ? '#4ade80' : 'transparent',
-                    fontSize: { xs: '0.78rem', sm: '0.9rem', md: '0.975rem' },
+                    px: { xs: 0.75, sm: 1.5, md: 1.75 },
+                    py: { xs: 0.8, sm: 0.6 },
+                    borderRadius: '999px',
+                    fontSize: { xs: '0.78rem', sm: '0.875rem' },
                     fontWeight: isActive ? 700 : 500,
                     letterSpacing: '0.01em',
                     lineHeight: 1.2,
                     color: isActive ? '#fff' : 'rgba(255, 255, 255, 0.55)',
-                    backgroundColor: 'transparent',
-                    transition: 'color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease',
                     whiteSpace: 'nowrap',
+                    overflow: 'hidden',
                     textOverflow: 'ellipsis',
+                    transition: 'color 0.2s ease',
                     '&:hover': {
                       color: '#fff',
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                      backgroundColor: isActive ? 'transparent' : 'rgba(255, 255, 255, 0.05)',
                     },
                   }}
                 >
-                  {label}
+                  {lang.displayName}
                 </ButtonBase>
               );
             })}

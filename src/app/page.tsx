@@ -13,13 +13,14 @@ import { getUserLanguage } from '@/lib/dbActions';
 import {
   useState, useEffect, useRef, useCallback, useLayoutEffect,
 } from 'react';
-import { fixDayNames, getDisplayMenuNames } from '@/lib/menuHelper';
+import { fixDayNames, getDisplayMenuNames, getLocationSwitcherLabel } from '@/lib/menuHelper';
 import SdxMenu from '@/components/SdxMenu';
 import SdxSpecialHoursNotice from '@/components/SdxSpecialHoursNotice';
 import { isSdxMenuBlank, SdxSpecialHours } from '@/lib/sdxSpecialHours';
 import {
   Box,
   Button,
+  ButtonBase,
   Chip,
   Collapse,
   Fade,
@@ -31,18 +32,11 @@ import {
   useTheme,
 } from '@mui/material';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { useMenu } from '@/lib/MenuContext';
+import { menuOptions, useMenu } from '@/lib/MenuContext';
 
 const MENU_SPINNER_DELAY_MS = 300;
 
 const Page = () => {
-  const languages = [
-    { name: 'English', displayName: 'English' },
-    { name: 'Japanese', displayName: '日本語' },
-    { name: 'Korean', displayName: '한국어' },
-    { name: 'Chinese', displayName: '中文' },
-  ];
-
   const getMenuSuffix = (lang: string): string => {
     switch (lang) {
       case 'Japanese':
@@ -93,12 +87,12 @@ const Page = () => {
     }
   };
 
-  const getLanguageLabel = (lang: string): string => {
+  const getLocationLabel = (lang: string): string => {
     switch (lang) {
-      case 'Japanese': return '言語';
-      case 'Korean': return '언어';
-      case 'Chinese': return '语言';
-      default: return 'Language';
+      case 'Japanese': return '食堂';
+      case 'Korean': return '식당';
+      case 'Chinese': return '餐厅';
+      default: return 'Location';
     }
   };
 
@@ -108,7 +102,7 @@ const Page = () => {
 
   const [favArr] = useState<string[]>([]);
 
-  const { menuState, language, setLanguage } = useMenu();
+  const { menuState, setMenuState, language, setLanguage } = useMenu();
 
   const [ccMenu, setCCMenu] = useState<DayMenu[]>([]);
   const [gwMenu, setGWMenu] = useState<SdxAPIResponse[]>([]);
@@ -119,43 +113,43 @@ const Page = () => {
   const [isHALoading, setHALoading] = useState(false);
   const [showMenuSpinner, setShowMenuSpinner] = useState(false);
 
-  const langTabListRef = useRef<HTMLDivElement>(null);
-  const langTabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const [langIndicator, setLangIndicator] = useState({ left: 0, width: 0 });
+  const locationTabListRef = useRef<HTMLDivElement>(null);
+  const locationTabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [locationIndicator, setLocationIndicator] = useState({ left: 0, width: 0 });
 
-  const activeLangIndex = languages.findIndex((lang) => lang.name === language);
+  const activeLocationIndex = menuOptions.findIndex((menu) => menu.name === menuState);
 
-  const updateLangIndicator = useCallback(() => {
-    const activeEl = langTabRefs.current[activeLangIndex];
-    const container = langTabListRef.current;
+  const updateLocationIndicator = useCallback(() => {
+    const activeEl = locationTabRefs.current[activeLocationIndex];
+    const container = locationTabListRef.current;
     if (!activeEl || !container) return;
 
     const containerRect = container.getBoundingClientRect();
     const activeRect = activeEl.getBoundingClientRect();
-    setLangIndicator({
+    setLocationIndicator({
       left: activeRect.left - containerRect.left,
       width: activeRect.width,
     });
-  }, [activeLangIndex]);
+  }, [activeLocationIndex]);
 
   useLayoutEffect(() => {
-    updateLangIndicator();
-  }, [updateLangIndicator, language]);
+    updateLocationIndicator();
+  }, [updateLocationIndicator, menuState, language]);
 
   useEffect(() => {
-    window.addEventListener('resize', updateLangIndicator);
+    window.addEventListener('resize', updateLocationIndicator);
 
-    const container = langTabListRef.current;
+    const container = locationTabListRef.current;
     const resizeObserver = typeof ResizeObserver !== 'undefined' && container
-      ? new ResizeObserver(updateLangIndicator)
+      ? new ResizeObserver(updateLocationIndicator)
       : null;
     if (container) resizeObserver?.observe(container);
 
     return () => {
-      window.removeEventListener('resize', updateLangIndicator);
+      window.removeEventListener('resize', updateLocationIndicator);
       resizeObserver?.disconnect();
     };
-  }, [updateLangIndicator]);
+  }, [updateLocationIndicator]);
 
   const [ccHours, setCCHours] = useState<string | null>(null);
   const [gwHours, setGWHours] = useState<string | null>(null);
@@ -174,10 +168,6 @@ const Page = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [showAiDisclosure, setShowAiDisclosure] = useState(false);
-
-  const langItemClick = (lang: string) => {
-    setLanguage(lang);
-  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -337,7 +327,7 @@ const Page = () => {
     </Box>
   ) : null;
 
-  const languageSwitcher = (
+  const locationSwitcher = (
     <Box
       sx={{
         width: { xs: '100%', sm: 'auto' },
@@ -366,33 +356,34 @@ const Page = () => {
             color: 'text.secondary',
           }}
         >
-          {getLanguageLabel(language)}
+          {getLocationLabel(language)}
         </Typography>
         {statusControls}
       </Box>
       <Box
-        ref={langTabListRef}
+        ref={locationTabListRef}
         role="tablist"
-        aria-label="Language"
+        aria-label="Dining location"
         sx={{
           position: 'relative',
           display: 'flex',
           alignItems: 'stretch',
           width: { xs: '100%', sm: 'auto' },
           maxWidth: { xs: '100%', sm: 'none' },
+          minWidth: 0,
           p: '4px',
           borderRadius: '999px',
           backgroundColor: 'rgba(3, 90, 62, 0.08)',
         }}
       >
-        {langIndicator.width > 0 && (
+        {locationIndicator.width > 0 && (
           <Box
             aria-hidden
             sx={{
               position: 'absolute',
               top: 4,
-              left: langIndicator.left,
-              width: langIndicator.width,
+              left: locationIndicator.left,
+              width: locationIndicator.width,
               height: 'calc(100% - 8px)',
               borderRadius: '999px',
               backgroundColor: '#035a3e',
@@ -402,45 +393,41 @@ const Page = () => {
             }}
           />
         )}
-        {languages.map((lang, index) => {
-          const isActive = language === lang.name;
+        {menuOptions.map((menu, index) => {
+          const isActive = menuState === menu.name;
+          const label = getLocationSwitcherLabel(menu.name, language);
 
           return (
-            <Button
-              key={lang.name}
-              ref={(el) => { langTabRefs.current[index] = el; }}
+            <ButtonBase
+              key={menu.name}
+              ref={(el) => { locationTabRefs.current[index] = el; }}
               role="tab"
               aria-selected={isActive}
-              disableElevation
-              disableRipple
-              size="small"
-              onClick={() => langItemClick(lang.name)}
+              onClick={() => setMenuState(menu.name)}
               sx={{
                 position: 'relative',
                 zIndex: 1,
-                flex: { xs: 1, sm: '0 0 auto' },
+                flex: { xs: '1 1 0', sm: '0 0 auto' },
                 minWidth: 0,
-                px: { xs: 1.25, sm: 2.25, md: 2.5 },
+                px: { xs: 1, sm: 2.25, md: 2.5 },
                 py: { xs: 0.9, sm: 1.05 },
                 borderRadius: '999px',
-                textTransform: 'none',
                 whiteSpace: 'nowrap',
-                fontSize: { xs: '0.85rem', sm: '0.925rem' },
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                fontSize: { xs: '0.82rem', sm: '0.925rem' },
                 fontWeight: isActive ? 700 : 600,
                 letterSpacing: '0.01em',
                 lineHeight: 1.2,
                 color: isActive ? '#fff' : 'rgba(3, 90, 62, 0.78)',
-                backgroundColor: 'transparent',
-                boxShadow: 'none',
                 transition: 'color 0.2s ease',
                 '&:hover': {
                   backgroundColor: isActive ? 'transparent' : 'rgba(3, 90, 62, 0.08)',
-                  boxShadow: 'none',
                 },
               }}
             >
-              {lang.displayName}
-            </Button>
+              {label}
+            </ButtonBase>
           );
         })}
       </Box>
@@ -506,7 +493,7 @@ const Page = () => {
           {statusControls}
         </Box>
 
-        {languageSwitcher}
+        {locationSwitcher}
       </Stack>
 
       <Box

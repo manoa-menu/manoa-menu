@@ -15,6 +15,13 @@ export const menuOptions: { name: MenuState }[] = [
   { name: 'ha' },
 ];
 
+export const languageOptions = [
+  { name: 'English', displayName: 'English' },
+  { name: 'Japanese', displayName: '日本語' },
+  { name: 'Korean', displayName: '한국어' },
+  { name: 'Chinese', displayName: '中文' },
+] as const;
+
 type MenuContextType = {
   menuState: MenuState;
   setMenuState: (menu: MenuState) => void;

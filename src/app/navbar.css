@@ -38,8 +38,8 @@
 }
 
 @media (max-width: 575.98px) {
-  .wrapper.has-menu-switcher {
-    padding-top: 84px;
+  .wrapper.has-lang-switcher {
+    padding-top: 106px;
   }
 }
 
