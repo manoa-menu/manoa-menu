@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { FilteredSodexoMeal, SdxAPIResponse } from '@/types/menuTypes';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -21,6 +21,7 @@ import { getDayHeaders, isFav } from '@/lib/menuHelper';
 import { getCurrentDayOf } from '@/lib/dateFunctions';
 import StarButton from '@/components/StarButton';
 import { menuDayTabFadeSx, getMenuDayTabsScrollSx, menuDayTabsDesktopSx } from '@/components/menuDayTabStyles';
+import { useMenuDayTabScrollFades } from '@/components/useMenuDayTabScrollFades';
 
 interface SdxMenuProps {
   weekMenu: SdxAPIResponse[];
@@ -108,58 +109,9 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
     weekMenu.filter((day) => day.meals.length > 0).length,
   );
 
-  const tabsRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-  const [tabsOverflow, setTabsOverflow] = useState(false);
-
-  const updateScrollFades = useCallback(() => {
-    const nav = tabsRef.current?.querySelector<HTMLElement>('.nav');
-    if (!nav) {
-      setCanScrollLeft(false);
-      setCanScrollRight(false);
-      setTabsOverflow(false);
-      return;
-    }
-
-    const { scrollLeft, scrollWidth, clientWidth } = nav;
-    setTabsOverflow(scrollWidth > clientWidth + 2);
-    setCanScrollLeft(scrollLeft > 2);
-    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 2);
-  }, []);
+  const { tabsRef, canScrollLeft, canScrollRight, tabsOverflow } = useMenuDayTabScrollFades(weekMenu);
 
   const scrollFadeOverlaySx = menuDayTabFadeSx;
-
-  useEffect(() => {
-    const root = tabsRef.current;
-    const nav = root?.querySelector<HTMLElement>('.nav');
-    if (!nav) return undefined;
-
-    updateScrollFades();
-
-    const activeTab = nav.querySelector<HTMLElement>('.nav-link.active');
-    if (activeTab) {
-      const navRect = nav.getBoundingClientRect();
-      const tabRect = activeTab.getBoundingClientRect();
-      const delta = (tabRect.left + tabRect.width / 2) - (navRect.left + navRect.width / 2);
-      nav.scrollLeft += delta;
-    }
-    updateScrollFades();
-
-    nav.addEventListener('scroll', updateScrollFades, { passive: true });
-    window.addEventListener('resize', updateScrollFades);
-
-    const resizeObserver = typeof ResizeObserver !== 'undefined'
-      ? new ResizeObserver(updateScrollFades)
-      : null;
-    resizeObserver?.observe(nav);
-
-    return () => {
-      nav.removeEventListener('scroll', updateScrollFades);
-      window.removeEventListener('resize', updateScrollFades);
-      resizeObserver?.disconnect();
-    };
-  }, [weekMenu, updateScrollFades]);
 
   return (
     <Box sx={{ mt: { xs: 1.25, sm: 0 }, width: '100%', maxWidth: '100%', minWidth: 0 }}>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React from 'react';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid2';
 import { useMediaQuery, useTheme } from '@mui/material';
@@ -13,6 +13,7 @@ import {
   menuDayTabFadeSx,
   menuDayTabsDesktopSx,
 } from '@/components/menuDayTabStyles';
+import { useMenuDayTabScrollFades } from '@/components/useMenuDayTabScrollFades';
 import { DayMenu } from '@/types/menuTypes';
 
 interface MenuListProps {
@@ -53,58 +54,9 @@ const CCMenuList: React.FC<MenuListProps> = ({ menu, language, userId, favArr })
   const dayOfWeek = new Date().getDay(); // 0=Sun … 6=Sat
   const todayIndex = dayOfWeek >= 1 && dayOfWeek <= 5 ? dayOfWeek - 1 : -1;
   const defaultTab = Math.max(0, Math.min(dayOfWeek - 1, menu.length - 1));
-  const tabsRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-  const [tabsOverflow, setTabsOverflow] = useState(false);
-
-  const updateScrollFades = useCallback(() => {
-    const nav = tabsRef.current?.querySelector<HTMLElement>('.nav');
-    if (!nav) {
-      setCanScrollLeft(false);
-      setCanScrollRight(false);
-      setTabsOverflow(false);
-      return;
-    }
-
-    const { scrollLeft, scrollWidth, clientWidth } = nav;
-    setTabsOverflow(scrollWidth > clientWidth + 2);
-    setCanScrollLeft(scrollLeft > 2);
-    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 2);
-  }, []);
+  const { tabsRef, canScrollLeft, canScrollRight, tabsOverflow } = useMenuDayTabScrollFades(menu);
 
   const scrollFadeOverlaySx = menuDayTabFadeSx;
-
-  useEffect(() => {
-    const root = tabsRef.current;
-    const nav = root?.querySelector<HTMLElement>('.nav');
-    if (!nav) return undefined;
-
-    updateScrollFades();
-
-    const activeTab = nav.querySelector<HTMLElement>('.nav-link.active');
-    if (activeTab) {
-      const navRect = nav.getBoundingClientRect();
-      const tabRect = activeTab.getBoundingClientRect();
-      const delta = (tabRect.left + tabRect.width / 2) - (navRect.left + navRect.width / 2);
-      nav.scrollLeft += delta;
-    }
-    updateScrollFades();
-
-    nav.addEventListener('scroll', updateScrollFades, { passive: true });
-    window.addEventListener('resize', updateScrollFades);
-
-    const resizeObserver = typeof ResizeObserver !== 'undefined'
-      ? new ResizeObserver(updateScrollFades)
-      : null;
-    resizeObserver?.observe(nav);
-
-    return () => {
-      nav.removeEventListener('scroll', updateScrollFades);
-      window.removeEventListener('resize', updateScrollFades);
-      resizeObserver?.disconnect();
-    };
-  }, [menu, updateScrollFades]);
 
   const gridSize = getGridSize(menu.length);
 
