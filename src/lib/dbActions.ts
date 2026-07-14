@@ -127,7 +127,39 @@ export async function insertSdxMenu(
   date: string,
 ) {
   try {
+    // Don't persist blank menus — no unique (date, language) constraint, so they
+    // duplicate on every cache miss / concurrent request.
+    if (!menuInfo || menuInfo.length === 0) {
+      console.log(`Skipping empty SDX menu insert for ${date} (${language}, ${location})`);
+      return;
+    }
+
     const weekMenu = JSON.parse(JSON.stringify(menuInfo));
+    const existing = await getSdxMenu(date, language, location);
+
+    if (existing) {
+      const existingMenu = (existing.menu as unknown as FilteredSodexoMeal[]) || [];
+      if (existingMenu.length > 0) {
+        console.log(`SDX menu already exists for ${date} (${language}, ${location}); skipping insert`);
+        return;
+      }
+
+      if (location === Location.GATEWAY) {
+        await prisma.gatewayMenus.update({
+          where: { id: existing.id },
+          data: { menu: weekMenu },
+        });
+      } else if (location === Location.HALE_ALOHA) {
+        await prisma.haleAlohaMenus.update({
+          where: { id: existing.id },
+          data: { menu: weekMenu },
+        });
+      } else {
+        throw new Error('Invalid location');
+      }
+      return;
+    }
+
     if (location === Location.GATEWAY) {
       await prisma.gatewayMenus.create({
         data: {

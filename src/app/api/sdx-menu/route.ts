@@ -165,7 +165,11 @@ export async function GET(req: NextRequest) {
   const fetchEnglishSdxMenu = async (day: string): Promise<FilteredSodexoMeal[]> => {
     const existingEnglish = await getSdxMenu(day, 'English', locationOption);
     if (existingEnglish) {
-      return (existingEnglish.menu as unknown as FilteredSodexoMeal[]) || [];
+      const cached = (existingEnglish.menu as unknown as FilteredSodexoMeal[]) || [];
+      // Blank rows are ignored so closed days re-hit the API instead of sticking.
+      if (cached.length > 0) {
+        return cached;
+      }
     }
 
     const queryUrl = `${url}?date=${day}`;
@@ -176,10 +180,10 @@ export async function GET(req: NextRequest) {
 
     if (filteredData.length > 0) {
       console.log(`Inserting menu for ${day} in English`);
+      await insertSdxMenu(filteredData, locationOption, 'English', day);
     } else {
-      console.log(`Inserting blank menu for ${day} in English`);
+      console.log(`Skipping blank English menu for ${day} (location closed / no meals)`);
     }
-    await insertSdxMenu(filteredData, locationOption, 'English', day);
 
     return filteredData;
   };
@@ -194,11 +198,13 @@ export async function GET(req: NextRequest) {
         const cachedMenu = await getSdxMenu(day, language, locationOption);
         if (cachedMenu) {
           const dayMenu = (cachedMenu.menu as unknown as FilteredSodexoMeal[]) || [];
-          console.log(`Returning cached ${language} menu for ${day}`);
-          return {
-            date: day,
-            meals: dayMenu,
-          };
+          if (dayMenu.length > 0) {
+            console.log(`Returning cached ${language} menu for ${day}`);
+            return {
+              date: day,
+              meals: dayMenu,
+            };
+          }
         }
 
         const englishMenu = await fetchEnglishSdxMenu(day);
@@ -211,8 +217,7 @@ export async function GET(req: NextRequest) {
         }
 
         if (englishMenu.length === 0) {
-          console.log(`Inserting blank menu for ${day} in ${language}`);
-          await insertSdxMenu([], locationOption, language, day);
+          console.log(`Skipping blank ${language} menu for ${day} (location closed / no meals)`);
           return {
             date: day,
             meals: [],
@@ -235,7 +240,8 @@ export async function GET(req: NextRequest) {
   );
 
   const pendingTranslations = resolvedDays.filter(
-    (day): day is ResolvedDay & { englishMenu: FilteredSodexoMeal[] } => Boolean(day.englishMenu),
+    (day): day is ResolvedDay & { englishMenu: FilteredSodexoMeal[] } =>
+      Array.isArray(day.englishMenu) && day.englishMenu.length > 0,
   );
 
   if (pendingTranslations.length > 0) {
