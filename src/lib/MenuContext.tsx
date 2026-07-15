@@ -2,9 +2,10 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
-  useLayoutEffect,
-  useState,
+  useMemo,
+  useSyncExternalStore,
   type ReactNode,
 } from 'react';
 
@@ -55,33 +56,65 @@ type MenuContextType = {
 
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
 
-export const MenuProvider = ({ children }: { children: ReactNode }) => {
-  // Defaults match the server render; localStorage is applied before first paint.
-  const [menuState, setMenuStateValue] = useState<MenuState>('cc');
-  const [language, setLanguageState] = useState<string>('English');
-  const [preferencesReady, setPreferencesReady] = useState(false);
+const menuListeners = new Set<() => void>();
+const languageListeners = new Set<() => void>();
 
-  useLayoutEffect(() => {
-    setMenuStateValue(getStoredMenuState());
-    setLanguageState(getStoredLanguage());
-    setPreferencesReady(true);
+function subscribeMenu(listener: () => void) {
+  menuListeners.add(listener);
+  return () => {
+    menuListeners.delete(listener);
+  };
+}
+
+function subscribeLanguage(listener: () => void) {
+  languageListeners.add(listener);
+  return () => {
+    languageListeners.delete(listener);
+  };
+}
+
+function emitMenuChange() {
+  menuListeners.forEach((listener) => listener());
+}
+
+function emitLanguageChange() {
+  languageListeners.forEach((listener) => listener());
+}
+
+export const MenuProvider = ({ children }: { children: ReactNode }) => {
+  const menuState = useSyncExternalStore(
+    subscribeMenu,
+    getStoredMenuState,
+    (): MenuState => 'cc',
+  );
+  const language = useSyncExternalStore(
+    subscribeLanguage,
+    getStoredLanguage,
+    () => 'English',
+  );
+  const preferencesReady = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+
+  const setMenuState = useCallback((menu: MenuState) => {
+    localStorage.setItem(MENU_STORAGE_KEY, menu);
+    emitMenuChange();
   }, []);
 
-  const setMenuState = (menu: MenuState) => {
-    setMenuStateValue(menu);
-    localStorage.setItem(MENU_STORAGE_KEY, menu);
-  };
-
-  const setLanguage = (lang: string) => {
-    setLanguageState(lang);
+  const setLanguage = useCallback((lang: string) => {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
-  };
+    emitLanguageChange();
+  }, []);
+
+  const value = useMemo(
+    () => ({ menuState, setMenuState, language, setLanguage, preferencesReady }),
+    [menuState, setMenuState, language, setLanguage, preferencesReady],
+  );
 
   return (
-    <MenuContext.Provider value={{
-      menuState, setMenuState, language, setLanguage, preferencesReady,
-    }}
-    >
+    <MenuContext.Provider value={value}>
       {children}
     </MenuContext.Provider>
   );

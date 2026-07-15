@@ -1,47 +1,27 @@
 'use client';
 
 import { Container, Row } from 'react-bootstrap';
-import { useState, useEffect, useLayoutEffect } from 'react';
+import { useEffect } from 'react';
 import Hamster from './spinners/Hamster';
 import Typewriter from './spinners/Typewriter';
 import Hourglass from './spinners/Hourglass';
 import Truck from './spinners/Truck';
 
 const spinnerOrder = [Hamster, Typewriter, Hourglass, Truck];
-const SPINNER_STORAGE_KEY = 'currentSpinnerIndex';
-
-function readSpinnerIndex(): number {
-  if (typeof window === 'undefined') return 0;
-  const savedIndex = localStorage.getItem(SPINNER_STORAGE_KEY);
-  const parsedIndex = savedIndex !== null ? parseInt(savedIndex, 10) : 0;
-
-  if (Number.isNaN(parsedIndex) || parsedIndex < 0 || parsedIndex >= spinnerOrder.length) {
-    return 0;
-  }
-
-  return parsedIndex;
-}
+const CURRENT_SPINNER_INDEX = 0;
 
 const LoadingSpinner = () => {
-  const [currentSpinnerIndex, setCurrentSpinnerIndex] = useState(0);
-
-  useLayoutEffect(() => {
-    const index = readSpinnerIndex();
-    setCurrentSpinnerIndex(index);
-    localStorage.setItem(SPINNER_STORAGE_KEY, ((index + 1) % spinnerOrder.length).toString());
-  }, []);
-
   useEffect(() => {
     if (process.env.NODE_ENV === 'production') {
       return;
     }
 
     console.log(
-      `Current Spinner Index: ${currentSpinnerIndex} Spinner: ${spinnerOrder[currentSpinnerIndex].name}`,
+      `Current Spinner Index: ${CURRENT_SPINNER_INDEX} Spinner: ${spinnerOrder[CURRENT_SPINNER_INDEX].name}`,
     );
-  }, [currentSpinnerIndex]);
+  }, []);
 
-  const CurrentSpinner = spinnerOrder[currentSpinnerIndex];
+  const CurrentSpinner = spinnerOrder[CURRENT_SPINNER_INDEX];
 
   return (
     <Container fluid className="d-flex justify-content-center mt-5 pt-4">

@@ -520,7 +520,14 @@ const Page = () => {
           {statusControls}
         </Box>
 
-        <Box sx={{ visibility: preferencesReady ? 'visible' : 'hidden', width: '100%', display: 'flex', justifyContent: 'center' }}>
+        <Box
+          sx={{
+            visibility: preferencesReady ? 'visible' : 'hidden',
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        >
           {locationSwitcher}
         </Box>
       </Stack>
