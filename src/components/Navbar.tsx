@@ -9,8 +9,9 @@ import '../app/navbar.css';
 
 const NavBar: React.FC = () => {
   const pathName = usePathname();
-  const { language, setLanguage } = useMenu();
+  const { language, setLanguage, preferencesReady } = useMenu();
   const showLangSwitcher = pathName === '/';
+  const showLangTabs = showLangSwitcher && preferencesReady;
 
   const langTabListRef = useRef<HTMLDivElement>(null);
   const langTabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -32,12 +33,12 @@ const NavBar: React.FC = () => {
   }, [activeLangIndex]);
 
   useLayoutEffect(() => {
-    if (!showLangSwitcher) return;
+    if (!showLangTabs) return;
     updateLangIndicator();
-  }, [updateLangIndicator, language, showLangSwitcher]);
+  }, [updateLangIndicator, language, showLangTabs]);
 
   useEffect(() => {
-    if (!showLangSwitcher) return undefined;
+    if (!showLangTabs) return undefined;
 
     window.addEventListener('resize', updateLangIndicator);
     const container = langTabListRef.current;
@@ -50,7 +51,7 @@ const NavBar: React.FC = () => {
       window.removeEventListener('resize', updateLangIndicator);
       resizeObserver?.disconnect();
     };
-  }, [updateLangIndicator, showLangSwitcher]);
+  }, [updateLangIndicator, showLangTabs]);
 
   useEffect(() => {
     document.body.classList.toggle('has-lang-switcher', showLangSwitcher);
@@ -72,7 +73,7 @@ const NavBar: React.FC = () => {
           Manoa Menu
         </Navbar.Brand>
 
-        {showLangSwitcher && (
+        {showLangTabs && (
           <Box
             ref={langTabListRef}
             className="lang-switcher"

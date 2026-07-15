@@ -102,7 +102,7 @@ const Page = () => {
 
   const [favArr] = useState<string[]>([]);
 
-  const { menuState, setMenuState, language, setLanguage } = useMenu();
+  const { menuState, setMenuState, language, setLanguage, preferencesReady } = useMenu();
 
   const [ccMenu, setCCMenu] = useState<DayMenu[]>([]);
   const [gwMenu, setGWMenu] = useState<SdxAPIResponse[]>([]);
@@ -111,7 +111,7 @@ const Page = () => {
   const [isCCLoading, setCCLoading] = useState(false);
   const [isGWLoading, setGWLoading] = useState(false);
   const [isHALoading, setHALoading] = useState(false);
-  const [showMenuSpinner, setShowMenuSpinner] = useState(false);
+  const [showMenuSpinner, setShowMenuSpinner] = useState(true);
 
   const locationTabListRef = useRef<HTMLDivElement>(null);
   const locationTabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -183,7 +183,16 @@ const Page = () => {
 
 
 
+  useLayoutEffect(() => {
+    if (!preferencesReady) return;
+    if (menuState === 'cc') setCCLoading(true);
+    else if (menuState === 'gw') setGWLoading(true);
+    else setHALoading(true);
+  }, [preferencesReady, menuState, language]);
+
   useEffect(() => {
+    if (!preferencesReady) return;
+
     const hoursEndpoint = menuState === 'cc'
       ? '/api/cc-hours'
       : menuState === 'gw'
@@ -214,9 +223,11 @@ const Page = () => {
           setSpecialHours(null);
         }
       });
-  }, [menuState]);
+  }, [menuState, preferencesReady]);
 
   useEffect(() => {
+    if (!preferencesReady) return;
+
     const fetchMenu = async (
       menuType: string,
       lang: string,
@@ -227,7 +238,6 @@ const Page = () => {
     ) => {
       try {
         const locationQuery = location ? `&location=${location}` : '';
-        setLoading(true);
         const response = await fetch(`/api/${menuType}-menu?language=${lang}${locationQuery}`);
         if (!response.ok) {
           throw new Error(`Error: ${response.status} ${response.statusText}`);
@@ -244,19 +254,33 @@ const Page = () => {
     };
 
     if (menuState === 'cc') {
+      setCCLoading(true);
       fetchMenu(menuState, language, setCCMenu, setCCLoading);
     } else if (menuState === 'gw') {
+      setGWLoading(true);
       fetchMenu('sdx', language, setGWMenu, setGWLoading, menuState);
     } else if (menuState === 'ha') {
+      setHALoading(true);
       fetchMenu('sdx', language, setHAMenu, setHALoading, menuState);
     }
-  }, [language, menuState]);
+  }, [language, menuState, preferencesReady]);
 
-  const isMenuFetching = isCCLoading || isGWLoading || isHALoading;
+  const isCurrentMenuLoading = menuState === 'cc'
+    ? isCCLoading
+    : menuState === 'gw'
+      ? isGWLoading
+      : isHALoading;
+  const isMenuFetching = !preferencesReady || isCurrentMenuLoading;
 
   useEffect(() => {
     if (!isMenuFetching) {
       setShowMenuSpinner(false);
+      return undefined;
+    }
+
+    // Show immediately during prefs init; delay only for later menu refetches.
+    if (!preferencesReady) {
+      setShowMenuSpinner(true);
       return undefined;
     }
 
@@ -265,7 +289,7 @@ const Page = () => {
     }, MENU_SPINNER_DELAY_MS);
 
     return () => clearTimeout(timer);
-  }, [isMenuFetching]);
+  }, [isMenuFetching, preferencesReady]);
 
   const renderBlankSdxFallback = (specialHours: SdxSpecialHours | null) => (
     specialHours
@@ -388,7 +412,9 @@ const Page = () => {
               borderRadius: '999px',
               backgroundColor: '#035a3e',
               boxShadow: '0 1px 3px rgba(3, 90, 62, 0.25)',
-              transition: 'left 0.28s cubic-bezier(0.4, 0, 0.2, 1), width 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+              transition: preferencesReady
+                ? 'left 0.28s cubic-bezier(0.4, 0, 0.2, 1), width 0.28s cubic-bezier(0.4, 0, 0.2, 1)'
+                : 'none',
               zIndex: 0,
             }}
           />
@@ -474,6 +500,7 @@ const Page = () => {
             gap: { sm: 2, md: 3 },
             width: '100%',
             px: 0,
+            visibility: preferencesReady ? 'visible' : 'hidden',
           }}
         >
           <Typography
@@ -493,7 +520,9 @@ const Page = () => {
           {statusControls}
         </Box>
 
-        {locationSwitcher}
+        <Box sx={{ visibility: preferencesReady ? 'visible' : 'hidden', width: '100%', display: 'flex', justifyContent: 'center' }}>
+          {locationSwitcher}
+        </Box>
       </Stack>
 
       <Box

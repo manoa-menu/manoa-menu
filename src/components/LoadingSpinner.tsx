@@ -1,30 +1,35 @@
 'use client';
 
 import { Container, Row } from 'react-bootstrap';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
 import Hamster from './spinners/Hamster';
 import Typewriter from './spinners/Typewriter';
 import Hourglass from './spinners/Hourglass';
 import Truck from './spinners/Truck';
 
 const spinnerOrder = [Hamster, Typewriter, Hourglass, Truck];
+const SPINNER_STORAGE_KEY = 'currentSpinnerIndex';
+
+function readSpinnerIndex(): number {
+  if (typeof window === 'undefined') return 0;
+  const savedIndex = localStorage.getItem(SPINNER_STORAGE_KEY);
+  const parsedIndex = savedIndex !== null ? parseInt(savedIndex, 10) : 0;
+
+  if (Number.isNaN(parsedIndex) || parsedIndex < 0 || parsedIndex >= spinnerOrder.length) {
+    return 0;
+  }
+
+  return parsedIndex;
+}
 
 const LoadingSpinner = () => {
-  const [currentSpinnerIndex] = useState<number>(() => {
-    const savedIndex = localStorage.getItem('currentSpinnerIndex');
-    const parsedIndex = savedIndex !== null ? parseInt(savedIndex, 10) : 0;
+  const [currentSpinnerIndex, setCurrentSpinnerIndex] = useState(0);
 
-    if (Number.isNaN(parsedIndex) || parsedIndex < 0 || parsedIndex >= spinnerOrder.length) {
-      return 0;
-    }
-
-    return parsedIndex;
-  });
-
-  useEffect(() => {
-    const nextIndex = (currentSpinnerIndex + 1) % spinnerOrder.length;
-    localStorage.setItem('currentSpinnerIndex', nextIndex.toString());
-  }, [currentSpinnerIndex]);
+  useLayoutEffect(() => {
+    const index = readSpinnerIndex();
+    setCurrentSpinnerIndex(index);
+    localStorage.setItem(SPINNER_STORAGE_KEY, ((index + 1) % spinnerOrder.length).toString());
+  }, []);
 
   useEffect(() => {
     if (process.env.NODE_ENV === 'production') {

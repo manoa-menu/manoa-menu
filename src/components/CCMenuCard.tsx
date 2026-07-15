@@ -107,7 +107,6 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
       container
       spacing={1}
       alignItems="center"
-      key={item}
       sx={{ py: 0.5 }}
     >
       <Grid size={userId === -21 ? 12 : 10}>
@@ -182,7 +181,7 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
           </Stack>
           <Box sx={{ mb: 1.75 }}>
             {plateLunch.map((item, index) => (
-              <React.Fragment key={item}>
+              <React.Fragment key={`plate-${item}-${index}`}>
                 {renderItemRow(item)}
                 {index < plateLunch.length - 1 && (
                   <Divider sx={{ my: 0.125, borderColor: '#b7b7b7' }} />
@@ -201,7 +200,7 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
           </Stack>
           <Box>
             {grabAndGo.map((item, index) => (
-              <React.Fragment key={item}>
+              <React.Fragment key={`grab-${item}-${index}`}>
                 {renderItemRow(item)}
                 {index < grabAndGo.length - 1 && (
                   <Divider sx={{ my: 0.125, borderColor: '#b7b7b7' }} />
