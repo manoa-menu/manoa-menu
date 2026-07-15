@@ -207,8 +207,8 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
                     spacing={isMobile ? 0 : 2}
                     justifyContent="center"
                   >
-                    {dayMenu.meals.map((meal: FilteredSodexoMeal) => (
-                      <Grid size={gridItemSize} key={meal.name}>
+                    {dayMenu.meals.map((meal: FilteredSodexoMeal, mealIndex) => (
+                      <Grid size={gridItemSize} key={`${meal.name}-${mealIndex}`}>
                         <Card
                           className="custom-scrollbar"
                           elevation={isMobile ? 0 : undefined}
@@ -264,8 +264,8 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
                           >
                             {meal.groups
                               .filter((group) => group.items.length > 0)
-                              .map((group) => (
-                              <Box key={group.name} sx={{ mb: isMobile ? 1 : 1.5 }}>
+                              .map((group, groupIndex) => (
+                              <Box key={`${group.name}-${groupIndex}`} sx={{ mb: isMobile ? 1 : 1.5 }}>
                                 <Typography
                                   variant={isMobile ? 'overline' : 'h6'}
                                   sx={{
@@ -279,10 +279,10 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
                                   {group.name}
                                 </Typography>
                                 <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
-                                  {group.items.map((item) => (
+                                  {group.items.map((item, itemIndex) => (
                                     <Box
                                       component="li"
-                                      key={item.formalName}
+                                      key={`${item.formalName}-${itemIndex}`}
                                       sx={{
                                         py: isMobile ? 0.5 : 1,
                                         borderBottom: isMobile ? '1px solid' : 'none',
