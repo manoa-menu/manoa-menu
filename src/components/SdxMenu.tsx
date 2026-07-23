@@ -17,11 +17,22 @@ import Grid from '@mui/material/Grid2';
 import Tooltip from '@mui/material/Tooltip';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { getDayHeaders, isFav } from '@/lib/menuHelper';
+import { formatSdxDayTabTitle, isFav } from '@/lib/menuHelper';
 import { getCurrentDayOf } from '@/lib/dateFunctions';
 import StarButton from '@/components/StarButton';
 import { menuDayTabFadeSx, getMenuDayTabsScrollSx, menuDayTabsDesktopSx } from '@/components/menuDayTabStyles';
 import { useMenuDayTabScrollFades } from '@/components/useMenuDayTabScrollFades';
+
+const mealHasVisibleItems = (meal: FilteredSodexoMeal): boolean => (
+  meal.groups.some((group) => (
+    group.name.trim().length > 0
+    && group.items.some((item) => item.formalName.trim().length > 0)
+  ))
+);
+
+const dayHasVisibleMeals = (dayMenu: SdxAPIResponse): boolean => (
+  dayMenu.meals.some(mealHasVisibleItems)
+);
 
 interface SdxMenuProps {
   weekMenu: SdxAPIResponse[];
@@ -105,10 +116,6 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
     setFavArray(updatedFavArr);
   };
 
-  const [daysOpen, setDaysOpen] = useState(
-    weekMenu.filter((day) => day.meals.length > 0).length,
-  );
-
   const { tabsRef, canScrollLeft, canScrollRight, tabsOverflow } = useMenuDayTabScrollFades(weekMenu);
 
   const scrollFadeOverlaySx = menuDayTabFadeSx;
@@ -141,11 +148,10 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
           className="mb-2"
         >
         {weekMenu
-          .filter((dayMenu) => {
-            console.log(`daysOpen: ${daysOpen}`);
-            return (dayMenu.meals.length > 0);
-          })
-          .map((dayMenu, index) => {
+          .filter(dayHasVisibleMeals)
+          .map((dayMenu) => {
+            const visibleMeals = dayMenu.meals.filter(mealHasVisibleItems);
+
             const getGridItemSize = (mealCount: number) => {
               switch (mealCount) {
                 case 1:
@@ -191,175 +197,170 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
               }
             };
 
-            const gridItemSize = getGridItemSize(dayMenu.meals.length);
+            const gridItemSize = getGridItemSize(visibleMeals.length);
 
             return (
-              (dayMenu.meals.length > 0) ? (
-                <Tab
-                  key={dayMenu.date}
-                  eventKey={dayMenu.date}
-                  title={
-                    getDayHeaders(language)[index + (daysOpen >= 7 ? 0 : 1)]
-                  }
+              <Tab
+                key={dayMenu.date}
+                eventKey={dayMenu.date}
+                title={formatSdxDayTabTitle(dayMenu.date, language)}
+              >
+                <Grid
+                  container
+                  spacing={isMobile ? 0 : 2}
+                  justifyContent="center"
                 >
-                  <Grid
-                    container
-                    spacing={isMobile ? 0 : 2}
-                    justifyContent="center"
-                  >
-                    {dayMenu.meals.map((meal: FilteredSodexoMeal, mealIndex) => (
-                      <Grid size={gridItemSize} key={`${meal.name}-${mealIndex}`}>
-                        <Card
-                          className="custom-scrollbar"
-                          elevation={isMobile ? 0 : undefined}
-                          sx={{
-                            m: isMobile ? 0 : 2,
-                            height: '100%',
-                            ...(isMobile
-                              ? { maxHeight: 'none', overflow: 'visible' }
-                              : getScrollProperties(dayMenu.meals.length)),
-                            borderRadius: isMobile ? 0 : undefined,
-                            animation: 'fadeIn 0.3s ease-in',
-                            '@keyframes fadeIn': {
-                              from: { opacity: 0 },
-                              to: { opacity: 1 },
-                            },
-                          }}
-                        >
-                          {isMobile ? (
-                            <Box
-                              sx={{
-                                px: 1.25,
-                                py: 0.75,
-                                textAlign: 'center',
-                                bgcolor: '#ECECEC',
-                                borderBottom: '1px solid',
-                                borderColor: 'divider',
-                              }}
-                            >
-                              <Typography
-                                variant="subtitle1"
-                                sx={{
-                                  fontWeight: 700,
-                                  letterSpacing: '0.05em',
-                                  textTransform: 'uppercase',
-                                }}
-                              >
-                                {meal.name}
-                              </Typography>
-                            </Box>
-                          ) : (
-                            <CardHeader className="px-3 py-2" style={{ backgroundColor: '#ECECEC' }}>
-                              <Typography variant="h4">
-                                {meal.name}
-                              </Typography>
-                            </CardHeader>
-                          )}
-                          <CardContent
+                  {visibleMeals.map((meal: FilteredSodexoMeal, mealIndex) => (
+                    <Grid size={gridItemSize} key={`${meal.name}-${mealIndex}`}>
+                      <Card
+                        className="custom-scrollbar"
+                        elevation={isMobile ? 0 : undefined}
+                        sx={{
+                          m: isMobile ? 0 : 2,
+                          height: '100%',
+                          ...(isMobile
+                            ? { maxHeight: 'none', overflow: 'visible' }
+                            : getScrollProperties(visibleMeals.length)),
+                          borderRadius: isMobile ? 0 : undefined,
+                          animation: 'fadeIn 0.3s ease-in',
+                          '@keyframes fadeIn': {
+                            from: { opacity: 0 },
+                            to: { opacity: 1 },
+                          },
+                        }}
+                      >
+                        {isMobile ? (
+                          <Box
                             sx={{
-                              px: isMobile ? 1.5 : undefined,
-                              py: isMobile ? 0.5 : undefined,
-                              '&:last-child': { pb: isMobile ? 1.5 : undefined },
+                              px: 1.25,
+                              py: 0.75,
+                              textAlign: 'center',
+                              bgcolor: '#ECECEC',
+                              borderBottom: '1px solid',
+                              borderColor: 'divider',
                             }}
                           >
-                            {meal.groups
-                              .filter((group) => group.items.length > 0)
-                              .map((group, groupIndex) => (
-                              <Box key={`${group.name}-${groupIndex}`} sx={{ mb: isMobile ? 1 : 1.5 }}>
-                                <Typography
-                                  variant={isMobile ? 'overline' : 'h6'}
-                                  sx={{
-                                    display: 'block',
-                                    mb: isMobile ? 0.5 : 1,
-                                    fontWeight: 700,
-                                    color: 'text.secondary',
-                                    letterSpacing: '0.08em',
-                                  }}
-                                >
-                                  {group.name}
-                                </Typography>
-                                <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
-                                  {group.items.map((item, itemIndex) => (
-                                    <Box
-                                      component="li"
-                                      key={`${item.formalName}-${itemIndex}`}
-                                      sx={{
-                                        py: isMobile ? 0.5 : 1,
-                                        borderBottom: isMobile ? '1px solid' : 'none',
-                                        borderColor: 'divider',
-                                        '&:last-child': { borderBottom: 'none' },
-                                      }}
-                                    >
-                                      <Grid container spacing={1} alignItems="flex-start">
-                                        <Grid size={userId === -21 ? 12 : 10}>
-                                          <Stack
-                                            direction="row"
-                                            alignItems="center"
-                                            spacing={0.75}
-                                            sx={{ flexWrap: 'wrap' }}
+                            <Typography
+                              variant="subtitle1"
+                              sx={{
+                                fontWeight: 700,
+                                letterSpacing: '0.05em',
+                                textTransform: 'uppercase',
+                              }}
+                            >
+                              {meal.name}
+                            </Typography>
+                          </Box>
+                        ) : (
+                          <CardHeader className="px-3 py-2" style={{ backgroundColor: '#ECECEC' }}>
+                            <Typography variant="h4">
+                              {meal.name}
+                            </Typography>
+                          </CardHeader>
+                        )}
+                        <CardContent
+                          sx={{
+                            px: isMobile ? 1.5 : undefined,
+                            py: isMobile ? 0.5 : undefined,
+                            '&:last-child': { pb: isMobile ? 1.5 : undefined },
+                          }}
+                        >
+                          {meal.groups
+                            .filter((group) => (
+                              group.name.trim().length > 0
+                              && group.items.some((item) => item.formalName.trim().length > 0)
+                            ))
+                            .map((group, groupIndex) => (
+                            <Box key={`${group.name}-${groupIndex}`} sx={{ mb: isMobile ? 1 : 1.5 }}>
+                              <Typography
+                                variant={isMobile ? 'overline' : 'h6'}
+                                sx={{
+                                  display: 'block',
+                                  mb: isMobile ? 0.5 : 1,
+                                  fontWeight: 700,
+                                  color: 'text.secondary',
+                                  letterSpacing: '0.08em',
+                                }}
+                              >
+                                {group.name}
+                              </Typography>
+                              <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
+                                {group.items
+                                  .filter((item) => item.formalName.trim().length > 0)
+                                  .map((item, itemIndex) => (
+                                  <Box
+                                    component="li"
+                                    key={`${item.formalName}-${itemIndex}`}
+                                    sx={{
+                                      py: isMobile ? 0.5 : 1,
+                                      borderBottom: isMobile ? '1px solid' : 'none',
+                                      borderColor: 'divider',
+                                      '&:last-child': { borderBottom: 'none' },
+                                    }}
+                                  >
+                                    <Grid container spacing={1} alignItems="flex-start">
+                                      <Grid size={userId === -21 ? 12 : 10}>
+                                        <Stack
+                                          direction="row"
+                                          alignItems="center"
+                                          spacing={0.75}
+                                          sx={{ flexWrap: 'wrap' }}
+                                        >
+                                          <Typography
+                                            variant={isMobile ? 'body2' : 'subtitle1'}
+                                            sx={{
+                                              fontWeight: 600,
+                                              lineHeight: 1.35,
+                                              overflowWrap: 'anywhere',
+                                              wordBreak: 'break-word',
+                                            }}
                                           >
-                                            <Typography
-                                              variant={isMobile ? 'body2' : 'subtitle1'}
-                                              sx={{
-                                                fontWeight: 600,
-                                                lineHeight: 1.35,
-                                                overflowWrap: 'anywhere',
-                                                wordBreak: 'break-word',
-                                              }}
-                                            >
-                                              {item.formalName}
-                                            </Typography>
-                                            <DietaryBadges
-                                              language={language}
-                                              isVegan={item.isVegan}
-                                              isVegetarian={item.isVegetarian}
-                                            />
-                                          </Stack>
-                                          {item.description && (
-                                            <Typography
-                                              variant="body2"
-                                              sx={{
-                                                mt: 0.5,
-                                                color: 'text.secondary',
-                                                lineHeight: 1.4,
-                                              }}
-                                            >
-                                              {item.description}
-                                            </Typography>
-                                          )}
-                                        </Grid>
-                                        {userId !== -21 && !sdxFilter.includes(item.formalName) && (
-                                          <Grid size={2}>
-                                            <Tooltip title={favTooltipNames.get(language)} placement="bottom" arrow>
-                                              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                                                <StarButton
-                                                  item={item.formalName}
-                                                  isStarred={isFav(favArray, item.formalName)}
-                                                  onToggle={() => handleToggle(item.formalName)}
-                                                />
-                                              </div>
-                                            </Tooltip>
-                                          </Grid>
+                                            {item.formalName}
+                                          </Typography>
+                                          <DietaryBadges
+                                            language={language}
+                                            isVegan={item.isVegan}
+                                            isVegetarian={item.isVegetarian}
+                                          />
+                                        </Stack>
+                                        {item.description && (
+                                          <Typography
+                                            variant="body2"
+                                            sx={{
+                                              mt: 0.5,
+                                              color: 'text.secondary',
+                                              lineHeight: 1.4,
+                                            }}
+                                          >
+                                            {item.description}
+                                          </Typography>
                                         )}
                                       </Grid>
-                                    </Box>
-                                  ))}
-                                </Box>
+                                      {userId !== -21 && !sdxFilter.includes(item.formalName) && (
+                                        <Grid size={2}>
+                                          <Tooltip title={favTooltipNames.get(language)} placement="bottom" arrow>
+                                            <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                              <StarButton
+                                                item={item.formalName}
+                                                isStarred={isFav(favArray, item.formalName)}
+                                                onToggle={() => handleToggle(item.formalName)}
+                                              />
+                                            </div>
+                                          </Tooltip>
+                                        </Grid>
+                                      )}
+                                    </Grid>
+                                  </Box>
+                                ))}
                               </Box>
-                            ))}
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                    ))}
-                  </Grid>
-                </Tab>
-              ) : (
-                <Tab eventKey={dayMenu.date} title={getDayHeaders(language)[index]} key={dayMenu.date} disabled>
-                  <Typography variant="h3" className="text-center">
-                    Closed or Menu Unavailable
-                  </Typography>
-                </Tab>
-              )
+                            </Box>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Tab>
             );
           })}
 

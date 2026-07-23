@@ -53,4 +53,18 @@ describe('applySdxTranslations', () => {
     assert.equal(translated[0].groups[0].items[0].meal, 'LUNCH');
     assert.equal(translated[0].groups[0].items[0].isVegan, false);
   });
+
+  it('keeps English when a translation is blank', () => {
+    const englishMenu = makeMenu('Crispy Sesame Tofu Bowl');
+    const translations = buildSdxTranslationMap(
+      ['Lunch', 'Entrees', 'Crispy Sesame Tofu Bowl'],
+      ['昼食', '', 'クリスピーセサミ豆腐ボウル'],
+    );
+
+    const translated = applySdxTranslations(englishMenu, translations);
+
+    assert.equal(translated[0].name, '昼食');
+    assert.equal(translated[0].groups[0].name, 'Entrees');
+    assert.equal(translated[0].groups[0].items[0].formalName, 'クリスピーセサミ豆腐ボウル');
+  });
 });

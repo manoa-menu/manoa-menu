@@ -1,47 +1,38 @@
-export const getCurrentWeekOf = (): string => {
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - dayOfWeek);
-  const yyyy = startOfWeek.getFullYear();
-  const mm = String(startOfWeek.getMonth() + 1).padStart(2, '0');
-  const dd = String(startOfWeek.getDate()).padStart(2, '0');
+import { formatDateParts, getTodayInHST } from '@/lib/ccMenuParsing';
+
+/** Calendar YYYY-MM-DD → UTC noon Date (stable weekday math, no local TZ shift). */
+const utcNoonFromIsoDate = (isoDate: string): Date => {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day, 12));
+};
+
+const formatUtcDate = (date: Date): string => {
+  const yyyy = date.getUTCFullYear();
+  const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(date.getUTCDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
 };
+
+export const getCurrentWeekOf = (): string => getCurrentWeekDates()[0];
 
 export const getNextWeekOf = (): string => {
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - dayOfWeek + 7);
-  const yyyy = startOfWeek.getFullYear();
-  const mm = String(startOfWeek.getMonth() + 1).padStart(2, '0');
-  const dd = String(startOfWeek.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
+  const sunday = utcNoonFromIsoDate(getCurrentWeekDates()[0]);
+  sunday.setUTCDate(sunday.getUTCDate() + 7);
+  return formatUtcDate(sunday);
 };
 
-export const getCurrentDayOf = (): string => {
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, '0');
-  const dd = String(today.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-};
+export const getCurrentDayOf = (): string => formatDateParts(getTodayInHST());
 
 export const getCurrentWeekDates = (): string[] => {
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - dayOfWeek);
+  const todayIso = getCurrentDayOf();
+  const today = utcNoonFromIsoDate(todayIso);
+  const dayOfWeek = today.getUTCDay();
 
-  const weekDates = [];
+  const weekDates: string[] = [];
   for (let i = 0; i < 7; i++) {
-    const currentDay = new Date(startOfWeek);
-    currentDay.setDate(startOfWeek.getDate() + i);
-    const yyyy = currentDay.getFullYear();
-    const mm = String(currentDay.getMonth() + 1).padStart(2, '0');
-    const dd = String(currentDay.getDate()).padStart(2, '0');
-    weekDates.push(`${yyyy}-${mm}-${dd}`);
+    const currentDay = new Date(today);
+    currentDay.setUTCDate(today.getUTCDate() - dayOfWeek + i);
+    weekDates.push(formatUtcDate(currentDay));
   }
   return weekDates;
 };

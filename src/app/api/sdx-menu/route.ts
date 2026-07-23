@@ -71,20 +71,19 @@ SPECIAL CASES
 Return ONLY the JSON object with the translations array.\n`
 );
 
+const isPlaceholderItemName = (formalName: string | null | undefined): boolean => {
+  const normalized = (formalName || '').trim().toLowerCase();
+  return !normalized || normalized === 'have a nice day';
+};
+
 const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => ({
   name: rootObject.name,
   groups: rootObject.groups
-    // Filter out groups with no names or no items
-    .filter((group) => group.name && group.items.length > 0)
     .map((group) => ({
-      name: group.name || '',
+      name: (group.name || '').trim(),
       items: group.items
-        .filter(
-          (item) =>
-            // Filter out items with the name 'Have a nice day'
-
-            item.formalName.toLowerCase() !== 'have a nice day',
-        )
+        // Drop placeholders / blank names first so empty groups can be removed below
+        .filter((item) => !isPlaceholderItemName(item.formalName))
         .map((item) => {
           // Remove nutritional facts from items
           const {
@@ -117,7 +116,8 @@ const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => (
           } = item;
           return rest;
         }),
-    })),
+    }))
+    .filter((group) => group.name && group.items.length > 0),
 });
 
 type ResolvedDay = {
@@ -176,7 +176,10 @@ export async function GET(req: NextRequest) {
     console.log(`Getting data for ${day} via API`);
     const response = await axios.get(queryUrl, { headers });
     const dataArr: SodexoMeal[] | [] = response.data;
-    const filteredData: FilteredSodexoMeal[] = dataArr.map((data: SodexoMeal) => removeNutritionalFacts(data));
+    const filteredData: FilteredSodexoMeal[] = dataArr
+      .map((data: SodexoMeal) => removeNutritionalFacts(data))
+      // Drop meals that only had placeholders (e.g. "Have A Nice Day")
+      .filter((meal) => meal.groups.length > 0);
 
     if (filteredData.length > 0) {
       console.log(`Inserting menu for ${day} in English`);
