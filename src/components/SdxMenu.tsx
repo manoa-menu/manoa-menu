@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { FilteredSodexoMeal, SdxAPIResponse } from '@/types/menuTypes';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -115,23 +114,8 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
   const visibleDays = weekMenu.filter(sdxDayHasVisibleMeals);
   const availableDates = visibleDays.map((day) => day.date);
 
-  const [activeDay, setActiveDay] = useState(() => (
-    resolveSdxActiveDay(availableDates, persistedSdxActiveDay, currentDateOf)
-  ));
-
-  useEffect(() => {
-    const dates = weekMenu.filter(sdxDayHasVisibleMeals).map((day) => day.date);
-    if (dates.length === 0) return;
-    const next = resolveSdxActiveDay(
-      dates,
-      persistedSdxActiveDay ?? activeDay,
-      currentDateOf,
-    );
-    if (next !== activeDay) {
-      setActiveDay(next);
-    }
-    persistedSdxActiveDay = next;
-  }, [weekMenu, activeDay, currentDateOf]);
+  const [selectedDay, setSelectedDay] = useState<string | null>(() => persistedSdxActiveDay);
+  const activeDay = resolveSdxActiveDay(availableDates, selectedDay, currentDateOf);
 
   const handleToggle = (item: string) => {
     const updatedFavArr = (prevFavArray: string[]) => {
@@ -146,7 +130,7 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
   const handleDaySelect = (key: string | null) => {
     if (!key) return;
     persistedSdxActiveDay = key;
-    setActiveDay(key);
+    setSelectedDay(key);
   };
 
   const { tabsRef, canScrollLeft, canScrollRight, tabsOverflow } = useMenuDayTabScrollFades(visibleDays);
