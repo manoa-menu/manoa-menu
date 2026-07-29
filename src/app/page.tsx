@@ -460,7 +460,8 @@ const Page = () => {
     </Box>
   );
 
-  const menuContentKey = `${menuState}-${language}`;
+  // Key by location only — including language remounted the menu and reset the day tab.
+  const menuContentKey = menuState;
   const hasDisplayableMenu = (() => {
     switch (menuState) {
       case 'cc':

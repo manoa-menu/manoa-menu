@@ -18,6 +18,7 @@ import {
   buildSdxTranslationMap,
   collectSdxTranslatableStrings,
 } from '@/lib/sdxTranslation';
+import { isSdxPlaceholderItemName } from '@/lib/sdxSpecialHours';
 
 const SUPPORTED_LANGUAGES = ['english', 'japanese', 'korean', 'chinese'];
 
@@ -71,11 +72,6 @@ SPECIAL CASES
 Return ONLY the JSON object with the translations array.\n`
 );
 
-const isPlaceholderItemName = (formalName: string | null | undefined): boolean => {
-  const normalized = (formalName || '').trim().toLowerCase();
-  return !normalized || normalized === 'have a nice day';
-};
-
 const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => ({
   name: rootObject.name,
   groups: rootObject.groups
@@ -83,7 +79,7 @@ const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => (
       name: (group.name || '').trim(),
       items: group.items
         // Drop placeholders / blank names first so empty groups can be removed below
-        .filter((item) => !isPlaceholderItemName(item.formalName))
+        .filter((item) => !isSdxPlaceholderItemName(item.formalName))
         .map((item) => {
           // Remove nutritional facts from items
           const {
