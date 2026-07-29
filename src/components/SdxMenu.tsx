@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FilteredSodexoMeal, SdxAPIResponse } from '@/types/menuTypes';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -19,20 +19,27 @@ import Tooltip from '@mui/material/Tooltip';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { formatSdxDayTabTitle, isFav } from '@/lib/menuHelper';
 import { getCurrentDayOf } from '@/lib/dateFunctions';
+import {
+  isSdxPlaceholderItemName,
+  sdxDayHasVisibleMeals,
+  sdxMealHasVisibleItems,
+} from '@/lib/sdxSpecialHours';
 import StarButton from '@/components/StarButton';
 import { menuDayTabFadeSx, getMenuDayTabsScrollSx, menuDayTabsDesktopSx } from '@/components/menuDayTabStyles';
 import { useMenuDayTabScrollFades } from '@/components/useMenuDayTabScrollFades';
 
-const mealHasVisibleItems = (meal: FilteredSodexoMeal): boolean => (
-  meal.groups.some((group) => (
-    group.name.trim().length > 0
-    && group.items.some((item) => item.formalName.trim().length > 0)
-  ))
-);
+/** Survives brief unmounts (e.g. loading spinner) so language switches keep the selected day. */
+let persistedSdxActiveDay: string | null = null;
 
-const dayHasVisibleMeals = (dayMenu: SdxAPIResponse): boolean => (
-  dayMenu.meals.some(mealHasVisibleItems)
-);
+const resolveSdxActiveDay = (
+  availableDates: string[],
+  preferred: string | null,
+  today: string,
+): string => {
+  if (preferred && availableDates.includes(preferred)) return preferred;
+  if (availableDates.includes(today)) return today;
+  return availableDates[0] ?? today;
+};
 
 interface SdxMenuProps {
   weekMenu: SdxAPIResponse[];
@@ -105,6 +112,26 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [favArray, setFavArray] = useState(favArr);
+  const visibleDays = weekMenu.filter(sdxDayHasVisibleMeals);
+  const availableDates = visibleDays.map((day) => day.date);
+
+  const [activeDay, setActiveDay] = useState(() => (
+    resolveSdxActiveDay(availableDates, persistedSdxActiveDay, currentDateOf)
+  ));
+
+  useEffect(() => {
+    const dates = weekMenu.filter(sdxDayHasVisibleMeals).map((day) => day.date);
+    if (dates.length === 0) return;
+    const next = resolveSdxActiveDay(
+      dates,
+      persistedSdxActiveDay ?? activeDay,
+      currentDateOf,
+    );
+    if (next !== activeDay) {
+      setActiveDay(next);
+    }
+    persistedSdxActiveDay = next;
+  }, [weekMenu, activeDay, currentDateOf]);
 
   const handleToggle = (item: string) => {
     const updatedFavArr = (prevFavArray: string[]) => {
@@ -116,9 +143,20 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
     setFavArray(updatedFavArr);
   };
 
-  const { tabsRef, canScrollLeft, canScrollRight, tabsOverflow } = useMenuDayTabScrollFades(weekMenu);
+  const handleDaySelect = (key: string | null) => {
+    if (!key) return;
+    persistedSdxActiveDay = key;
+    setActiveDay(key);
+  };
+
+  const { tabsRef, canScrollLeft, canScrollRight, tabsOverflow } = useMenuDayTabScrollFades(visibleDays);
+  const showCategoryLabels = language.toLowerCase() === 'english';
 
   const scrollFadeOverlaySx = menuDayTabFadeSx;
+
+  if (visibleDays.length === 0) {
+    return null;
+  }
 
   return (
     <Box sx={{ mt: { xs: 1.25, sm: 0 }, width: '100%', maxWidth: '100%', minWidth: 0 }}>
@@ -143,14 +181,14 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
         </Box>
         <Tabs
           variant="underline"
-          defaultActiveKey={currentDateOf}
+          activeKey={activeDay}
+          onSelect={handleDaySelect}
           id="menuDateTabs"
           className="mb-2"
         >
-        {weekMenu
-          .filter(dayHasVisibleMeals)
+        {visibleDays
           .map((dayMenu) => {
-            const visibleMeals = dayMenu.meals.filter(mealHasVisibleItems);
+            const visibleMeals = dayMenu.meals.filter(sdxMealHasVisibleItems);
 
             const getGridItemSize = (mealCount: number) => {
               switch (mealCount) {
@@ -164,36 +202,6 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
                   return { xs: 12, md: 12, lg: 4, xl: 3 };
                 default:
                   return { xs: 12, md: 12, lg: 4, xl: 4 };
-              }
-            };
-
-            const getScrollProperties = (mealCount: number) => {
-              switch (mealCount) {
-                case 1:
-                  return {
-                    maxHeight: { xs: 'none', md: 'none', lg: 'none' as const },
-                    overflow: { xs: 'visible', md: 'visible', lg: 'visible' as const },
-                  };
-                case 2:
-                  return {
-                    maxHeight: { xs: 'none', md: 'none', lg: 820 },
-                    overflow: { xs: 'visible', md: 'visible', lg: 'auto' as const },
-                  };
-                case 3:
-                  return {
-                    maxHeight: { xs: 'none', md: 'none', lg: 840 },
-                    overflow: { xs: 'visible', md: 'visible', lg: 'auto' as const },
-                  };
-                case 4:
-                  return {
-                    maxHeight: { xs: 'none', md: 'none', lg: 840 },
-                    overflow: { xs: 'visible', md: 'visible', lg: 'auto' as const },
-                  };
-                default:
-                  return {
-                    maxHeight: { xs: 'none', md: 'none', lg: 840 },
-                    overflow: { xs: 'visible', md: 'visible', lg: 'auto' as const },
-                  };
               }
             };
 
@@ -213,14 +221,10 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
                   {visibleMeals.map((meal: FilteredSodexoMeal, mealIndex) => (
                     <Grid size={gridItemSize} key={`${meal.name}-${mealIndex}`}>
                       <Card
-                        className="custom-scrollbar"
                         elevation={isMobile ? 0 : undefined}
                         sx={{
                           m: isMobile ? 0 : 2,
                           height: '100%',
-                          ...(isMobile
-                            ? { maxHeight: 'none', overflow: 'visible' }
-                            : getScrollProperties(visibleMeals.length)),
                           borderRadius: isMobile ? 0 : undefined,
                           animation: 'fadeIn 0.3s ease-in',
                           '@keyframes fadeIn': {
@@ -253,7 +257,7 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
                           </Box>
                         ) : (
                           <CardHeader className="px-3 py-2" style={{ backgroundColor: '#ECECEC' }}>
-                            <Typography variant="h4">
+                            <Typography variant="h5">
                               {meal.name}
                             </Typography>
                           </CardHeader>
@@ -268,25 +272,27 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
                           {meal.groups
                             .filter((group) => (
                               group.name.trim().length > 0
-                              && group.items.some((item) => item.formalName.trim().length > 0)
+                              && group.items.some((item) => !isSdxPlaceholderItemName(item.formalName))
                             ))
                             .map((group, groupIndex) => (
                             <Box key={`${group.name}-${groupIndex}`} sx={{ mb: isMobile ? 1 : 1.5 }}>
-                              <Typography
-                                variant={isMobile ? 'overline' : 'h6'}
-                                sx={{
-                                  display: 'block',
-                                  mb: isMobile ? 0.5 : 1,
-                                  fontWeight: 700,
-                                  color: 'text.secondary',
-                                  letterSpacing: '0.08em',
-                                }}
-                              >
-                                {group.name}
-                              </Typography>
+                              {showCategoryLabels && (
+                                <Typography
+                                  variant={isMobile ? 'overline' : 'h6'}
+                                  sx={{
+                                    display: 'block',
+                                    mb: isMobile ? 0.5 : 1,
+                                    fontWeight: 700,
+                                    color: 'text.secondary',
+                                    letterSpacing: '0.08em',
+                                  }}
+                                >
+                                  {group.name}
+                                </Typography>
+                              )}
                               <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
                                 {group.items
-                                  .filter((item) => item.formalName.trim().length > 0)
+                                  .filter((item) => !isSdxPlaceholderItemName(item.formalName))
                                   .map((item, itemIndex) => (
                                   <Box
                                     component="li"

@@ -111,6 +111,36 @@ describe('isSdxMenuBlank', () => {
   it('detects empty week menus', () => {
     assert.equal(isSdxMenuBlank([]), true);
     assert.equal(isSdxMenuBlank([{ meals: [] }, { meals: [] }]), true);
-    assert.equal(isSdxMenuBlank([{ meals: [{ name: 'Lunch', groups: [] }] }]), false);
+    assert.equal(isSdxMenuBlank([{ meals: [{ groups: [] }] }]), true);
+  });
+
+  it('treats placeholder-only menus as blank', () => {
+    assert.equal(isSdxMenuBlank([{
+      meals: [{
+        groups: [{
+          name: 'Entrees',
+          items: [{ formalName: 'Have A Nice Day' }],
+        }],
+      }],
+    }]), true);
+    assert.equal(isSdxMenuBlank([{
+      meals: [{
+        groups: [{
+          name: 'Entrees',
+          items: [{ formalName: '  ' }],
+        }],
+      }],
+    }]), true);
+  });
+
+  it('detects menus with real items', () => {
+    assert.equal(isSdxMenuBlank([{
+      meals: [{
+        groups: [{
+          name: 'Entrees',
+          items: [{ formalName: 'Garlic Chicken' }],
+        }],
+      }],
+    }]), false);
   });
 });

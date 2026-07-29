@@ -267,9 +267,32 @@ export function parseSdxSpecialHours(html: string, now = new Date()): SdxSpecial
   return normalizeSeasonalHours(active[active.length - 1]);
 }
 
-export function isSdxMenuBlank(weekMenu: { meals?: unknown[] }[] | null | undefined): boolean {
+/** Sodexo placeholder / closed-day item names that should not count as real menu content. */
+export function isSdxPlaceholderItemName(formalName: string | null | undefined): boolean {
+  const normalized = (formalName || '').trim().toLowerCase();
+  return !normalized || normalized === 'have a nice day';
+}
+
+type SdxVisibleItem = { formalName?: string | null };
+type SdxVisibleGroup = { name?: string | null; items?: SdxVisibleItem[] | null };
+type SdxVisibleMeal = { groups?: SdxVisibleGroup[] | null };
+
+export function sdxMealHasVisibleItems(meal: SdxVisibleMeal | null | undefined): boolean {
+  if (!meal?.groups?.length) return false;
+  return meal.groups.some((group) => (
+    Boolean(group?.name?.trim())
+    && (group.items ?? []).some((item) => !isSdxPlaceholderItemName(item?.formalName))
+  ));
+}
+
+export function sdxDayHasVisibleMeals(day: { meals?: SdxVisibleMeal[] | null } | null | undefined): boolean {
+  return (day?.meals ?? []).some(sdxMealHasVisibleItems);
+}
+
+/** True when the week has no real food items (empty days, empty groups, or placeholders only). */
+export function isSdxMenuBlank(weekMenu: { meals?: SdxVisibleMeal[] | null }[] | null | undefined): boolean {
   if (!weekMenu || weekMenu.length === 0) {
     return true;
   }
-  return weekMenu.every((day) => !day.meals || day.meals.length === 0);
+  return !weekMenu.some(sdxDayHasVisibleMeals);
 }
