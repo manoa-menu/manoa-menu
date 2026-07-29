@@ -88,30 +88,52 @@ export const fixDayNames = (menu: DayMenu[], language: string) => {
   return menu;
 };
 
+const DAY_ABBR_BY_LANGUAGE: Record<string, string[]> = {
+  English: ENGLISH_DAY_ABBR,
+  Japanese: ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'],
+  Korean: ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'],
+  Chinese: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'],
+  Spanish: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+};
+
+const formatMonthDay = (month: number, day: number, language: string): string => {
+  switch (language) {
+    case 'Japanese':
+    case 'Chinese':
+      return `${month}月${day}日`;
+    case 'Korean':
+      return `${month}월${day}일`;
+    default:
+      return `${month}/${day}`;
+  }
+};
+
+/** Tab title from an API/menu ISO date (YYYY-MM-DD), not from filtered tab index. */
+export const formatSdxDayTabTitle = (isoDate: string, language: string): string => {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  if (!year || !month || !day) {
+    return isoDate;
+  }
+
+  // Noon UTC keeps the calendar day stable regardless of local timezone.
+  const weekdayIndex = new Date(Date.UTC(year, month - 1, day, 12)).getUTCDay();
+  const dayNames = DAY_ABBR_BY_LANGUAGE[language] ?? DAY_ABBR_BY_LANGUAGE.English;
+  return `${dayNames[weekdayIndex]} (${formatMonthDay(month, day, language)})`;
+};
+
 export const getDayHeaders = (language: string): string[] => {
-  const englishWeekDays = ENGLISH_DAY_ABBR;
-  const japaneseWeekDays = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
-  const koreanWeekDays = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
-  const chineseWeekDays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-  const weekdayDates = getWeekdayDates(language);
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - dayOfWeek); // Sunday
 
-  if (language === 'English') {
-    return englishWeekDays.map((day, index) => `${day} (${weekdayDates[index % 5]})`);
-  }
+  const dayNames = DAY_ABBR_BY_LANGUAGE[language] ?? DAY_ABBR_BY_LANGUAGE.English;
 
-  if (language === 'Japanese') {
-    return japaneseWeekDays.map((day, index) => `${day} (${weekdayDates[index % 5]})`);
-  }
-
-  if (language === 'Korean') {
-    return koreanWeekDays.map((day, index) => `${day} (${weekdayDates[index % 5]})`);
-  }
-
-  if (language === 'Chinese') {
-    return chineseWeekDays.map((day, index) => `${day} (${weekdayDates[index % 5]})`);
-  }
-
-  return englishWeekDays.map((day, index) => `${day} (${weekdayDates[index % 5]})`);
+  return dayNames.map((dayName, index) => {
+    const weekday = new Date(startOfWeek);
+    weekday.setDate(startOfWeek.getDate() + index);
+    return `${dayName} (${formatMonthDay(weekday.getMonth() + 1, weekday.getDate(), language)})`;
+  });
 };
 
 export const isFav = (favList: string[], name: string): boolean => favList.includes(name);

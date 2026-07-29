@@ -45,17 +45,27 @@ export function applySdxTranslations(
   menu: FilteredSodexoMeal[],
   translations: Map<string, string>,
 ): FilteredSodexoMeal[] {
-  const translate = (value: string) => translations.get(value) ?? value;
+  const translate = (value: string) => {
+    const translated = translations.get(value);
+    if (translated == null || !translated.trim()) {
+      return value;
+    }
+    return translated;
+  };
 
   return menu.map((meal) => ({
     name: translate(meal.name),
-    groups: meal.groups.map((group) => ({
-      name: translate(group.name),
-      items: group.items.map((item) => ({
-        ...item,
-        formalName: translate(item.formalName),
-        description: item.description ? translate(item.description) : item.description,
-      })),
-    })),
-  }));
+    groups: meal.groups
+      .map((group) => ({
+        name: translate(group.name),
+        items: group.items
+          .map((item) => ({
+            ...item,
+            formalName: translate(item.formalName),
+            description: item.description ? translate(item.description) : item.description,
+          }))
+          .filter((item) => item.formalName.trim().length > 0),
+      }))
+      .filter((group) => group.name.trim().length > 0 && group.items.length > 0),
+  })).filter((meal) => meal.groups.length > 0);
 }
