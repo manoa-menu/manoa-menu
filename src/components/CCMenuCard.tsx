@@ -79,11 +79,11 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
       case 'English':
         return ['Plate Lunch', 'Grab and Go'];
       case 'Japanese':
-        return ['セットメニュー', 'クイックメニュー'];
+        return ['メイン', '軽食'];
       case 'Korean':
-        return ['백반', '포장 메뉴'];
+        return ['주요리', '그랩앤고'];
       case 'Chinese':
-        return ['套餐', '外带餐'];
+        return ['套餐', '即取即走'];
       default:
         return ['Plate Lunch', 'Grab and Go'];
     }
