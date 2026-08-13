@@ -9,9 +9,10 @@ type ModelPricing = {
 };
 
 const OPENAI_MODEL_PRICING: Record<string, ModelPricing> = {
+  // Standard short-context rates as of 2026-07-30 (Terra −20%, Luna −80%; Sol unchanged).
   'gpt-5.6-sol': { input: 5.0, cached_input: 0.5, cache_writes: 6.25, output: 30.0 },
-  'gpt-5.6-terra': { input: 2.5, cached_input: 0.25, cache_writes: 3.125, output: 15.0 },
-  'gpt-5.6-luna': { input: 1.0, cached_input: 0.1, cache_writes: 1.25, output: 6.0 },
+  'gpt-5.6-terra': { input: 2.0, cached_input: 0.2, cache_writes: 2.5, output: 12.0 },
+  'gpt-5.6-luna': { input: 0.2, cached_input: 0.02, cache_writes: 0.25, output: 1.2 },
   'gpt-5.5': { input: 5.0, cached_input: 0.5, cache_writes: null, output: 30.0 },
   'gpt-5.5-pro': { input: 30.0, cached_input: null, cache_writes: null, output: 180.0 },
   'gpt-5.4': { input: 2.5, cached_input: 0.25, cache_writes: null, output: 15.0 },
