@@ -3,6 +3,9 @@ export interface DayMenu {
   plateLunch: string[];
   grabAndGo: string[];
   specialMessage: string;
+  /** English dish names, aligned by index. Present only on translated API responses. */
+  plateLunchEnglish?: string[];
+  grabAndGoEnglish?: string[];
 }
 
 export interface FilteredSodexoMenuItem {
@@ -12,6 +15,8 @@ export interface FilteredSodexoMenuItem {
   description: string;
   isVegan: boolean;
   isVegetarian: boolean;
+  /** Original English dish name. Present only on translated API responses. */
+  englishName?: string;
 }
 
 export interface FilteredSodexoGroup {

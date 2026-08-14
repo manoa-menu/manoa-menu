@@ -14,12 +14,15 @@ import { UtensilsCrossed, ShoppingBag } from 'lucide-react';
 
 import checkHoliday from '@/lib/checkHoliday';
 import StarButton from '@/components/StarButton';
+import TranslatedDishName from '@/components/TranslatedDishName';
 import { isFav } from '@/lib/menuHelper';
 
 interface MenuCardProps {
   name: string;
   plateLunch: string[];
   grabAndGo: string[];
+  plateLunchEnglish?: string[];
+  grabAndGoEnglish?: string[];
   message: string;
   language: string;
   favArr: string[];
@@ -33,6 +36,8 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
   name,
   plateLunch,
   grabAndGo,
+  plateLunchEnglish,
+  grabAndGoEnglish,
   message,
   language,
   favArr = [],
@@ -102,33 +107,40 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
     return colorPalette[index % colorPalette.length];
   };
 
-  const renderItemRow = (item: string) => (
-    <Grid
-      container
-      spacing={1}
-      alignItems="center"
-      sx={{ py: 0.5 }}
-    >
-      <Grid size={userId === -21 ? 12 : 10}>
-        <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: 1.3 }}>
-          {item}
-        </Typography>
-      </Grid>
-      {item && userId !== -21 && !sdxFilter.includes(item) && (
-        <Grid size={2} sx={{ display: 'flex', justifyContent: 'center' }}>
-          <Tooltip title={displayTooltipNames.get(language)} placement="bottom" arrow>
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <StarButton
-                item={item}
-                isStarred={isFav(favArray, item)}
-                onToggle={() => handleToggle(item)}
-              />
-            </div>
-          </Tooltip>
+  const renderItemRow = (item: string, englishName?: string) => {
+    const filterKey = englishName || item;
+
+    return (
+      <Grid
+        container
+        spacing={1}
+        alignItems="flex-start"
+        sx={{ py: 0.5 }}
+      >
+        <Grid size={userId === -21 ? 12 : 10}>
+          <TranslatedDishName
+            name={item}
+            englishName={englishName}
+            variant="body2"
+            nameSx={{ fontWeight: 500, lineHeight: 1.3 }}
+          />
         </Grid>
-      )}
-    </Grid>
-  );
+        {item && userId !== -21 && !sdxFilter.includes(filterKey) && (
+          <Grid size={2} sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Tooltip title={displayTooltipNames.get(language)} placement="bottom" arrow>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <StarButton
+                  item={item}
+                  isStarred={isFav(favArray, item)}
+                  onToggle={() => handleToggle(item)}
+                />
+              </div>
+            </Tooltip>
+          </Grid>
+        )}
+      </Grid>
+    );
+  };
 
   const headers = getSectionHeaders(language);
   const dayColor = getDayColor(dayIndex);
@@ -182,7 +194,7 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
           <Box sx={{ mb: 1.75 }}>
             {plateLunch.map((item, index) => (
               <React.Fragment key={`plate-${item}-${index}`}>
-                {renderItemRow(item)}
+                {renderItemRow(item, plateLunchEnglish?.[index])}
                 {index < plateLunch.length - 1 && (
                   <Divider sx={{ my: 0.125, borderColor: '#b7b7b7' }} />
                 )}
@@ -201,7 +213,7 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
           <Box>
             {grabAndGo.map((item, index) => (
               <React.Fragment key={`grab-${item}-${index}`}>
-                {renderItemRow(item)}
+                {renderItemRow(item, grabAndGoEnglish?.[index])}
                 {index < grabAndGo.length - 1 && (
                   <Divider sx={{ my: 0.125, borderColor: '#b7b7b7' }} />
                 )}

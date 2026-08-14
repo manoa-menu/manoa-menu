@@ -18,7 +18,17 @@ import {
   buildSdxTranslationMap,
   collectSdxTranslatableStrings,
 } from '@/lib/sdxTranslation';
+import {
+  ensureSdxTranslationCacheBackfilled,
+  overlaySdxMenusWithCorrections,
+  refreshPendingSdxDays,
+  translateSdxStringsCached,
+  withSdxTranslationLock,
+} from '@/lib/sdxTranslationCache';
 import { isSdxPlaceholderItemName } from '@/lib/sdxSpecialHours';
+
+export const maxDuration = 180;
+export const dynamic = 'force-dynamic';
 
 const SUPPORTED_LANGUAGES = ['english', 'japanese', 'korean', 'chinese'];
 
@@ -135,6 +145,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid Language Parameter' }, { status: 500 });
   }
 
+  if (language.toLowerCase() !== 'english') {
+    await ensureSdxTranslationCacheBackfilled(language);
+  }
+
   const location =
     searchParams.get('location') || NextResponse.json({ error: 'Missing Location Parameter' }, { status: 500 });
   console.log(`Location: ${location}`);
@@ -245,28 +259,47 @@ export async function GET(req: NextRequest) {
 
   if (pendingTranslations.length > 0) {
     try {
-      const englishMenus = pendingTranslations.map((day) => day.englishMenu);
-      const uniqueStrings = collectSdxTranslatableStrings(englishMenus);
+      await withSdxTranslationLock(language, async () => {
+        await ensureSdxTranslationCacheBackfilled(language);
+        const stillPending = await refreshPendingSdxDays(
+          pendingTranslations,
+          language,
+          locationOption,
+        );
+        if (stillPending.length === 0) {
+          console.log(`Another request already translated ${language} ${locationOption} for this week`);
+          return;
+        }
 
-      console.log(
-        `Translating ${uniqueStrings.length} unique strings across `
-          + `${pendingTranslations.length} day(s) into ${language}`,
-      );
+        const englishMenus = stillPending
+          .map((day) => day.englishMenu)
+          .filter((menu): menu is FilteredSodexoMeal[] => Array.isArray(menu) && menu.length > 0);
+        const uniqueStrings = collectSdxTranslatableStrings(englishMenus);
 
-      const translatedStrings = await translateSdxStrings(
-        getSdxTranslationPrompt(language),
-        uniqueStrings,
-        language,
-      );
-      const translationMap = buildSdxTranslationMap(uniqueStrings, translatedStrings);
+        console.log(
+          `Translating ${uniqueStrings.length} unique strings across `
+            + `${stillPending.length} day(s) into ${language}`,
+        );
 
-      await Promise.all(
-        pendingTranslations.map(async (day) => {
-          const translatedMenu = applySdxTranslations(day.englishMenu, translationMap);
-          await insertSdxMenu(translatedMenu, locationOption, language, day.date);
-          day.meals = translatedMenu;
-        }),
-      );
+        const translatedStrings = await translateSdxStringsCached(
+          language,
+          uniqueStrings,
+          (missing) => translateSdxStrings(
+            getSdxTranslationPrompt(language),
+            missing,
+            language,
+          ),
+        );
+        const translationMap = buildSdxTranslationMap(uniqueStrings, translatedStrings);
+
+        await Promise.all(
+          stillPending.map(async (day) => {
+            const translatedMenu = applySdxTranslations(day.englishMenu ?? [], translationMap);
+            await insertSdxMenu(translatedMenu, locationOption, language, day.date);
+            day.meals = translatedMenu;
+          }),
+        );
+      });
     } catch (error) {
       console.error('Error translating SDX menus for the week:', error);
       return NextResponse.json(
@@ -276,10 +309,16 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  if (language.toLowerCase() !== 'english') {
+    await overlaySdxMenusWithCorrections(resolvedDays, language, locationOption);
+  }
+
   const nextSevenDaysMenu: SdxAPIResponse[] = resolvedDays.map(({ date, meals }) => ({
     date,
     meals,
   }));
 
-  return NextResponse.json(nextSevenDaysMenu);
+  return NextResponse.json(nextSevenDaysMenu, {
+    headers: { 'Cache-Control': 'no-store' },
+  });
 }

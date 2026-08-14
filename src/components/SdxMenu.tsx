@@ -24,6 +24,7 @@ import {
   sdxMealHasVisibleItems,
 } from '@/lib/sdxSpecialHours';
 import StarButton from '@/components/StarButton';
+import TranslatedDishName from '@/components/TranslatedDishName';
 import { menuDayTabFadeSx, getMenuDayTabsScrollSx, menuDayTabsDesktopSx } from '@/components/menuDayTabStyles';
 import { useMenuDayTabScrollFades } from '@/components/useMenuDayTabScrollFades';
 
@@ -292,21 +293,17 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
                                       <Grid size={userId === -21 ? 12 : 10}>
                                         <Stack
                                           direction="row"
-                                          alignItems="center"
+                                          alignItems="flex-start"
                                           spacing={0.75}
-                                          sx={{ flexWrap: 'wrap' }}
+                                          sx={{ width: '100%' }}
                                         >
-                                          <Typography
-                                            variant={isMobile ? 'body2' : 'subtitle1'}
-                                            sx={{
-                                              fontWeight: 600,
-                                              lineHeight: 1.35,
-                                              overflowWrap: 'anywhere',
-                                              wordBreak: 'break-word',
-                                            }}
-                                          >
-                                            {item.formalName}
-                                          </Typography>
+                                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                                            <TranslatedDishName
+                                              name={item.formalName}
+                                              englishName={item.englishName}
+                                              variant={isMobile ? 'body2' : 'subtitle1'}
+                                            />
+                                          </Box>
                                           <DietaryBadges
                                             language={language}
                                             isVegan={item.isVegan}
@@ -326,7 +323,7 @@ const SdxMenu: React.FC<SdxMenuProps> = ({ weekMenu, language, favArr = [], user
                                           </Typography>
                                         )}
                                       </Grid>
-                                      {userId !== -21 && !sdxFilter.includes(item.formalName) && (
+                                      {userId !== -21 && !sdxFilter.includes(item.englishName || item.formalName) && (
                                         <Grid size={2}>
                                           <Tooltip title={favTooltipNames.get(language)} placement="bottom" arrow>
                                             <div style={{ display: 'flex', justifyContent: 'center' }}>

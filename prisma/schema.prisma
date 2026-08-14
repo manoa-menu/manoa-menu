@@ -92,3 +92,27 @@ model AiTokenUsage {
   outputCost       Decimal  @db.Decimal(12, 8)
   responseId       String?
 }
+
+model SdxStringTranslation {
+  id               Int       @id @default(autoincrement())
+  sourceHash       String
+  language         String
+  sourceText       String
+  translatedText   String
+  aiTranslatedText String
+  isCorrected      Boolean   @default(false)
+  correctedAt      DateTime?
+  correctedBy      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([sourceHash, language])
+  @@index([language])
+  @@index([language, isCorrected])
+}
+
+model SdxTranslationLock {
+  language  String   @id
+  holder    String
+  expiresAt DateTime
+}

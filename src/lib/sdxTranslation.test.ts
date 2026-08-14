@@ -5,6 +5,9 @@ import {
   applySdxTranslations,
   buildSdxTranslationMap,
   collectSdxTranslatableStrings,
+  extractSdxTranslationPairs,
+  mergeSdxTranslations,
+  mergeStoredAndCachedTranslations,
 } from './sdxTranslation';
 import type { FilteredSodexoMeal } from '../types/menuTypes';
 
@@ -34,6 +37,78 @@ describe('collectSdxTranslatableStrings', () => {
     ]);
 
     assert.deepEqual(strings, ['Lunch', 'Entrees', 'White Rice', 'Grilled Salmon']);
+  });
+
+  it('does not collect a description that repeats the dish name', () => {
+    const strings = collectSdxTranslatableStrings([makeMenu('White Rice')]);
+    assert.deepEqual(strings, ['Lunch', 'Entrees', 'White Rice']);
+  });
+
+  it('collapses case and spacing variants of the same dish', () => {
+    const strings = collectSdxTranslatableStrings([
+      makeMenu('BBQ Beef Brisket'),
+      makeMenu('Bbq Beef Brisket'),
+      makeMenu('BBQ  Beef Brisket'),
+    ]);
+    assert.deepEqual(strings, ['Lunch', 'Entrees', 'BBQ Beef Brisket']);
+  });
+});
+
+describe('extractSdxTranslationPairs', () => {
+  it('pairs matching English and translated menus', () => {
+    const english = makeMenu('Garlic Chicken');
+    const translated: FilteredSodexoMeal[] = [{
+      name: '昼食',
+      groups: [{
+        name: '主菜',
+        items: [{
+          ...sampleItem,
+          formalName: 'ガーリックチキン',
+          description: 'にんにくチキン',
+        }],
+      }],
+    }];
+
+    assert.deepEqual(extractSdxTranslationPairs(english, translated), [
+      ['Lunch', '昼食'],
+      ['Entrees', '主菜'],
+      ['Garlic Chicken', 'ガーリックチキン'],
+    ]);
+  });
+
+  it('returns no pairs when menu shapes differ', () => {
+    const english = makeMenu('Garlic Chicken');
+    const translated: FilteredSodexoMeal[] = [{
+      name: '昼食',
+      groups: [],
+    }];
+
+    assert.deepEqual(extractSdxTranslationPairs(english, translated), []);
+  });
+});
+
+describe('mergeSdxTranslations', () => {
+  it('prefers cached strings and fills the rest from a fresh batch', () => {
+    const merged = mergeSdxTranslations(
+      ['Lunch', 'Garlic Chicken', 'White Rice'],
+      new Map([['Lunch', '昼食']]),
+      ['Garlic Chicken', 'White Rice'],
+      ['ガーリックチキン', '白米'],
+    );
+
+    assert.deepEqual(merged, ['昼食', 'ガーリックチキン', '白米']);
+  });
+});
+
+describe('mergeStoredAndCachedTranslations', () => {
+  it('lets table corrections overwrite stored menu translations', () => {
+    const merged = mergeStoredAndCachedTranslations(
+      [['Garlic Chicken', 'ガーリックチキン'], ['Lunch', '昼食']],
+      new Map([['Garlic Chicken', 'にんにくチキン']]),
+    );
+
+    assert.equal(merged.get('Garlic Chicken'), 'にんにくチキン');
+    assert.equal(merged.get('Lunch'), '昼食');
   });
 });
 

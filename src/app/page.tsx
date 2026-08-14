@@ -55,15 +55,15 @@ const Page = () => {
     if (isOpen) {
       switch (lang) {
         case 'Japanese': return '営業中';
-        case 'Korean': return '영업중';
+        case 'Korean': return '영업 중';
         case 'Chinese': return '营业中';
         default: return 'Open';
       }
     } else {
       switch (lang) {
-        case 'Japanese': return '準備中';
-        case 'Korean': return '준비중';
-        case 'Chinese': return '休息中';
+        case 'Japanese': return '営業終了';
+        case 'Korean': return '영업 종료';
+        case 'Chinese': return '已打烊';
         default: return 'Closed';
       }
     }
@@ -238,7 +238,9 @@ const Page = () => {
     ) => {
       try {
         const locationQuery = location ? `&location=${location}` : '';
-        const response = await fetch(`/api/${menuType}-menu?language=${lang}${locationQuery}`);
+        const response = await fetch(`/api/${menuType}-menu?language=${lang}${locationQuery}`, {
+          cache: 'no-store',
+        });
         if (!response.ok) {
           throw new Error(`Error: ${response.status} ${response.statusText}`);
         }
