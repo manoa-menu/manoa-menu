@@ -7,15 +7,20 @@ import {
   useState,
 } from 'react';
 
-import type {
-  TranslationReviewKind,
-  TranslationReviewLanguage,
-  TranslationReviewRow,
-  TranslationReviewSort,
-  TranslationReviewStatus,
-  TranslationReviewerPublic,
+import {
+  TRANSLATION_REVIEW_LOCATIONS,
+  type TranslationReviewKind,
+  type TranslationReviewLanguage,
+  type TranslationReviewLocation,
+  type TranslationReviewRow,
+  type TranslationReviewSort,
+  type TranslationReviewStatus,
+  type TranslationReviewerPublic,
 } from '@/lib/translationReviewShared';
-import { formatOccurrenceDates } from '@/lib/translationOccurrences';
+import {
+  TRANSLATION_LOCATION_LABELS,
+  formatOccurrenceDates,
+} from '@/lib/translationOccurrences';
 import { translationSourceKey } from '@/lib/translationSource';
 import TranslationCachePurge from './TranslationCachePurge';
 
@@ -33,15 +38,8 @@ type Props = {
   initialLanguage: TranslationReviewLanguage;
 };
 
-const LOCATION_ORDER = ['GW', 'HA', 'CC'] as const;
-const LOCATION_LABELS = {
-  GW: 'Gateway',
-  HA: 'Hale Aloha',
-  CC: 'Campus Center',
-} as const;
-
-function primaryLocation(row: TranslationReviewRow): keyof typeof LOCATION_LABELS | null {
-  let bestLocation: keyof typeof LOCATION_LABELS | null = null;
+function primaryLocation(row: TranslationReviewRow): keyof typeof TRANSLATION_LOCATION_LABELS | null {
+  let bestLocation: keyof typeof TRANSLATION_LOCATION_LABELS | null = null;
   let bestDate = '';
   row.occurrences.forEach((occurrence) => {
     occurrence.dates.forEach((date) => {
@@ -50,7 +48,8 @@ function primaryLocation(row: TranslationReviewRow): keyof typeof LOCATION_LABEL
         bestLocation == null
         || date < bestDate
         || (date === bestDate
-          && LOCATION_ORDER.indexOf(location) < LOCATION_ORDER.indexOf(bestLocation))
+          && TRANSLATION_REVIEW_LOCATIONS.indexOf(location)
+            < TRANSLATION_REVIEW_LOCATIONS.indexOf(bestLocation))
       ) {
         bestLocation = location;
         bestDate = date;
@@ -62,7 +61,7 @@ function primaryLocation(row: TranslationReviewRow): keyof typeof LOCATION_LABEL
 
 type DisplayGroup = {
   key: string;
-  place: keyof typeof LOCATION_LABELS | null;
+  place: keyof typeof TRANSLATION_LOCATION_LABELS | null;
   dish: TranslationReviewRow | null;
   dishLabel: string | null;
   descriptions: TranslationReviewRow[];
@@ -149,7 +148,7 @@ function buildDisplayGroups(
 
 function occurrenceTitle(row: TranslationReviewRow): string {
   return row.occurrences.map((occurrence) => {
-    const location = LOCATION_LABELS[occurrence.location];
+    const location = TRANSLATION_LOCATION_LABELS[occurrence.location];
     return `${location} ${formatOccurrenceDates(occurrence.dates)}`;
   }).join(' · ');
 }
@@ -158,6 +157,7 @@ export default function TranslationReview({ reviewer, initialLanguage }: Props) 
   const [language, setLanguage] = useState<TranslationReviewLanguage>(initialLanguage);
   const [status, setStatus] = useState<TranslationReviewStatus>('uncorrected');
   const [kind, setKind] = useState<TranslationReviewKind>('all');
+  const [location, setLocation] = useState<TranslationReviewLocation>('all');
   const [sort, setSort] = useState<TranslationReviewSort>('text');
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -175,13 +175,14 @@ export default function TranslationReview({ reviewer, initialLanguage }: Props) 
 
   useEffect(() => {
     setPage(1);
-  }, [language, status, kind, sort, debouncedQuery]);
+  }, [language, status, kind, location, sort, debouncedQuery]);
 
   const listUrl = useMemo(() => {
     const params = new URLSearchParams({
       language,
       status,
       kind,
+      location,
       sort,
       page: String(page),
     });
@@ -189,7 +190,7 @@ export default function TranslationReview({ reviewer, initialLanguage }: Props) 
       params.set('q', debouncedQuery);
     }
     return `/api/translations?${params.toString()}`;
-  }, [language, status, kind, sort, page, debouncedQuery]);
+  }, [language, status, kind, location, sort, page, debouncedQuery]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -377,6 +378,29 @@ export default function TranslationReview({ reviewer, initialLanguage }: Props) 
               </button>
             ))}
           </div>
+          <div className="translation-seg" role="tablist" aria-label="Menu">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={location === 'all'}
+              className={`translation-seg-btn${location === 'all' ? ' is-active' : ''}`}
+              onClick={() => setLocation('all')}
+            >
+              All menus
+            </button>
+            {TRANSLATION_REVIEW_LOCATIONS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="tab"
+                aria-selected={location === option}
+                className={`translation-seg-btn${location === option ? ' is-active' : ''}`}
+                onClick={() => setLocation(option)}
+              >
+                {TRANSLATION_LOCATION_LABELS[option]}
+              </button>
+            ))}
+          </div>
           <div className="translation-seg" role="tablist" aria-label="String type">
             {([
               ['all', 'All types'],
@@ -442,13 +466,14 @@ export default function TranslationReview({ reviewer, initialLanguage }: Props) 
             {displayGroups.map((group, index) => {
               const previousPlace = index > 0 ? displayGroups[index - 1].place : null;
               const showPlaceHeader = sort === 'date'
+                && location === 'all'
                 && group.place != null
                 && group.place !== previousPlace;
               return (
                 <div key={group.key} className="translation-list-item">
                   {showPlaceHeader && group.place ? (
                     <h3 className="translation-place-header">
-                      {LOCATION_LABELS[group.place]}
+                      {TRANSLATION_LOCATION_LABELS[group.place]}
                     </h3>
                   ) : null}
                   <article className="translation-group">

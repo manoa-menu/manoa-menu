@@ -8,7 +8,7 @@ import {
   createTranslationKindCatalog,
   parentDishForSource,
 } from './translationKind';
-import { parseTranslationKind } from './translationReviewShared';
+import { parseTranslationKind, parseTranslationLocation } from './translationReviewShared';
 import type { DayMenu, FilteredSodexoMeal } from '../types/menuTypes';
 
 const sdxMenu: FilteredSodexoMeal[] = [{
@@ -87,5 +87,13 @@ describe('translation kinds', () => {
     assert.equal(parseTranslationKind('dish'), 'dish');
     assert.equal(parseTranslationKind('description'), 'description');
     assert.equal(parseTranslationKind('nope'), 'all');
+  });
+
+  it('parses location filters', () => {
+    assert.equal(parseTranslationLocation('GW'), 'GW');
+    assert.equal(parseTranslationLocation('ha'), 'HA');
+    assert.equal(parseTranslationLocation('cc'), 'CC');
+    assert.equal(parseTranslationLocation('all'), 'all');
+    assert.equal(parseTranslationLocation('nope'), 'all');
   });
 });

@@ -29,8 +29,13 @@ const sdxMenu: FilteredSodexoMeal[] = [{
 
 describe('translation occurrences', () => {
   it('turns a Campus Center week and day name into a calendar date', () => {
-    assert.equal(isoDateFromWeekAndDayName('2026-08-09', 'Monday (8/11)'), '2026-08-10');
+    assert.equal(isoDateFromWeekAndDayName('2026-08-09', 'Monday'), '2026-08-10');
+    assert.equal(isoDateFromWeekAndDayName('2026-08-09', 'Monday (8/11)'), '2026-08-11');
     assert.equal(isoDateFromWeekAndDayName('2026-08-09', 'Thursday'), '2026-08-13');
+    assert.equal(isoDateFromWeekAndDayName('2026-08-09', 'Mon 08/10'), '2026-08-10');
+    assert.equal(isoDateFromWeekAndDayName('2026-08-09', 'Tue 08/11'), '2026-08-11');
+    assert.equal(isoDateFromWeekAndDayName('2026-08-09', 'Thurs 08/13'), '2026-08-13');
+    assert.equal(isoDateFromWeekAndDayName('2026-08-09', 'Fri 08/14'), '2026-08-14');
   });
 
   it('formats consecutive dates as a range', () => {
@@ -60,11 +65,35 @@ describe('translation occurrences', () => {
     ]);
     assert.equal(
       formatTranslationOccurrences(garlic),
-      'GW 8/13 · HA 8/10 · CC 8/10',
+      'Gateway 8/13 · Hale Aloha 8/10 · Campus Center 8/10',
     );
     assert.equal(
       formatTranslationOccurrences(getTranslationOccurrences(index, 'Chicken breast seasoned with garlic.')),
-      'GW 8/13 · HA 8/10',
+      'Gateway 8/13 · Hale Aloha 8/10',
+    );
+  });
+
+  it('labels abbreviated Campus Center day names as Campus Center', () => {
+    const index = createOccurrenceIndex();
+    collectCcOccurrences([{
+      name: 'Mon 08/10',
+      plateLunch: ['Hamburger Steak with Grilled Onions'],
+      grabAndGo: ['Caesar Salad'],
+      specialMessage: '',
+    }, {
+      name: 'Thurs 08/13',
+      plateLunch: ['New York Steak with Mushroom Gravy'],
+      grabAndGo: [],
+      specialMessage: '',
+    }] as DayMenu[], '2026-08-09', index);
+
+    assert.equal(
+      formatTranslationOccurrences(getTranslationOccurrences(index, 'Hamburger Steak with Grilled Onions')),
+      'Campus Center 8/10',
+    );
+    assert.equal(
+      formatTranslationOccurrences(getTranslationOccurrences(index, 'New York Steak with Mushroom Gravy')),
+      'Campus Center 8/13',
     );
   });
 });

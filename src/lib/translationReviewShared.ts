@@ -1,5 +1,7 @@
 export const TRANSLATION_REVIEW_LANGUAGES = ['Japanese', 'Korean', 'Chinese'] as const;
+export const TRANSLATION_REVIEW_LOCATIONS = ['GW', 'HA', 'CC'] as const;
 export type TranslationReviewLanguage = (typeof TRANSLATION_REVIEW_LANGUAGES)[number];
+export type TranslationReviewLocation = 'all' | (typeof TRANSLATION_REVIEW_LOCATIONS)[number];
 export type TranslationReviewStatus = 'all' | 'uncorrected' | 'corrected';
 export type TranslationReviewKind = 'all' | 'dish' | 'description';
 export type TranslationReviewSort = 'text' | 'date';
@@ -56,4 +58,15 @@ export function parseTranslationSort(value: string | null | undefined): Translat
     return value;
   }
   return 'text';
+}
+
+export function parseTranslationLocation(value: string | null | undefined): TranslationReviewLocation {
+  if (!value) {
+    return 'all';
+  }
+  const normalized = value.trim().toUpperCase();
+  if (normalized === 'ALL') {
+    return 'all';
+  }
+  return TRANSLATION_REVIEW_LOCATIONS.find((location) => location === normalized) ?? 'all';
 }

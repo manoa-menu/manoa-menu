@@ -8,15 +8,10 @@ import {
 } from '@/lib/translationReviewShared';
 import {
   TRANSLATION_LOCATIONS,
+  TRANSLATION_LOCATION_LABELS,
   shiftIsoDate,
   type TranslationLocation,
 } from '@/lib/translationOccurrences';
-
-const LOCATION_LABELS: Record<TranslationLocation, string> = {
-  GW: 'Gateway',
-  HA: 'Hale Aloha',
-  CC: 'Campus Center',
-};
 
 type Props = {
   initialLanguage: TranslationReviewLanguage;
@@ -168,7 +163,7 @@ export default function TranslationCachePurge({ initialLanguage, onPurged }: Pro
                     checked={locations.includes(location)}
                     onChange={() => toggleLocation(location)}
                   />
-                  {LOCATION_LABELS[location]}
+                  {TRANSLATION_LOCATION_LABELS[location]}
                 </label>
               ))}
             </fieldset>

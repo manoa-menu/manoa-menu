@@ -4,6 +4,12 @@ import { translationSourceKey } from '@/lib/translationSource';
 export const TRANSLATION_LOCATIONS = ['GW', 'HA', 'CC'] as const;
 export type TranslationLocation = (typeof TRANSLATION_LOCATIONS)[number];
 
+export const TRANSLATION_LOCATION_LABELS: Record<TranslationLocation, string> = {
+  GW: 'Gateway',
+  HA: 'Hale Aloha',
+  CC: 'Campus Center',
+};
+
 export type TranslationOccurrence = {
   location: TranslationLocation;
   dates: string[];
@@ -13,13 +19,28 @@ export type TranslationOccurrenceIndex = Map<string, Map<TranslationLocation, Se
 
 const WEEKDAY_NAME_TO_INDEX: Record<string, number> = {
   sunday: 0,
+  sun: 0,
   monday: 1,
+  mon: 1,
   tuesday: 2,
+  tues: 2,
+  tue: 2,
   wednesday: 3,
+  wed: 3,
   thursday: 4,
+  thurs: 4,
+  thur: 4,
+  thu: 4,
   friday: 5,
+  fri: 5,
   saturday: 6,
+  sat: 6,
 };
+
+const WEEKDAY_PATTERN = new RegExp(
+  `\\b(${Object.keys(WEEKDAY_NAME_TO_INDEX).sort((left, right) => right.length - left.length).join('|')})\\b`,
+  'i',
+);
 
 export function createOccurrenceIndex(): TranslationOccurrenceIndex {
   return new Map();
@@ -39,15 +60,62 @@ export function shiftIsoDate(iso: string, days: number): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+function isoFromParts(year: number, month: number, day: number): string | null {
+  if (month < 1 || month > 12 || day < 1 || day > 31) {
+    return null;
+  }
+  const date = new Date(Date.UTC(year, month - 1, day, 12));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    return null;
+  }
+  const mm = String(month).padStart(2, '0');
+  const dd = String(day).padStart(2, '0');
+  return `${year}-${mm}-${dd}`;
+}
+
+function isoDateFromNumericDayName(weekOf: string, name: string): string | null {
+  const match = name.match(/\b(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?\b/);
+  if (!match) {
+    return null;
+  }
+  const month = Number(match[1]);
+  const day = Number(match[2]);
+  if (match[3]) {
+    const year = match[3].length === 2 ? 2000 + Number(match[3]) : Number(match[3]);
+    return isoFromParts(year, month, day);
+  }
+
+  const weekYear = Number(weekOf.slice(0, 4));
+  const weekTime = Date.parse(`${weekOf}T12:00:00.000Z`);
+  let best: string | null = null;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  [weekYear - 1, weekYear, weekYear + 1].forEach((year) => {
+    const iso = isoFromParts(year, month, day);
+    if (!iso) {
+      return;
+    }
+    const distance = Math.abs(Date.parse(`${iso}T12:00:00.000Z`) - weekTime);
+    if (distance < bestDistance) {
+      best = iso;
+      bestDistance = distance;
+    }
+  });
+  return best;
+}
+
 export function isoDateFromWeekAndDayName(weekOf: string, name: string): string | null {
   if (!isIsoDate(weekOf)) {
     return null;
   }
-  const match = name.match(/sunday|monday|tuesday|wednesday|thursday|friday|saturday/i);
+  const fromDate = isoDateFromNumericDayName(weekOf, name);
+  if (fromDate) {
+    return fromDate;
+  }
+  const match = name.match(WEEKDAY_PATTERN);
   if (!match) {
     return null;
   }
-  const weekday = WEEKDAY_NAME_TO_INDEX[match[0].toLowerCase()];
+  const weekday = WEEKDAY_NAME_TO_INDEX[match[1].toLowerCase()];
   if (weekday == null) {
     return null;
   }
@@ -140,8 +208,9 @@ export function collectCcOccurrences(
   if (!Array.isArray(menu)) {
     return;
   }
-  (menu as DayMenu[]).forEach((dayMenu) => {
-    const isoDate = isoDateFromWeekAndDayName(weekOf, dayMenu?.name ?? '');
+  (menu as DayMenu[]).forEach((dayMenu, dayIndex) => {
+    const isoDate = isoDateFromWeekAndDayName(weekOf, dayMenu?.name ?? '')
+      ?? (isIsoDate(weekOf) ? shiftIsoDate(weekOf, dayIndex + 1) : null);
     dayMenu?.plateLunch?.forEach((item) => addOccurrence(index, item, 'CC', isoDate));
     dayMenu?.grabAndGo?.forEach((item) => addOccurrence(index, item, 'CC', isoDate));
     addOccurrence(index, dayMenu?.specialMessage, 'CC', isoDate);
@@ -167,8 +236,9 @@ export function getTranslationOccurrences(
 export function formatTranslationOccurrences(occurrences: TranslationOccurrence[]): string {
   return occurrences
     .map((occurrence) => {
+      const location = TRANSLATION_LOCATION_LABELS[occurrence.location];
       const dates = formatOccurrenceDates(occurrence.dates);
-      return dates ? `${occurrence.location} ${dates}` : occurrence.location;
+      return dates ? `${location} ${dates}` : location;
     })
     .join(' · ');
 }

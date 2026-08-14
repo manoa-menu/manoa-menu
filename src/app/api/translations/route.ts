@@ -5,6 +5,7 @@ import {
   listTranslationReviews,
   parseTranslationKind,
   parseTranslationLanguage,
+  parseTranslationLocation,
   parseTranslationSort,
   parseTranslationStatus,
   resetTranslationToAi,
@@ -51,6 +52,7 @@ export async function GET(req: NextRequest) {
   const query = req.nextUrl.searchParams.get('q') ?? '';
   const status = parseTranslationStatus(req.nextUrl.searchParams.get('status'));
   const kind = parseTranslationKind(req.nextUrl.searchParams.get('kind'));
+  const location = parseTranslationLocation(req.nextUrl.searchParams.get('location'));
   const sort = parseTranslationSort(req.nextUrl.searchParams.get('sort'));
 
   await ensureSdxTranslationCacheBackfilled(language);
@@ -59,6 +61,7 @@ export async function GET(req: NextRequest) {
     language,
     status,
     kind,
+    location,
     sort,
     query,
     page: Number.isFinite(page) ? page : 1,

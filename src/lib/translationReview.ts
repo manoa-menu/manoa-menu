@@ -25,6 +25,7 @@ import { translationSourceKey } from '@/lib/translationSource';
 import type {
   TranslationReviewKind,
   TranslationReviewLanguage,
+  TranslationReviewLocation,
   TranslationReviewRow,
   TranslationReviewSort,
   TranslationReviewStatus,
@@ -35,12 +36,14 @@ export {
   TRANSLATION_REVIEW_LANGUAGES,
   parseTranslationKind,
   parseTranslationLanguage,
+  parseTranslationLocation,
   parseTranslationSort,
   parseTranslationStatus,
 } from '@/lib/translationReviewShared';
 export type {
   TranslationReviewKind,
   TranslationReviewLanguage,
+  TranslationReviewLocation,
   TranslationReviewRow,
   TranslationReviewSort,
   TranslationReviewStatus,
@@ -178,6 +181,16 @@ function primaryLocation(row: TranslationReviewRow): 'GW' | 'HA' | 'CC' | null {
     });
   });
   return bestLocation ?? row.occurrences[0]?.location ?? null;
+}
+
+function rowMatchesLocation(
+  row: TranslationReviewRow,
+  location: TranslationReviewLocation,
+): boolean {
+  if (location === 'all') {
+    return true;
+  }
+  return row.occurrences.some((occurrence) => occurrence.location === location);
 }
 
 function groupSortName(row: TranslationReviewRow): string {
@@ -334,6 +347,7 @@ export async function listTranslationReviews(options: {
   language: TranslationReviewLanguage;
   status: TranslationReviewStatus;
   kind?: TranslationReviewKind;
+  location?: TranslationReviewLocation;
   sort?: TranslationReviewSort;
   query?: string;
   page?: number;
@@ -350,6 +364,7 @@ export async function listTranslationReviews(options: {
   const page = Math.max(1, options.page ?? 1);
   const query = options.query?.trim();
   const kind = options.kind ?? 'all';
+  const location = options.location ?? 'all';
   const sort = options.sort ?? 'text';
 
   try {
@@ -386,9 +401,10 @@ export async function listTranslationReviews(options: {
     }
   });
   const uniqueRows = [...uniqueBySource.values()];
+  const byLocation = uniqueRows.filter((row) => rowMatchesLocation(row, location));
   const byKind = kind === 'all'
-    ? uniqueRows
-    : uniqueRows.filter((row) => row.kind === kind);
+    ? byLocation
+    : byLocation.filter((row) => row.kind === kind);
   const uncorrectedCount = byKind.filter((row) => !row.isCorrected).length;
   const correctedCount = byKind.filter((row) => row.isCorrected).length;
   const statusFiltered = options.status === 'all'
