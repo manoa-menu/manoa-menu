@@ -107,7 +107,6 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
     TRANSLATION STYLE
     - Prefer clear, natural, and informal food descriptions over strict literal translation
       when a literal translation would be confusing.
-    - For unfamiliar dish names, transliterate or keep the established dish name, then add a short explanation.
     - When helpful, identify the main ingredient, cooking method, and defining sauce/flavor.
     - Do not over-explain items that are already clear in ${language}.
     
