@@ -318,7 +318,7 @@ export default async function AiDashPage({ searchParams }: PageProps) {
           <p className="ai-dash-eyebrow">Internal</p>
           <h1>AI Cost Dashboard</h1>
           <p className="ai-dash-sub">
-            Estimated OpenAI spend from recorded token usage.
+            Estimated AI spend from recorded token usage.
           </p>
         </div>
       </header>

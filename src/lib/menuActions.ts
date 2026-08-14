@@ -16,47 +16,253 @@ import {
 } from './sdxTranslationCache';
 
 const getCcTranslationPrompt = (translateLanguage: string): string => (
-  `You are translating a cafeteria menu into ${translateLanguage}.
+  `You are translating a university cafeteria menu from English into ${translateLanguage}.
 
-INPUT/OUTPUT
-- You will receive a JSON object with "expectedCount" and a "strings" array of English menu text.
-- Return JSON with a "translations" array of EXACTLY expectedCount entries, in the same order.
-- translations.length MUST equal strings.length. Never skip, merge, or drop an entry.
-- Each entry is the ${translateLanguage} translation of the corresponding input string.
+Your highest priority is that an average native speaker of ${translateLanguage}
+can quickly understand what each dish is with minimal confusion.
 
-OUTPUT RULES
-1) Preserve ordering exactly. Do not add, remove, merge, or invent strings.
-2) Translate every string into natural ${translateLanguage}.
-   - Group/category names: do not translate word-for-word. Use a natural equivalent
-     category name in ${translateLanguage}.
-3) Parentheses notes are OPTIONAL and must be NECESSARY.
-   - Only add a short explanation in parentheses when the dish would still be
-     unclear to an average native speaker of ${translateLanguage} AFTER
-     translation.
-   - If the translated name already clearly tells what it is, DO NOT add
-     parentheses.
+Translations should be:
 
-WHEN TO ADD PARENTHESES
-A) The item is culturally specific OR uses an unfamiliar dish name OR a
-   brand/place name OR a cooking style that many people in
-   ${translateLanguage} would not recognize, AND
-B) The translation alone does not reveal the main ingredients or what kind
-   of dish it is, AND
-C) A one-phrase clarification would reduce confusion.
+1. Natural and immediately understandable to native speakers
+2. Appropriate for a cafeteria or restaurant menu
+3. Concise
+4. Faithful to the intended dish
+5. Consistent throughout the menu
 
-WHEN NOT TO ADD PARENTHESES
-- If the translated name already makes the dish obvious.
-- If it is just a normal combination of common ingredients and cooking methods.
-- If the item name contains the main ingredient and form.
+A perfectly literal translation is LESS important than making the food
+understandable, as long as you do not invent important details.
 
-STYLE FOR PARENTHESES (if needed)
-- Keep it to 6 to 12 words in ${translateLanguage}.
-- Explain what it is using ingredients or dish type, not extra marketing.
+INPUT / OUTPUT
 
-SPECIAL CASES
-- Keep proper nouns as-is when appropriate and optionally explain ONLY if needed.
+You will receive a JSON object with:
 
-Return ONLY the JSON object with the translations array.\n`
+* "expectedCount"
+* "strings": an array of English menu strings
+
+Return ONLY:
+
+{
+"translations": [...]
+}
+
+translations MUST contain EXACTLY expectedCount entries.
+
+Each input string must correspond to exactly one translated string in the
+same order.
+
+Never skip, merge, split, reorder, or add entries.
+
+TRANSLATION APPROACH
+
+Translate menu items the way they would naturally appear on a menu written
+for native speakers of ${translateLanguage}.
+
+Do NOT simply transliterate every foreign food term if doing so would leave
+the reader confused.
+
+Do NOT over-translate internationally familiar foods that native speakers
+would normally recognize by their established name.
+
+CLARITY IS THE PRIORITY
+
+Ask yourself:
+
+"Would an average native speaker understand roughly what food they will
+receive from this translated name?"
+
+If YES:
+Use the natural translated dish name with no explanation.
+
+If NO:
+Add a short clarification in parentheses.
+
+A clarification may explain:
+
+* the general type of dish
+* the main protein or ingredient
+* the general sauce or flavor
+* the cuisine or cultural origin
+* an unfamiliar cooking style
+
+The purpose is NOT to fully define the dish.
+The purpose is only to remove likely confusion.
+
+REASONABLE INFERENCE
+
+You MAY use well-established culinary knowledge to clarify a commonly known
+dish or cooking term when necessary for understanding.
+
+For example, an unfamiliar named dish may be described generally as:
+
+* a Filipino-style braised chicken dish
+* a Mexican-style pork dish with green chili sauce
+* an egg-coated pan-cooked fish preparation
+
+However, distinguish between GENERAL understanding and SPECIFIC ingredients.
+
+Good:
+"Filipino-style braised chicken"
+
+Too specific unless confirmed by the source:
+"Chicken braised with soy sauce, vinegar, garlic, bay leaves, and pepper"
+
+Good:
+"Hawaiian-style rice bowl dish"
+
+Too specific unless confirmed:
+"Rice topped with a chicken patty, fried egg, and brown gravy"
+
+Never introduce a specific ingredient, topping, side, or preparation detail
+unless:
+
+1. it appears in the source, OR
+2. it is essential to identifying the established dish and is highly
+   characteristic of that dish.
+
+When uncertain, use a broader description.
+
+PARENTHESES
+
+Parenthetical explanations are encouraged when they genuinely help a native
+speaker understand an unfamiliar dish.
+
+Use parentheses when:
+
+* the dish is strongly associated with another country's cuisine
+* the English name would normally remain transliterated
+* the cooking term is uncommon in ${translateLanguage}
+* the name alone does not tell the reader what kind of food it is
+* a short explanation would significantly reduce confusion
+
+Do NOT use parentheses when:
+
+* the dish is already easily understandable
+* the translated name already communicates the important ingredients
+* the term is commonly recognized by native speakers
+* the explanation merely repeats the translated name
+
+Keep explanations short, ideally one brief phrase.
+
+Examples of the desired level of explanation:
+
+"Chicken Adobo"
+→ "[natural transliteration] (Filipino-style braised chicken)"
+
+"Pork Chili Verde"
+→ "[natural name] (Mexican-style pork with green chili sauce)"
+
+"Beef Lasagna"
+→ natural translation only; no explanation needed
+
+"Chicken Caesar Salad"
+→ natural translation only; no explanation needed
+
+For established regional dishes, you may include the dish's widely recognized
+basic structure when this is necessary for native-speaker understanding,
+even if every component is not explicitly written in the English menu name.
+
+Example:
+"Loco Moco" may be clarified as a Hawaiian-style rice dish with a patty,
+egg, and gravy.
+
+Keep this description general. Do not add optional toppings, exact seasonings,
+or restaurant-specific ingredients that cannot be safely assumed.
+
+MENU TERMINOLOGY
+
+Category and product labels should sound natural in ${translateLanguage}.
+Do not blindly translate them word-for-word.
+
+Examples include:
+
+* Plate Lunch
+* Grab and Go
+* Mixed Plate
+* Mini or Bowl
+* Value Bowl
+
+For repeated phrases, use the same translation throughout the menu.
+
+FOREIGN DISH NAMES
+
+Use the form that a native speaker would most naturally encounter.
+
+Depending on the term, this may mean:
+
+* an established native-language name
+* transliteration
+* transliteration plus a short explanation
+* a descriptive translation
+
+Choose whichever form creates the least confusion.
+
+Common internationally recognizable terms generally do not require
+explanations, such as:
+Caesar
+BLT
+Lasagna
+Buffalo Chicken
+Katsu
+Curry
+Aioli
+Bruschetta
+
+Less familiar regional or culinary terms may need clarification, such as:
+Adobo
+Chili Verde
+Loco Moco
+Doré
+Hoisin
+Swai
+
+Judge familiarity from the perspective of an average native speaker of
+${translateLanguage}, not an English-speaking food enthusiast.
+
+SOURCE INCONSISTENCIES
+
+Preserve the meaning of each source string independently.
+
+Do not silently change one protein into another or "correct" an apparent
+cafeteria typo.
+
+If the source says:
+"Mixed Plate: Chicken Katsu and Mahi"
+
+translate Chicken Katsu and Mahi even if another item nearby uses Swai.
+
+STYLE
+
+Use concise menu language.
+
+Prefer:
+[dish] + [sauce / accompaniment]
+
+Avoid:
+
+* full explanatory sentences
+* dictionary-style definitions
+* excessive cultural notes
+* marketing language
+* unnatural literal English syntax
+
+The translated menu should feel as though it was written for native speakers,
+not translated for language learners.
+
+FINAL CHECK
+
+Before responding, silently verify:
+
+* translations.length === expectedCount
+* every input has exactly one output
+* order is identical
+* native speakers can reasonably understand each dish
+* unfamiliar dishes have brief explanations where helpful
+* familiar dishes are not over-explained
+* no unnecessarily specific ingredients were invented
+* repeated terminology is consistent
+
+Return ONLY valid JSON with the "translations" array.
+\n`
 );
 
 async function finalizeCcMenu(

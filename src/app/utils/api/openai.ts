@@ -1,5 +1,4 @@
 // import axios from 'axios';
-import OpenAI from 'openai';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -8,75 +7,13 @@ import { getCCMenu, insertCCMenu, getSdxMenu, insertSdxMenu } from '@/lib/dbActi
 import { extractCcTranslationPairs } from '@/lib/ccTranslation';
 import { overlayCcMenuWithCorrections, saveSdxTranslations } from '@/lib/sdxTranslationCache';
 import { getCurrentWeekOf, getNextWeekOf } from '@/lib/dateFunctions';
-import { recordAiTokenUsage, type AiOperation } from '@/lib/aiTokenUsage';
+import { recordAiTokenUsage } from '@/lib/aiTokenUsage';
+import { getAiClient, getAiLogLabel, getAiProvider, selectAiConfig } from '@/lib/aiProvider';
 
 import { MenuResponse, Location, FilteredSodexoMeal, DayMenu, SdxSchemaObject } from '@/types/menuTypes';
 
-const DEFAULT_OPENAI_MODEL = 'gpt-5.4-mini';
-
-type ReasoningEffort = 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
-
-type OpenAiModelConfig = {
-  model: string;
-  reasoningEffort: ReasoningEffort;
-};
-
-function normalizeLanguage(language?: string): string {
-  if (!language) {
-    return '';
-  }
-  const trimmed = language.trim();
-  if (!trimmed) {
-    return '';
-  }
-  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
-}
-
-/** Pick model + reasoning effort by task and language. */
-function selectOpenAiConfig(operation: AiOperation, language?: string): OpenAiModelConfig {
-  const lang = normalizeLanguage(language);
-
-  switch (operation) {
-    case 'cc_pdf_parse':
-      return { model: 'gpt-5-mini', reasoningEffort: 'medium' };
-
-    case 'cc_translate':
-    case 'cc_translate_batch':
-    case 'sdx_translate':
-    case 'sdx_translate_batch':
-      switch (lang) {
-        case 'Japanese':
-          return { model: 'gpt-5.6-terra', reasoningEffort: 'low' };
-        case 'Korean':
-          return { model: 'gpt-5.6-terra', reasoningEffort: 'low' };
-        case 'Chinese':
-          return { model: 'gpt-5.6-terra', reasoningEffort: 'none' };
-        case 'English':
-        case 'Spanish':
-        case '':
-          return { model: 'gpt-5.4-mini', reasoningEffort: 'none' };
-        default:
-          console.warn(
-            `[OpenAI] No explicit model mapping for language="${language}"; `
-            + `using ${DEFAULT_OPENAI_MODEL} / none`,
-          );
-          return { model: DEFAULT_OPENAI_MODEL, reasoningEffort: 'none' };
-      }
-
-    default: {
-      const _exhaustive: never = operation;
-      console.warn(
-        `[OpenAI] Unhandled operation "${_exhaustive}"; `
-        + `using ${DEFAULT_OPENAI_MODEL} / none`,
-      );
-      return { model: DEFAULT_OPENAI_MODEL, reasoningEffort: 'low' };
-    }
-  }
-}
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const client = getAiClient();
+const providerTag = getAiLogLabel();
 
 const ccJsonSchema = {
   name: 'day_menu_array',
@@ -435,7 +372,7 @@ async function fetchOpenAI(
   const maxTokens = 10000;
   const jsonSchema = (option === Location.CAMPUS_CENTER) ? ccJsonSchema : sdxJsonSchema;
   const operation = option === Location.CAMPUS_CENTER ? 'cc_translate' : 'sdx_translate';
-  const { model, reasoningEffort } = selectOpenAiConfig(operation, language);
+  const { model, reasoningEffort } = selectAiConfig(operation, language);
 
   const response = await client.responses.create({
     model,
@@ -456,7 +393,7 @@ async function fetchOpenAI(
   const rStatus = response.status;
   const rModel = response.model;
   console.log(
-    `[OpenAI] id: ${rId}, status: ${rStatus}, model: ${rModel}, reasoning=${reasoningEffort}`,
+    `[${providerTag}] id: ${rId}, status: ${rStatus}, model: ${rModel}, reasoning=${reasoningEffort}`,
   );
   console.log(`Total tokens used: ${response.usage?.total_tokens}`);
 
@@ -473,8 +410,13 @@ async function fetchOpenAI(
   });
 
   if (response.status === 'incomplete') {
-    console.error(`OpenAI response was incomplete (likely truncated). Increase max_output_tokens or reduce menu size.`);
-    throw new Error('OpenAI response was incomplete – the translated menu was too long for the token limit.');
+    console.error(
+      `${providerTag} response was incomplete (likely truncated). `
+      + 'Increase max_output_tokens or reduce menu size.',
+    );
+    throw new Error(
+      `${providerTag} response was incomplete – the translated menu was too long for the token limit.`,
+    );
   }
 
   const content = response.output_text;
@@ -523,7 +465,7 @@ async function fetchOpenAI(
     console.log(`Inserted ${language} ${option} menu into DB for ${date}`);
     return sdxResult;
   }
-  throw new Error('Failed to parse the response from OpenAI');
+  throw new Error(`Failed to parse the response from ${providerTag}`);
 }
 
 const SDX_STRING_BATCH_SIZE = 40;
@@ -546,7 +488,7 @@ async function translateMenuStringBatch(
 ): Promise<SdxBatchUsage> {
   const label = operation === 'cc_translate_batch' ? 'CC strings' : 'SDX strings';
   const maxTokens = Math.min(16000, 4000 + strings.length * 80);
-  const { model, reasoningEffort } = selectOpenAiConfig(operation, language);
+  const { model, reasoningEffort } = selectAiConfig(operation, language);
   let inputTokens = 0;
   let outputTokens = 0;
   let totalTokens = 0;
@@ -554,7 +496,7 @@ async function translateMenuStringBatch(
 
   for (let attempt = 1; attempt <= SDX_STRING_MAX_ATTEMPTS; attempt += 1) {
     console.log(
-      `[OpenAI ${label}] Starting batch ${batchIndex + 1}/${batchCount} `
+      `[${providerTag} ${label}] Starting batch ${batchIndex + 1}/${batchCount} `
       + `(language=${language}, model=${model}, reasoning=${reasoningEffort}, `
       + `strings=${strings.length}, attempt=${attempt}/${SDX_STRING_MAX_ATTEMPTS}, `
       + `max_output_tokens=${maxTokens})`,
@@ -605,11 +547,11 @@ async function translateMenuStringBatch(
     });
 
     console.log(
-      `[OpenAI ${label}] Finished batch ${batchIndex + 1}/${batchCount} `
+      `[${providerTag} ${label}] Finished batch ${batchIndex + 1}/${batchCount} `
       + `(language=${language}, strings=${strings.length}, attempt=${attempt}, status=${response.status})`,
     );
     console.log(
-      `[OpenAI ${label}] Batch ${batchIndex + 1}/${batchCount} tokens: `
+      `[${providerTag} ${label}] Batch ${batchIndex + 1}/${batchCount} tokens: `
       + `input=${batchInputTokens}, output=${batchOutputTokens}, total=${batchTotalTokens}`
       + `, cached_input=${cachedInputTokens}`
       + `, reasoning=${reasoningTokens}`
@@ -617,19 +559,19 @@ async function translateMenuStringBatch(
     );
 
     if (response.status === 'incomplete') {
-      console.error(`OpenAI ${label} translation was incomplete.`, {
+      console.error(`${providerTag} ${label} translation was incomplete.`, {
         incompleteDetails: response.incomplete_details,
         usage: response.usage,
       });
       lastError = new Error(
-        'OpenAI response was incomplete – the translated strings were too long for the token limit.',
+        `${providerTag} response was incomplete – the translated strings were too long for the token limit.`,
       );
       continue;
     }
 
     const content = response.output_text;
     if (!content) {
-      lastError = new Error(`Failed to parse the ${label} translation response from OpenAI`);
+      lastError = new Error(`Failed to parse the ${label} translation response from ${providerTag}`);
       continue;
     }
 
@@ -642,7 +584,7 @@ async function translateMenuStringBatch(
     }
     if (parsed.translations.length !== strings.length) {
       console.error(
-        `[OpenAI ${label}] Count mismatch on batch ${batchIndex + 1}/${batchCount}: `
+        `[${providerTag} ${label}] Count mismatch on batch ${batchIndex + 1}/${batchCount}: `
         + `expected ${strings.length}, got ${parsed.translations.length}`,
       );
       lastError = new Error(
@@ -679,7 +621,7 @@ async function translateMenuStrings(
   }
 
   console.log(
-    `[OpenAI ${label}] Starting translation: language=${language}, `
+    `[${providerTag} ${label}] Starting translation: language=${language}, `
     + `totalStrings=${strings.length}, batches=${batches.length}, batchSize=${SDX_STRING_BATCH_SIZE}`,
   );
 
@@ -699,7 +641,7 @@ async function translateMenuStrings(
   const totalTokens = translatedBatches.reduce((sum, batch) => sum + batch.totalTokens, 0);
 
   console.log(
-    `[OpenAI ${label}] Week translation complete: language=${language}, `
+    `[${providerTag} ${label}] Week translation complete: language=${language}, `
     + `batches=${batches.length}, strings=${strings.length}, `
     + `input=${inputTokens}, output=${outputTokens}, total=${totalTokens}`,
   );
@@ -770,6 +712,12 @@ async function parseCCMenuFromPDF(pdfUrl: string): Promise<MenuResponse> {
     console.warn(`Local PDF extraction failed, falling back to file_url input: ${pdfExtractError}`);
   }
 
+  if (menuText.length === 0 && getAiProvider() === 'openrouter') {
+    throw new Error(
+      'Local PDF text extraction failed; OpenRouter cannot use OpenAI file_url PDF input.',
+    );
+  }
+
   const promptText = `You are a menu parser.
 Analyze this Campus Center menu text (extracted from a PDF) and extract the menu items into the specified JSON format.
 
@@ -789,7 +737,7 @@ The menu may span 1-2 weeks. Extract weekOne (first 5 days) and weekTwo (next 5 
 
 Return the data in the exact JSON schema format specified.`;
 
-  const { model, reasoningEffort } = selectOpenAiConfig('cc_pdf_parse', 'English');
+  const { model, reasoningEffort } = selectAiConfig('cc_pdf_parse', 'English');
   const maxTokens = 12000;
 
   const response = await client.responses.create({
@@ -842,18 +790,18 @@ Return the data in the exact JSON schema format specified.`;
   });
 
   if (response.status === 'incomplete') {
-    console.error('OpenAI PDF parse was incomplete.', {
+    console.error(`${providerTag} PDF parse was incomplete.`, {
       incompleteDetails: response.incomplete_details,
       usage: response.usage,
     });
     throw new Error(
-      'OpenAI PDF parse was incomplete – increase max_output_tokens or lower reasoning effort.',
+      `${providerTag} PDF parse was incomplete – increase max_output_tokens or lower reasoning effort.`,
     );
   }
 
   const content = response.output_text;
   if (!content) {
-    throw new Error('Failed to parse CC menu from PDF using OpenAI (empty response)');
+    throw new Error(`Failed to parse CC menu from PDF using ${providerTag} (empty response)`);
   }
 
   let parsed: MenuResponse;
@@ -862,7 +810,7 @@ Return the data in the exact JSON schema format specified.`;
   } catch (parseError) {
     console.error('Failed to parse CC PDF JSON. Preview:', content.slice(0, 500));
     throw new Error(
-      `Failed to parse CC menu JSON from OpenAI: `
+      `Failed to parse CC menu JSON from ${providerTag}: `
       + `${parseError instanceof Error ? parseError.message : String(parseError)}`,
     );
   }
