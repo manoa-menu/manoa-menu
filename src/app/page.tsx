@@ -55,15 +55,15 @@ const Page = () => {
     if (isOpen) {
       switch (lang) {
         case 'Japanese': return '営業中';
-        case 'Korean': return '영업중';
+        case 'Korean': return '영업 중';
         case 'Chinese': return '营业中';
         default: return 'Open';
       }
     } else {
       switch (lang) {
-        case 'Japanese': return '準備中';
-        case 'Korean': return '준비중';
-        case 'Chinese': return '休息中';
+        case 'Japanese': return '営業終了';
+        case 'Korean': return '영업 종료';
+        case 'Chinese': return '已打烊';
         default: return 'Closed';
       }
     }
