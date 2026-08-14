@@ -14,6 +14,7 @@ import {
   mergeStoredAndCachedTranslations,
 } from '@/lib/sdxTranslation';
 import { applyCcTranslations, collectCcTranslatableStrings, extractCcTranslationPairs } from '@/lib/ccTranslation';
+import { attachCcEnglishSources, attachSdxEnglishNames } from '@/lib/englishSource';
 import { DayMenu, FilteredSodexoMeal, Location } from '@/types/menuTypes';
 import {
   lookupTranslation,
@@ -496,18 +497,18 @@ export async function overlaySdxMenusWithCorrections<T extends {
     return;
   }
 
-  try {
-    const withEnglish = await Promise.all(overlayDays.map(async (day) => {
-      if (day.englishMenu && day.englishMenu.length > 0) {
-        return { day, english: day.englishMenu };
-      }
-      const englishRow = await getSdxMenu(day.date, 'English', location);
-      const english = englishRow
-        ? (englishRow.menu as unknown as FilteredSodexoMeal[]) || []
-        : [];
-      return { day, english };
-    }));
+  const withEnglish = await Promise.all(overlayDays.map(async (day) => {
+    if (day.englishMenu && day.englishMenu.length > 0) {
+      return { day, english: day.englishMenu };
+    }
+    const englishRow = await getSdxMenu(day.date, 'English', location);
+    const english = englishRow
+      ? (englishRow.menu as unknown as FilteredSodexoMeal[]) || []
+      : [];
+    return { day, english };
+  }));
 
+  try {
     const uniqueStrings = collectSdxTranslatableStrings(
       withEnglish.map(({ english }) => english).filter((menu) => menu.length > 0),
     );
@@ -524,11 +525,16 @@ export async function overlaySdxMenusWithCorrections<T extends {
       day.meals = applySdxTranslations(english, merged);
     });
   } catch (error) {
-    if (isMissingTableError(error)) {
-      return;
+    if (!isMissingTableError(error)) {
+      console.warn('[SDX translation cache] Overlay failed; serving stored menus', error);
     }
-    console.warn('[SDX translation cache] Overlay failed; serving stored menus', error);
   }
+
+  withEnglish.forEach(({ day, english }) => {
+    if (english.length > 0) {
+      day.meals = attachSdxEnglishNames(day.meals, english);
+    }
+  });
 }
 
 export async function overlayCcMenuWithCorrections(
@@ -540,6 +546,7 @@ export async function overlayCcMenuWithCorrections(
     return translatedMenu;
   }
 
+  let next = translatedMenu;
   try {
     const uniqueStrings = collectCcTranslatableStrings(englishMenu);
     const table = await getCachedSdxTranslations(language, uniqueStrings);
@@ -547,14 +554,14 @@ export async function overlayCcMenuWithCorrections(
       extractCcTranslationPairs(englishMenu, translatedMenu),
       table,
     );
-    return applyCcTranslations(englishMenu, merged);
+    next = applyCcTranslations(englishMenu, merged);
   } catch (error) {
-    if (isMissingTableError(error)) {
-      return translatedMenu;
+    if (!isMissingTableError(error)) {
+      console.warn('[SDX translation cache] CC overlay failed; serving stored menu', error);
     }
-    console.warn('[SDX translation cache] CC overlay failed; serving stored menu', error);
-    return translatedMenu;
   }
+
+  return attachCcEnglishSources(next, englishMenu);
 }
 
 /** Write a correction into stored weekly menus so current and later weeks stay in sync. */

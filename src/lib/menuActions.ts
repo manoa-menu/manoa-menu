@@ -179,7 +179,11 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
     ) as MenuResponse;
 
     if (translatedMenu.weekOne && translatedMenu.weekOne.length > 0) {
-      return translatedMenu.weekOne;
+      return overlayCcMenuWithCorrections(
+        englishMenuFromDb.weekOne,
+        translatedMenu.weekOne,
+        language,
+      );
     }
 
     // Log an error if fetching the parsed menu from the database fails
