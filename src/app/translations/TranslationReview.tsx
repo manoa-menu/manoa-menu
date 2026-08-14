@@ -17,6 +17,7 @@ import type {
 } from '@/lib/translationReviewShared';
 import { formatOccurrenceDates } from '@/lib/translationOccurrences';
 import { translationSourceKey } from '@/lib/translationSource';
+import TranslationCachePurge from './TranslationCachePurge';
 
 type ListResponse = {
   rows: TranslationReviewRow[];
@@ -421,6 +422,13 @@ export default function TranslationReview({ reviewer, initialLanguage }: Props) 
             />
           </label>
         </div>
+        {reviewer.name === 'Justin' ? (
+          <TranslationCachePurge
+            key={language}
+            initialLanguage={language}
+            onPurged={load}
+          />
+        ) : null}
       </section>
 
       <section className="ai-dash-panel">

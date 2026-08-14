@@ -41,15 +41,16 @@ function selectOpenAiConfig(operation: AiOperation, language?: string): OpenAiMo
       return { model: 'gpt-5-mini', reasoningEffort: 'medium' };
 
     case 'cc_translate':
+    case 'cc_translate_batch':
     case 'sdx_translate':
     case 'sdx_translate_batch':
       switch (lang) {
         case 'Japanese':
-          return { model: 'gpt-5.4-mini', reasoningEffort: 'low' };
+          return { model: 'gpt-5.6-terra', reasoningEffort: 'low' };
         case 'Korean':
-          return { model: 'gpt-5.4-mini', reasoningEffort: 'low' };
+          return { model: 'gpt-5.6-terra', reasoningEffort: 'low' };
         case 'Chinese':
-          return { model: 'gpt-5.4-mini', reasoningEffort: 'none' };
+          return { model: 'gpt-5.6-terra', reasoningEffort: 'none' };
         case 'English':
         case 'Spanish':
         case '':
@@ -535,15 +536,17 @@ type SdxBatchUsage = {
   translations: string[];
 };
 
-async function translateSdxStringBatch(
+async function translateMenuStringBatch(
   prompt: string,
   strings: string[],
   language: string,
   batchIndex: number,
   batchCount: number,
+  operation: 'sdx_translate_batch' | 'cc_translate_batch',
 ): Promise<SdxBatchUsage> {
+  const label = operation === 'cc_translate_batch' ? 'CC strings' : 'SDX strings';
   const maxTokens = Math.min(16000, 4000 + strings.length * 80);
-  const { model, reasoningEffort } = selectOpenAiConfig('sdx_translate_batch', language);
+  const { model, reasoningEffort } = selectOpenAiConfig(operation, language);
   let inputTokens = 0;
   let outputTokens = 0;
   let totalTokens = 0;
@@ -551,7 +554,7 @@ async function translateSdxStringBatch(
 
   for (let attempt = 1; attempt <= SDX_STRING_MAX_ATTEMPTS; attempt += 1) {
     console.log(
-      `[OpenAI SDX strings] Starting batch ${batchIndex + 1}/${batchCount} `
+      `[OpenAI ${label}] Starting batch ${batchIndex + 1}/${batchCount} `
       + `(language=${language}, model=${model}, reasoning=${reasoningEffort}, `
       + `strings=${strings.length}, attempt=${attempt}/${SDX_STRING_MAX_ATTEMPTS}, `
       + `max_output_tokens=${maxTokens})`,
@@ -590,7 +593,7 @@ async function translateSdxStringBatch(
     totalTokens += batchTotalTokens;
 
     await recordAiTokenUsage({
-      operation: 'sdx_translate_batch',
+      operation,
       model: response.model || model,
       language,
       inputTokens: batchInputTokens,
@@ -602,11 +605,11 @@ async function translateSdxStringBatch(
     });
 
     console.log(
-      `[OpenAI SDX strings] Finished batch ${batchIndex + 1}/${batchCount} `
+      `[OpenAI ${label}] Finished batch ${batchIndex + 1}/${batchCount} `
       + `(language=${language}, strings=${strings.length}, attempt=${attempt}, status=${response.status})`,
     );
     console.log(
-      `[OpenAI SDX strings] Batch ${batchIndex + 1}/${batchCount} tokens: `
+      `[OpenAI ${label}] Batch ${batchIndex + 1}/${batchCount} tokens: `
       + `input=${batchInputTokens}, output=${batchOutputTokens}, total=${batchTotalTokens}`
       + `, cached_input=${cachedInputTokens}`
       + `, reasoning=${reasoningTokens}`
@@ -614,7 +617,7 @@ async function translateSdxStringBatch(
     );
 
     if (response.status === 'incomplete') {
-      console.error('OpenAI SDX string translation was incomplete.', {
+      console.error(`OpenAI ${label} translation was incomplete.`, {
         incompleteDetails: response.incomplete_details,
         usage: response.usage,
       });
@@ -626,7 +629,7 @@ async function translateSdxStringBatch(
 
     const content = response.output_text;
     if (!content) {
-      lastError = new Error('Failed to parse the SDX string translation response from OpenAI');
+      lastError = new Error(`Failed to parse the ${label} translation response from OpenAI`);
       continue;
     }
 
@@ -634,12 +637,12 @@ async function translateSdxStringBatch(
     try {
       parsed = JSON.parse(content) as { translations: string[] };
     } catch {
-      lastError = new Error('Failed to parse JSON from SDX string translation response');
+      lastError = new Error(`Failed to parse JSON from ${label} translation response`);
       continue;
     }
     if (parsed.translations.length !== strings.length) {
       console.error(
-        `[OpenAI SDX strings] Count mismatch on batch ${batchIndex + 1}/${batchCount}: `
+        `[OpenAI ${label}] Count mismatch on batch ${batchIndex + 1}/${batchCount}: `
         + `expected ${strings.length}, got ${parsed.translations.length}`,
       );
       lastError = new Error(
@@ -656,35 +659,38 @@ async function translateSdxStringBatch(
     };
   }
 
-  throw lastError ?? new Error('Failed to translate SDX strings');
+  throw lastError ?? new Error(`Failed to translate ${label}`);
 }
 
-async function translateSdxStrings(
+async function translateMenuStrings(
   prompt: string,
   strings: string[],
   language: string,
+  operation: 'sdx_translate_batch' | 'cc_translate_batch',
 ): Promise<string[]> {
   if (strings.length === 0) {
     return [];
   }
 
+  const label = operation === 'cc_translate_batch' ? 'CC strings' : 'SDX strings';
   const batches: string[][] = [];
   for (let i = 0; i < strings.length; i += SDX_STRING_BATCH_SIZE) {
     batches.push(strings.slice(i, i + SDX_STRING_BATCH_SIZE));
   }
 
   console.log(
-    `[OpenAI SDX strings] Starting translation: language=${language}, `
+    `[OpenAI ${label}] Starting translation: language=${language}, `
     + `totalStrings=${strings.length}, batches=${batches.length}, batchSize=${SDX_STRING_BATCH_SIZE}`,
   );
 
   const translatedBatches = await Promise.all(
-    batches.map((batch, index) => translateSdxStringBatch(
+    batches.map((batch, index) => translateMenuStringBatch(
       prompt,
       batch,
       language,
       index,
       batches.length,
+      operation,
     )),
   );
 
@@ -693,12 +699,28 @@ async function translateSdxStrings(
   const totalTokens = translatedBatches.reduce((sum, batch) => sum + batch.totalTokens, 0);
 
   console.log(
-    `[OpenAI SDX strings] Week translation complete: language=${language}, `
+    `[OpenAI ${label}] Week translation complete: language=${language}, `
     + `batches=${batches.length}, strings=${strings.length}, `
     + `input=${inputTokens}, output=${outputTokens}, total=${totalTokens}`,
   );
 
   return translatedBatches.flatMap((batch) => batch.translations);
+}
+
+async function translateSdxStrings(
+  prompt: string,
+  strings: string[],
+  language: string,
+): Promise<string[]> {
+  return translateMenuStrings(prompt, strings, language, 'sdx_translate_batch');
+}
+
+async function translateCcStrings(
+  prompt: string,
+  strings: string[],
+  language: string,
+): Promise<string[]> {
+  return translateMenuStrings(prompt, strings, language, 'cc_translate_batch');
 }
 
 async function parseCCMenuFromPDF(pdfUrl: string): Promise<MenuResponse> {
@@ -854,5 +876,5 @@ Return the data in the exact JSON schema format specified.`;
   return parsed;
 }
 
-export { parseCCMenuFromPDF, translateSdxStrings };
+export { parseCCMenuFromPDF, translateSdxStrings, translateCcStrings };
 export default fetchOpenAI;

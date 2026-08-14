@@ -52,6 +52,8 @@ const replaceDayMenu = (dayMenu: DayMenu, index: number): DayMenu => ({
   plateLunch: dayMenu.plateLunch.map(applyRules),
   grabAndGo: dayMenu.grabAndGo.map(applyRules),
   specialMessage: dayMenu.specialMessage,
+  plateLunchEnglish: dayMenu.plateLunchEnglish,
+  grabAndGoEnglish: dayMenu.grabAndGoEnglish,
 });
 
 const jpManualReplace = (original: MenuResponse): MenuResponse => ({

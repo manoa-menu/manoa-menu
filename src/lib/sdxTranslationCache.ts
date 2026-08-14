@@ -29,7 +29,6 @@ const LOCK_POLL_MS = 800;
 
 const warmedLanguages = new Set<string>();
 let dedupedTranslationRows = false;
-let prunedTranslationRows = false;
 
 function hashSource(sourceText: string): string {
   return createHash('sha256').update(translationSourceKey(sourceText), 'utf8').digest('hex');
@@ -232,76 +231,6 @@ export async function dedupeSdxStringTranslations(): Promise<number> {
   return removed;
 }
 
-async function currentWeekSourceKeys(): Promise<Set<string>> {
-  const dates = getCurrentWeekDates();
-  const weekOf = getCurrentWeekOf();
-  const [gwMenus, haMenus, ccMenus] = await Promise.all([
-    prisma.gatewayMenus.findMany({
-      where: { language: 'English', date: { in: dates } },
-      select: { menu: true },
-    }),
-    prisma.haleAlohaMenus.findMany({
-      where: { language: 'English', date: { in: dates } },
-      select: { menu: true },
-    }),
-    prisma.campusCenterMenus.findMany({
-      where: { language: 'English', week_of: weekOf },
-      select: { menu: true },
-    }),
-  ]);
-
-  const keys = new Set<string>();
-  const sdxMenus = [...gwMenus, ...haMenus]
-    .map((row) => row.menu)
-    .filter((menu): menu is Prisma.JsonArray => Array.isArray(menu))
-    .map((menu) => menu as unknown as FilteredSodexoMeal[]);
-  collectSdxTranslatableStrings(sdxMenus).forEach((source) => {
-    keys.add(translationSourceKey(source));
-  });
-  ccMenus.forEach((row) => {
-    if (!Array.isArray(row.menu)) {
-      return;
-    }
-    collectCcTranslatableStrings(row.menu as unknown as DayMenu[]).forEach((source) => {
-      keys.add(translationSourceKey(source));
-    });
-  });
-  return keys;
-}
-
-/** Drop cache rows that are not on this week's English menus. */
-export async function pruneSdxStringTranslationsToCurrentWeek(): Promise<number> {
-  if (prunedTranslationRows) {
-    return 0;
-  }
-
-  const keepKeys = await currentWeekSourceKeys();
-  if (keepKeys.size === 0) {
-    console.warn('[SDX translation cache] Skipping prune; no current-week menus found');
-    return 0;
-  }
-
-  const rows = await prisma.sdxStringTranslation.findMany({
-    select: { id: true, sourceText: true },
-  });
-  const staleIds = rows
-    .filter((row) => !keepKeys.has(translationSourceKey(row.sourceText)))
-    .map((row) => row.id);
-
-  if (staleIds.length > 0) {
-    await prisma.sdxStringTranslation.deleteMany({
-      where: { id: { in: staleIds } },
-    });
-  }
-
-  prunedTranslationRows = true;
-  console.log(
-    `[SDX translation cache] Kept ${rows.length - staleIds.length} current-week strings, `
-    + `removed ${staleIds.length} older string(s)`,
-  );
-  return staleIds.length;
-}
-
 function menuByDate(
   rows: Array<{ date: string; menu: unknown }>,
 ): Map<string, unknown> {
@@ -396,7 +325,6 @@ export async function ensureSdxTranslationCacheBackfilled(language: string): Pro
   try {
     await dedupeSdxStringTranslations();
     await backfillSdxTranslationCache(language);
-    await pruneSdxStringTranslationsToCurrentWeek();
     warmedLanguages.add(language);
   } catch (error) {
     if (isMissingTableError(error)) {

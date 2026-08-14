@@ -36,6 +36,7 @@ const OPENAI_MODEL_PRICING: Record<string, ModelPricing> = {
 export type AiOperation =
   | 'cc_pdf_parse'
   | 'cc_translate'
+  | 'cc_translate_batch'
   | 'sdx_translate'
   | 'sdx_translate_batch';
 

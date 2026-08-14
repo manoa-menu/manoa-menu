@@ -1,14 +1,77 @@
- 
- 
+
 import scrapeCCUrl from '@/lib/scrapeCCUrl';
-import { getCCMenu } from '@/lib/dbActions';
+import { getCCMenu, insertCCMenu } from '@/lib/dbActions';
 import { Location, DayMenu, MenuResponse } from '@/types/menuTypes';
-import fetchOpenAI, { parseCCMenuFromPDF } from '../app/utils/api/openai';
+import { parseCCMenuFromPDF, translateCcStrings } from '../app/utils/api/openai';
 import { getCurrentWeekOf, getNextWeekOf } from './dateFunctions';
+import { applyCcTranslations, collectCcTranslatableStrings } from './ccTranslation';
+import { attachCcEnglishSources } from './englishSource';
+import jpManualReplace from './manualTranslate';
+import { buildSdxTranslationMap } from './sdxTranslation';
 import {
   ensureSdxTranslationCacheBackfilled,
   overlayCcMenuWithCorrections,
+  translateSdxStringsCached,
+  withSdxTranslationLock,
 } from './sdxTranslationCache';
+
+const getCcTranslationPrompt = (translateLanguage: string): string => (
+  `You are translating a cafeteria menu into ${translateLanguage}.
+
+INPUT/OUTPUT
+- You will receive a JSON object with "expectedCount" and a "strings" array of English menu text.
+- Return JSON with a "translations" array of EXACTLY expectedCount entries, in the same order.
+- translations.length MUST equal strings.length. Never skip, merge, or drop an entry.
+- Each entry is the ${translateLanguage} translation of the corresponding input string.
+
+OUTPUT RULES
+1) Preserve ordering exactly. Do not add, remove, merge, or invent strings.
+2) Translate every string into natural ${translateLanguage}.
+   - Group/category names: do not translate word-for-word. Use a natural equivalent
+     category name in ${translateLanguage}.
+3) Parentheses notes are OPTIONAL and must be NECESSARY.
+   - Only add a short explanation in parentheses when the dish would still be
+     unclear to an average native speaker of ${translateLanguage} AFTER
+     translation.
+   - If the translated name already clearly tells what it is, DO NOT add
+     parentheses.
+
+WHEN TO ADD PARENTHESES
+A) The item is culturally specific OR uses an unfamiliar dish name OR a
+   brand/place name OR a cooking style that many people in
+   ${translateLanguage} would not recognize, AND
+B) The translation alone does not reveal the main ingredients or what kind
+   of dish it is, AND
+C) A one-phrase clarification would reduce confusion.
+
+WHEN NOT TO ADD PARENTHESES
+- If the translated name already makes the dish obvious.
+- If it is just a normal combination of common ingredients and cooking methods.
+- If the item name contains the main ingredient and form.
+
+STYLE FOR PARENTHESES (if needed)
+- Keep it to 6 to 12 words in ${translateLanguage}.
+- Explain what it is using ingredients or dish type, not extra marketing.
+
+SPECIAL CASES
+- Keep proper nouns as-is when appropriate and optionally explain ONLY if needed.
+
+Return ONLY the JSON object with the translations array.\n`
+);
+
+async function finalizeCcMenu(
+  englishMenu: DayMenu[],
+  translatedMenu: DayMenu[],
+  language: string,
+): Promise<DayMenu[]> {
+  let next = await overlayCcMenuWithCorrections(englishMenu, translatedMenu, language);
+  if (language === 'Japanese') {
+    next = jpManualReplace({ weekOne: next, weekTwo: [] }).weekOne;
+    // Manual replace rebuilds day objects; re-attach English underlines.
+    next = attachCcEnglishSources(next, englishMenu);
+  }
+  return next;
+}
 
 async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
   try {
@@ -29,11 +92,7 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
             ? englishWeekOneRow.menu as unknown as DayMenu[]
             : [];
           if (englishWeekOne.length > 0) {
-            return overlayCcMenuWithCorrections(
-              englishWeekOne,
-              existingLanguageMenuParsed,
-              language,
-            );
+            return finalizeCcMenu(englishWeekOne, existingLanguageMenuParsed, language);
           }
           return existingLanguageMenuParsed;
         }
@@ -83,110 +142,54 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
 
     console.log(`No ${language} menu found for ${currentWeekOf}. Translating now.`);
 
-    const prompt =
-      `You are translating a cafeteria menu into ${language} for exchange students `
-      + `who need to quickly understand what each dish is.
+    return withSdxTranslationLock(language, async () => {
+      const existingDuringLock = await getCCMenu(currentWeekOf, language);
+      if (existingDuringLock) {
+        const existingMenu = existingDuringLock.menu as unknown as DayMenu[];
+        if (existingMenu.length > 0) {
+          console.log(`Another request already translated ${language} CC for ${currentWeekOf}`);
+          return finalizeCcMenu(englishMenuFromDb.weekOne, existingMenu, language);
+        }
+      }
 
-    TARGET READER
-    Assume the reader is a native speaker of ${language}, but may not be familiar with American,
-    Hawaiian, Filipino, local-style plate lunch, cafeteria, or regional restaurant dishes.
-    The goal is not only to translate the name, but to help the student quickly imagine the main food.
-    
-    OUTPUT RULES
-    1) Preserve the original structure, order, and number of groups/items exactly.
-    2) Translate all group names and menu items into natural ${language}.
-    3) Do not add, remove, merge, split, or invent menu items.
-    4) Use familiar, student-friendly wording. Avoid overly literal translations.
-    5) Return only the translated menu in the same format as the input.
-    
-    GROUP NAMES
-    - Use natural cafeteria category names in ${language}, not word-for-word translations.
-    - For example, translate categories by function, such as plate lunches, bowls, value bowls,
-      or takeout/grab-and-go items.
-    
-    TRANSLATION STYLE
-    - Prefer clear, natural, and informal food descriptions over strict literal translation
-      when a literal translation would be confusing.
-    - When helpful, identify the main ingredient, cooking method, and defining sauce/flavor.
-    - Do not over-explain items that are already clear in ${language}.
-    
-    PARENTHESES
-    Add a short parenthetical description only when the dish would likely be unfamiliar or unclear to the target reader.
-    
-    Add parentheses when the item:
-    - Is not commonly recognized by native speakers of ${language} from the target student culture.
-    - Uses an unfamiliar cultural dish name, regional style, brand, place name, or specialized cooking term.
-    - Uses an English/American menu phrase whose meaning is not obvious from the words alone.
-    - Does not clearly show the main ingredient, dish type, sauce, or flavor.
-    - Is a salad, wrap, bowl, or plate item with an unclear style name such as "Black & Blue,"
-      "Mesquite," "Bruschetta," "Adobo," "Lau Lau," or "Kalua."
-    
-    Do not add parentheses when:
-    - The dish is likely familiar to the target reader.
-    - The translated name already identifies the dish clearly.
-    - The description would only repeat the name.
-    - There is not enough reliable information to describe it beyond the translated name.
-    
-    PARENTHESIS STYLE
-    - Write descriptions in ${language}.
-    - Keep them short: about 6 to 16 words.
-    - Describe the basic dish type, main ingredient, cooking method, sauce, or defining flavor.
-    - Be neutral and factual.
-    - Do not add marketing language.
-    - Do not use uncertainty phrases like "usually," "probably," or "may contain."
-    
-    INGREDIENT ACCURACY
-    - Do not invent restaurant-specific ingredients, sauces, toppings, sides, or preparation details.
-    - Only mention ingredients that appear in the name or are essential to the commonly recognized dish.
-    - If recipes vary, give only a broad description.
-    - You may mention the standard defining preparation of a well-known dish, such as fried cutlet,
-      slow-cooked pork, stewed beef, or vinegar-soy braise.
-    - Do not infer allergens, dietary labels, sides, or exact toppings when uncertain.
-    
-    SPECIAL CASES
-    - Keep brand names and proper nouns as-is unless there is an established translation.
-    - Keep style names like "Cajun," "Mesquite," "Black & Blue," or "Bruschetta" only if they are
-      understandable in ${language}; otherwise translate or explain the meaning.
-    - Transliterate unfamiliar cultural dish names when appropriate, then add a basic description.
-    - Preserve numbers, serving sizes, and established abbreviations.
-    - For fish names that may be unfamiliar, add a simple description such as "white fish" when accurate.
-    
-    EXAMPLES
-    Use these as meaning guides. In the actual output, write the names and descriptions naturally in ${language}.
-    
-    - "Country Fried Steak" → translated name + (breaded fried beef with creamy gravy)
-    - "Kalua Pork" → translated name + (Hawaiian-style slow-cooked shredded pork)
-    - "Lau Lau" → translated name + (Hawaiian dish steamed in leaves)
-    - "Pork Adobo" → translated name + (Filipino pork braised with vinegar and soy sauce)
-    - "Black & Blue Chicken Salad" → translated name + (spiced chicken salad with blue cheese)
-    - "Mesquite Chicken Salad" → translated name + (smoky-flavored chicken salad)
-    - "Furikake Swai" → translated name + (white fish seasoned with furikake)
-    - "Loco Moco" → translated name + (rice with hamburger patty, gravy, and egg)
-    - "Chicken Katsu" → translated name + (Japanese-style breaded fried chicken cutlet)
-    - "Bibimbap" → translated name + (Korean rice bowl with vegetables and mixed toppings)
-    - "Pork Lumpia" → translated name + (Filipino fried rolls filled with seasoned pork)
-    - "Teriyaki Chicken" → translated name + (Japanese-style teriyaki chicken)
-    
-    Return ONLY the translated menu text.\n`;
+      const englishMenus = [
+        ...englishMenuFromDb.weekOne,
+        ...(englishMenuFromDb.weekTwo ?? []),
+      ];
+      const uniqueStrings = collectCcTranslatableStrings(englishMenus);
 
-    const translatedMenu = await fetchOpenAI(
-      prompt,
-      Location.CAMPUS_CENTER,
-      englishMenuFromDb,
-      language,
-      currentWeekOf,
-    ) as MenuResponse;
-
-    if (translatedMenu.weekOne && translatedMenu.weekOne.length > 0) {
-      return overlayCcMenuWithCorrections(
-        englishMenuFromDb.weekOne,
-        translatedMenu.weekOne,
-        language,
+      console.log(
+        `Translating ${uniqueStrings.length} unique CC strings into ${language}`,
       );
-    }
 
-    // Log an error if fetching the parsed menu from the database fails
-    throw new Error(`Failed to load parsedMenu for language: ${language}. Please try again later.`);
+      const translatedStrings = await translateSdxStringsCached(
+        language,
+        uniqueStrings,
+        (missing) => translateCcStrings(
+          getCcTranslationPrompt(language),
+          missing,
+          language,
+        ),
+      );
+      const translationMap = buildSdxTranslationMap(uniqueStrings, translatedStrings);
+
+      let weekOne = applyCcTranslations(englishMenuFromDb.weekOne, translationMap);
+      let weekTwo = applyCcTranslations(englishMenuFromDb.weekTwo ?? [], translationMap);
+
+      if (language === 'Japanese') {
+        const replaced = jpManualReplace({ weekOne, weekTwo });
+        weekOne = replaced.weekOne;
+        weekTwo = replaced.weekTwo ?? [];
+      }
+
+      await insertCCMenu(weekOne, Location.CAMPUS_CENTER, language, currentWeekOf);
+      if (weekTwo.length > 0) {
+        await insertCCMenu(weekTwo, Location.CAMPUS_CENTER, language, nextWeekOf);
+      }
+      console.log(`Inserted ${language} CC menu into DB for ${currentWeekOf}`);
+
+      return finalizeCcMenu(englishMenuFromDb.weekOne, weekOne, language);
+    });
   } catch (error) {
     if (error instanceof Error) {
       console.error(`Failed to fetch menu for language: ${language}. ERROR: ${error.message}`);

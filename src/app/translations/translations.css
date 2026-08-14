@@ -293,9 +293,101 @@ textarea.translation-input {
   color: #fff;
 }
 
+.translation-btn-danger {
+  background: #9b1c1c;
+  border-color: transparent;
+  color: #fff;
+}
+
 .translation-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.translation-cache-tools {
+  margin-top: 0.55rem;
+  border-top: 1px solid var(--ai-line);
+  padding-top: 0.45rem;
+  font-size: 0.78rem;
+}
+
+.translation-cache-tools summary {
+  width: fit-content;
+  color: var(--ai-muted);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.translation-cache-body {
+  margin-top: 0.45rem;
+  padding: 0.55rem;
+  border: 1px solid #f0c7c7;
+  border-radius: 8px;
+  background: #fffafa;
+}
+
+.translation-cache-body > p {
+  margin: 0 0 0.45rem;
+}
+
+.translation-cache-grid {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
+@media (min-width: 720px) {
+  .translation-cache-grid {
+    grid-template-columns: minmax(12rem, 1.4fr) 1fr 1fr;
+  }
+}
+
+.translation-cache-field,
+.translation-cache-grid fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  margin: 0;
+}
+
+.translation-cache-field > span,
+.translation-cache-grid legend {
+  margin-bottom: 0.1rem;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ai-muted);
+}
+
+.translation-cache-field select {
+  min-height: 2rem;
+  border: 1px solid var(--ai-line);
+  border-radius: 7px;
+  padding: 0.3rem 0.45rem;
+  background: var(--ai-panel);
+  color: var(--ai-text);
+  font: inherit;
+}
+
+.translation-cache-grid fieldset {
+  border: 0;
+  padding: 0;
+}
+
+.translation-cache-grid fieldset label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.translation-cache-warning {
+  color: #8a4b0f;
+}
+
+.translation-cache-success {
+  color: #166534;
 }
 
 .translation-pager {

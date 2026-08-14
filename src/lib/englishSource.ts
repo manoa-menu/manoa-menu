@@ -1,6 +1,11 @@
 import type { DayMenu, FilteredSodexoMeal } from '@/types/menuTypes';
 import { normalizeTranslationSource, translationSourceKey } from '@/lib/translationSource';
 
+/** English underlines that should never appear under a translated dish. */
+const HIDDEN_ENGLISH_SOURCES = new Set([
+  translationSourceKey('Mini or Bowl: Choice of any one (1) entrée'),
+]);
+
 function stripTrailingNotes(text: string): string {
   return text
     .replace(/\s*[\(（][^)）]*[\)）]\s*$/g, '')
@@ -15,6 +20,9 @@ export function englishSourceLabel(
   const source = normalizeTranslationSource(english);
   const display = normalizeTranslationSource(translated);
   if (!source || !display) {
+    return undefined;
+  }
+  if (HIDDEN_ENGLISH_SOURCES.has(translationSourceKey(source))) {
     return undefined;
   }
   if (translationSourceKey(source) === translationSourceKey(display)) {

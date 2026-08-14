@@ -118,6 +118,8 @@ function operationLabel(operation: string): string {
       return 'CC PDF parse';
     case 'cc_translate':
       return 'CC translate';
+    case 'cc_translate_batch':
+      return 'CC string batch';
     case 'sdx_translate':
       return 'SDX translate';
     case 'sdx_translate_batch':

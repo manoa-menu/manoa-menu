@@ -2,7 +2,6 @@ import { prisma } from '@/lib/prisma';
 import {
   persistTranslationToStoredMenus,
   dedupeSdxStringTranslations,
-  pruneSdxStringTranslationsToCurrentWeek,
 } from '@/lib/sdxTranslationCache';
 import { getCurrentWeekDates, getCurrentWeekOf } from '@/lib/dateFunctions';
 import {
@@ -355,7 +354,6 @@ export async function listTranslationReviews(options: {
 
   try {
     await dedupeSdxStringTranslations();
-    await pruneSdxStringTranslationsToCurrentWeek();
   } catch (error) {
     console.warn('[translation review] Duplicate cleanup failed', error);
   }
