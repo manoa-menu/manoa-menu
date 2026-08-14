@@ -40,21 +40,23 @@ const LOCATION_LABELS = {
 } as const;
 
 function primaryLocation(row: TranslationReviewRow): keyof typeof LOCATION_LABELS | null {
-  let best: { location: keyof typeof LOCATION_LABELS; date: string } | null = null;
+  let bestLocation: keyof typeof LOCATION_LABELS | null = null;
+  let bestDate = '';
   row.occurrences.forEach((occurrence) => {
     occurrence.dates.forEach((date) => {
       const location = occurrence.location;
       if (
-        !best
-        || date < best.date
-        || (date === best.date
-          && LOCATION_ORDER.indexOf(location) < LOCATION_ORDER.indexOf(best.location))
+        bestLocation == null
+        || date < bestDate
+        || (date === bestDate
+          && LOCATION_ORDER.indexOf(location) < LOCATION_ORDER.indexOf(bestLocation))
       ) {
-        best = { location, date };
+        bestLocation = location;
+        bestDate = date;
       }
     });
   });
-  return best?.location ?? row.occurrences[0]?.location ?? null;
+  return bestLocation ?? row.occurrences[0]?.location ?? null;
 }
 
 type DisplayGroup = {
@@ -436,7 +438,7 @@ export default function TranslationReview({ reviewer, initialLanguage }: Props) 
                 && group.place !== previousPlace;
               return (
                 <div key={group.key} className="translation-list-item">
-                  {showPlaceHeader ? (
+                  {showPlaceHeader && group.place ? (
                     <h3 className="translation-place-header">
                       {LOCATION_LABELS[group.place]}
                     </h3>

@@ -1,5 +1,9 @@
 import { prisma } from '@/lib/prisma';
-import { persistTranslationToStoredMenus, dedupeSdxStringTranslations, pruneSdxStringTranslationsToCurrentWeek } from '@/lib/sdxTranslationCache';
+import {
+  persistTranslationToStoredMenus,
+  dedupeSdxStringTranslations,
+  pruneSdxStringTranslationsToCurrentWeek,
+} from '@/lib/sdxTranslationCache';
 import { getCurrentWeekDates, getCurrentWeekOf } from '@/lib/dateFunctions';
 import {
   classifyTranslationKind,
@@ -53,7 +57,11 @@ function toReviewRow(row: {
   correctedAt: Date | null;
   correctedBy: string | null;
   updatedAt: Date;
-}, kind: TranslationStringKind, occurrences: TranslationOccurrence[], parentDishText: string | null): TranslationReviewRow {
+},
+kind: TranslationStringKind,
+occurrences: TranslationOccurrence[],
+parentDishText: string | null,
+): TranslationReviewRow {
   return {
     id: row.id,
     language: row.language,
@@ -155,20 +163,22 @@ function earliestOccurrenceDate(row: TranslationReviewRow): string {
 const LOCATION_SORT_ORDER = { GW: 0, HA: 1, CC: 2 } as const;
 
 function primaryLocation(row: TranslationReviewRow): 'GW' | 'HA' | 'CC' | null {
-  let best: { location: 'GW' | 'HA' | 'CC'; date: string } | null = null;
+  let bestLocation: 'GW' | 'HA' | 'CC' | null = null;
+  let bestDate = '';
   row.occurrences.forEach((occurrence) => {
     occurrence.dates.forEach((date) => {
       if (
-        !best
-        || date < best.date
-        || (date === best.date
-          && LOCATION_SORT_ORDER[occurrence.location] < LOCATION_SORT_ORDER[best.location])
+        bestLocation == null
+        || date < bestDate
+        || (date === bestDate
+          && LOCATION_SORT_ORDER[occurrence.location] < LOCATION_SORT_ORDER[bestLocation])
       ) {
-        best = { location: occurrence.location, date };
+        bestLocation = occurrence.location;
+        bestDate = date;
       }
     });
   });
-  return best?.location ?? row.occurrences[0]?.location ?? null;
+  return bestLocation ?? row.occurrences[0]?.location ?? null;
 }
 
 function groupSortName(row: TranslationReviewRow): string {

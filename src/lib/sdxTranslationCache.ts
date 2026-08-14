@@ -253,7 +253,8 @@ async function currentWeekSourceKeys(): Promise<Set<string>> {
   const keys = new Set<string>();
   const sdxMenus = [...gwMenus, ...haMenus]
     .map((row) => row.menu)
-    .filter((menu): menu is FilteredSodexoMeal[] => Array.isArray(menu));
+    .filter((menu): menu is Prisma.JsonArray => Array.isArray(menu))
+    .map((menu) => menu as unknown as FilteredSodexoMeal[]);
   collectSdxTranslatableStrings(sdxMenus).forEach((source) => {
     keys.add(translationSourceKey(source));
   });
@@ -261,7 +262,7 @@ async function currentWeekSourceKeys(): Promise<Set<string>> {
     if (!Array.isArray(row.menu)) {
       return;
     }
-    collectCcTranslatableStrings(row.menu as DayMenu[]).forEach((source) => {
+    collectCcTranslatableStrings(row.menu as unknown as DayMenu[]).forEach((source) => {
       keys.add(translationSourceKey(source));
     });
   });
