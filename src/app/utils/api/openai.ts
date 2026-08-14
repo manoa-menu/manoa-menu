@@ -5,6 +5,8 @@ import { pathToFileURL } from 'node:url';
 
 import jpManualReplace from '@/lib/manualTranslate';
 import { getCCMenu, insertCCMenu, getSdxMenu, insertSdxMenu } from '@/lib/dbActions';
+import { extractCcTranslationPairs } from '@/lib/ccTranslation';
+import { overlayCcMenuWithCorrections, saveSdxTranslations } from '@/lib/sdxTranslationCache';
 import { getCurrentWeekOf, getNextWeekOf } from '@/lib/dateFunctions';
 import { recordAiTokenUsage, type AiOperation } from '@/lib/aiTokenUsage';
 
@@ -488,6 +490,25 @@ async function fetchOpenAI(
       }
 
       const menuResp = parsed as MenuResponse;
+      const englishMenu = weeklyMenu as MenuResponse;
+      const ccPairs = new Map<string, string>([
+        ...extractCcTranslationPairs(englishMenu.weekOne, menuResp.weekOne),
+        ...extractCcTranslationPairs(englishMenu.weekTwo ?? [], menuResp.weekTwo ?? []),
+      ]);
+      await saveSdxTranslations(language, ccPairs);
+      menuResp.weekOne = await overlayCcMenuWithCorrections(
+        englishMenu.weekOne,
+        menuResp.weekOne,
+        language,
+      );
+      if (menuResp.weekTwo && menuResp.weekTwo.length > 0 && englishMenu.weekTwo) {
+        menuResp.weekTwo = await overlayCcMenuWithCorrections(
+          englishMenu.weekTwo,
+          menuResp.weekTwo,
+          language,
+        );
+      }
+
       await insertCCMenu(menuResp.weekOne, option, language, date);
       if (menuResp.weekTwo && menuResp.weekTwo.length > 0) {
         await insertCCMenu(menuResp.weekTwo, option, language, getNextWeekOf());

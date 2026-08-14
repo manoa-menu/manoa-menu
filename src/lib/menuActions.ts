@@ -5,6 +5,10 @@ import { getCCMenu } from '@/lib/dbActions';
 import { Location, DayMenu, MenuResponse } from '@/types/menuTypes';
 import fetchOpenAI, { parseCCMenuFromPDF } from '../app/utils/api/openai';
 import { getCurrentWeekOf, getNextWeekOf } from './dateFunctions';
+import {
+  ensureSdxTranslationCacheBackfilled,
+  overlayCcMenuWithCorrections,
+} from './sdxTranslationCache';
 
 async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
   try {
@@ -14,11 +18,23 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
     const nextWeekOf = getNextWeekOf();
 
     if (language !== 'English') {
+      await ensureSdxTranslationCacheBackfilled(language);
       const existingLanguageMenu = await getCCMenu(currentWeekOf, language);
       if (existingLanguageMenu) {
         const existingLanguageMenuParsed = existingLanguageMenu.menu as unknown as DayMenu[];
         if (existingLanguageMenuParsed.length > 0) {
           console.log(`Returning cached ${language} menu for ${currentWeekOf}`);
+          const englishWeekOneRow = await getCCMenu(currentWeekOf, 'English');
+          const englishWeekOne = englishWeekOneRow
+            ? englishWeekOneRow.menu as unknown as DayMenu[]
+            : [];
+          if (englishWeekOne.length > 0) {
+            return overlayCcMenuWithCorrections(
+              englishWeekOne,
+              existingLanguageMenuParsed,
+              language,
+            );
+          }
           return existingLanguageMenuParsed;
         }
       }

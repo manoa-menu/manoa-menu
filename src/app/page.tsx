@@ -238,7 +238,9 @@ const Page = () => {
     ) => {
       try {
         const locationQuery = location ? `&location=${location}` : '';
-        const response = await fetch(`/api/${menuType}-menu?language=${lang}${locationQuery}`);
+        const response = await fetch(`/api/${menuType}-menu?language=${lang}${locationQuery}`, {
+          cache: 'no-store',
+        });
         if (!response.ok) {
           throw new Error(`Error: ${response.status} ${response.statusText}`);
         }

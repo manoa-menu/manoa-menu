@@ -11,7 +11,9 @@ export async function GET(req: NextRequest) {
     const menu = await getCheckCCMenu(language);
     const elapsed = ((performance.now() - start) / 1000).toFixed(2);
     console.log(`[cc-menu] Done in ${elapsed}s (language=${language})`);
-    return NextResponse.json(menu);
+    return NextResponse.json(menu, {
+      headers: { 'Cache-Control': 'no-store' },
+    });
   } catch (error) {
     const elapsed = ((performance.now() - start) / 1000).toFixed(2);
     if (error instanceof TypeError) {
@@ -27,3 +29,4 @@ export async function GET(req: NextRequest) {
 }
 
 export const maxDuration = 180;
+export const dynamic = 'force-dynamic';
