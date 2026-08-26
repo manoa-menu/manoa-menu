@@ -9,13 +9,17 @@ import {
   findCurrentWeekMenu,
   isTodayWithinRange,
   mergeMenuCandidates,
+  rangeOverlapsCurrentWeek,
   normalizePdfHref,
   parseMenuDateRange,
+  parsePdfFilenameRange,
 } from './ccMenuParsing';
 import type { DateParts, MenuCandidate } from './ccMenuParsing';
 
 const julySix2026: DateParts = { year: 2026, month: 6, day: 6 };
 const julyEleven2026: DateParts = { year: 2026, month: 6, day: 11 };
+const augTwentyThree2026: DateParts = { year: 2026, month: 7, day: 23 };
+const augTwentyFive2026: DateParts = { year: 2026, month: 7, day: 25 };
 
 function assertDate(date: Date, year: number, month: number, day: number): void {
   assert.equal(date.getFullYear(), year);
@@ -42,6 +46,36 @@ function makeCandidate(
 }
 
 describe('parseMenuDateRange', () => {
+  it('parses a date range with no venue wording', () => {
+    const parsed = parseMenuDateRange('24 Aug to 28 Aug', augTwentyFive2026);
+
+    assert.ok(parsed);
+    assert.equal(parsed.format, 'day-month');
+    assertDate(parsed.startDate, 2026, 7, 24);
+    assertDate(parsed.endDate, 2026, 7, 28);
+  });
+
+  it('parses weekday-prefixed day-month ranges', () => {
+    const parsed = parseMenuDateRange('Mon 6 Jul - Fri 10 Jul', julySix2026);
+
+    assert.ok(parsed);
+    assert.equal(parsed.format, 'day-month');
+    assertDate(parsed.startDate, 2026, 6, 6);
+    assertDate(parsed.endDate, 2026, 6, 10);
+  });
+
+  it('parses labels that omit the word Menu', () => {
+    const parsed = parseMenuDateRange(
+      'Campus Center Food Court 24 Aug to 28 Aug',
+      augTwentyFive2026,
+    );
+
+    assert.ok(parsed);
+    assert.equal(parsed.format, 'day-month');
+    assertDate(parsed.startDate, 2026, 7, 24);
+    assertDate(parsed.endDate, 2026, 7, 28);
+  });
+
   it('parses the primary day-month format', () => {
     const parsed = parseMenuDateRange(
       'Campus Center Food Court Menu 06 July to 10 July',
@@ -148,7 +182,28 @@ describe('parseMenuDateRange', () => {
   it('returns null for unsupported labels', () => {
     assert.equal(parseMenuDateRange('Campus Center Food Court Menu', julySix2026), null);
     assert.equal(parseMenuDateRange('No dates here at all', julySix2026), null);
-    assert.equal(parseMenuDateRange('Campus Center Food Court Menu Mon 6 Jul - Fri 10 Jul', julySix2026), null);
+    assert.equal(parseMenuDateRange('1 January to 31 January', julySix2026), null);
+  });
+});
+
+describe('parsePdfFilenameRange', () => {
+  it('reads YY-MMDD from the PDF filename as a Mon-Fri week', () => {
+    const parsed = parsePdfFilenameRange(
+      '/web/en-us/media/26-0824%20printed%20menu%20b_tcm17-93718.pdf',
+      augTwentyFive2026,
+    );
+
+    assert.ok(parsed);
+    assert.equal(parsed.format, 'filename');
+    assertDate(parsed.startDate, 2026, 7, 24);
+    assertDate(parsed.endDate, 2026, 7, 28);
+  });
+
+  it('ignores tcm id numbers in the filename', () => {
+    assert.equal(
+      parsePdfFilenameRange('/web/en-us/media/menu_tcm17-89982.pdf', julySix2026),
+      null,
+    );
   });
 });
 
@@ -193,13 +248,35 @@ describe('findCurrentWeekMenu', () => {
     assert.equal(match.label, 'Campus Center Food Court Menu 06 July to 10 July');
   });
 
-  it('returns null on weekends between published menu ranges', () => {
-    assert.equal(findCurrentWeekMenu(candidates, julyEleven2026), null);
+  it('matches a Mon-Fri menu on Sunday and Saturday of the same week', () => {
+    const sundayBefore = { year: 2026, month: 6, day: 5 };
+    const saturdayAfter = julyEleven2026;
+
+    const sundayMatch = findCurrentWeekMenu(candidates, sundayBefore);
+    const saturdayMatch = findCurrentWeekMenu(candidates, saturdayAfter);
+
+    assert.ok(sundayMatch);
+    assert.equal(sundayMatch.href, 'https://example.com/july.pdf');
+    assert.ok(saturdayMatch);
+    assert.equal(saturdayMatch.href, 'https://example.com/july.pdf');
   });
 
   it('does not fall back to the first or nearest menu', () => {
     const onlyPastAndFuture = [candidates[0], candidates[2]];
     assert.equal(findCurrentWeekMenu(onlyPastAndFuture, julySix2026), null);
+  });
+});
+
+describe('rangeOverlapsCurrentWeek', () => {
+  it('treats a Mon-Fri range as part of the Sunday-Saturday week', () => {
+    const start = new Date(2026, 7, 24);
+    const end = new Date(2026, 7, 28);
+
+    assert.equal(rangeOverlapsCurrentWeek(augTwentyThree2026, start, end), true);
+    assert.equal(rangeOverlapsCurrentWeek(augTwentyFive2026, start, end), true);
+    assert.equal(rangeOverlapsCurrentWeek({ year: 2026, month: 7, day: 29 }, start, end), true);
+    assert.equal(rangeOverlapsCurrentWeek({ year: 2026, month: 7, day: 22 }, start, end), false);
+    assert.equal(rangeOverlapsCurrentWeek({ year: 2026, month: 7, day: 30 }, start, end), false);
   });
 });
 
@@ -215,6 +292,31 @@ describe('isTodayWithinRange', () => {
 });
 
 describe('collectCandidatesFromEmbeddedJson', () => {
+  it('extracts a nearby name even when venue wording changes', () => {
+    const html = `
+      "name":"Weekly Menu 24 Aug to 28 Aug",
+      "link":{"media":{"content":{"main":{"uri":"/web/en-us/media/26-0824%20printed%20menu%20b_tcm17-93718.pdf"}}}}
+    `;
+
+    const candidates = collectCandidatesFromEmbeddedJson(html, augTwentyFive2026);
+
+    assert.equal(candidates.length, 1);
+    assert.equal(candidates[0].label, 'Weekly Menu 24 Aug to 28 Aug');
+  });
+
+  it('uses the PDF filename dates when the nearby name has no range', () => {
+    const html = `
+      "name":"Download",
+      "link":{"media":{"content":{"main":{"uri":"/web/en-us/media/26-0824%20printed%20menu%20b_tcm17-93718.pdf"}}}}
+    `;
+
+    const candidates = collectCandidatesFromEmbeddedJson(html, augTwentyFive2026);
+
+    assert.equal(candidates.length, 1);
+    assertDate(candidates[0].startDate, 2026, 7, 24);
+    assertDate(candidates[0].endDate, 2026, 7, 28);
+  });
+
   it('extracts menu labels and PDF URIs from embedded page JSON', () => {
     const html = `
       "name":"Campus Center Food Court Menu 06 July to 10 July",
@@ -235,6 +337,36 @@ describe('collectCandidatesFromEmbeddedJson', () => {
 });
 
 describe('collectCandidatesFromDom', () => {
+  it('accepts a PDF link whose visible text is only a date range', () => {
+    const html = `
+      <a href="https://media-prd.sodexomyway.net/web/en-us/media/week.pdf">
+        24 Aug to 28 Aug
+      </a>
+    `;
+
+    const doc = new JSDOM(html).window.document;
+    const candidates = collectCandidatesFromDom(doc, augTwentyFive2026);
+
+    assert.equal(candidates.length, 1);
+    assert.equal(candidates[0].label, '24 Aug to 28 Aug');
+  });
+
+  it('reads MenuApp links whose labels omit the word Menu', () => {
+    const html = `
+      <div class="MenuAppstyles__MenuLinkContainer-sc-hftaq1-1 gRMdaN">
+        <a href="https://media-prd.sodexomyway.net/web/en-us/media/26-0824%20printed%20menu%20b_tcm17-93718.pdf">
+          Campus Center Food Court 24 Aug to 28 Aug
+        </a>
+      </div>
+    `;
+
+    const doc = new JSDOM(html).window.document;
+    const candidates = collectCandidatesFromDom(doc, augTwentyFive2026);
+
+    assert.equal(candidates.length, 1);
+    assert.equal(candidates[0].label, 'Campus Center Food Court 24 Aug to 28 Aug');
+  });
+
   it('reads menu links from MenuLinkContainer anchors', () => {
     const html = `
       <div class="Locationstyles__MenuLinkContainer-sc-nt7jmt-17">
@@ -287,6 +419,50 @@ describe('mergeMenuCandidates', () => {
 });
 
 describe('createMenuCandidate', () => {
+  it('accepts a date range with no Campus Center wording', () => {
+    const candidate = createMenuCandidate(
+      '24 Aug to 28 Aug',
+      '/web/en-us/media/menu.pdf',
+      augTwentyFive2026,
+    );
+
+    assert.ok(candidate);
+    assertDate(candidate.startDate, 2026, 7, 24);
+    assertDate(candidate.endDate, 2026, 7, 28);
+  });
+
+  it('falls back to filename dates when the label has no numbers', () => {
+    const candidate = createMenuCandidate(
+      'Download PDF',
+      '/web/en-us/media/26-0824%20printed%20menu%20b_tcm17-93718.pdf',
+      augTwentyThree2026,
+    );
+
+    assert.ok(candidate);
+    assertDate(candidate.startDate, 2026, 7, 24);
+    assertDate(candidate.endDate, 2026, 7, 28);
+    assert.equal(
+      findCurrentWeekMenu([candidate], augTwentyThree2026)?.href,
+      candidate.href,
+    );
+  });
+
+  it('accepts the live Sodexo label without the word Menu', () => {
+    const candidate = createMenuCandidate(
+      'Campus Center Food Court 24 Aug to 28 Aug',
+      '/web/en-us/media/26-0824%20printed%20menu%20b_tcm17-93718.pdf',
+      augTwentyThree2026,
+    );
+
+    assert.ok(candidate);
+    assertDate(candidate.startDate, 2026, 7, 24);
+    assertDate(candidate.endDate, 2026, 7, 28);
+    assert.equal(
+      findCurrentWeekMenu([candidate], augTwentyThree2026)?.href,
+      candidate.href,
+    );
+  });
+
   it('builds a normalized candidate from a label and href', () => {
     const candidate = createMenuCandidate(
       'Campus Center Food Court Menu July 6 to July 10',
@@ -300,17 +476,13 @@ describe('createMenuCandidate', () => {
     assertDate(candidate.endDate, 2026, 6, 10);
   });
 
-  it('returns null when the label does not include a parseable date range', () => {
+  it('returns null when the label and filename have no parseable date range', () => {
     assert.equal(
       createMenuCandidate('Campus Center Food Court Menu', '/web/en-us/media/menu.pdf', julySix2026),
       null,
     );
     assert.equal(
-      createMenuCandidate(
-        'Campus Center Food Court Menu Mon 6 Jul - Fri 10 Jul',
-        '/web/en-us/media/menu.pdf',
-        julySix2026,
-      ),
+      createMenuCandidate('Hours of operation', '/web/en-us/media/menu_tcm17-89982.pdf', julySix2026),
       null,
     );
   });

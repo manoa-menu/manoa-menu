@@ -1,6 +1,10 @@
 export const PDF_MEDIA_BASE = 'https://media-prd.sodexomyway.net';
 export const HST_TIMEZONE = 'Pacific/Honolulu';
 
+const MAX_MENU_RANGE_DAYS = 14;
+const FILENAME_MENU_DAY_SPAN = 4;
+const EMBEDDED_NAME_LOOKBACK_CHARS = 800;
+
 const MONTH_MAP: Record<string, number> = {};
 [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -10,35 +14,36 @@ const MONTH_MAP: Record<string, number> = {};
   MONTH_MAP[month.slice(0, 3).toLowerCase()] = index;
 });
 
-// Primary: "06 July to 10 July", "29 June - 03 July", "6th July to 10th July"
+const WEEKDAY = '(?:Sun(?:day)?|Mon(?:day)?|Tue(?:s(?:day)?)?|Wed(?:nesday)?'
+  + '|Thu(?:rs(?:day)?)?|Fri(?:day)?|Sat(?:urday)?)';
+const RANGE_SEP = '(?:to|–|—|-)';
+
+// Primary: "06 July to 10 July", "Mon 6 Jul - Fri 10 Jul", "6th July to 10th July"
 const DAY_MONTH_RANGE_REGEX = new RegExp(
-  '(\\d{1,2})(?:st|nd|rd|th)?\\s+([A-Za-z]+\\.?)\\s+(?:to|–|—|-)\\s+'
-  + '(\\d{1,2})(?:st|nd|rd|th)?\\s+([A-Za-z]+\\.?)',
+  `(?:${WEEKDAY}\\s+)?(\\d{1,2})(?:st|nd|rd|th)?\\s+([A-Za-z]+\\.?)\\s+${RANGE_SEP}\\s+`
+  + `(?:${WEEKDAY}\\s+)?(\\d{1,2})(?:st|nd|rd|th)?\\s+([A-Za-z]+\\.?)`,
   'i',
 );
 
 // Secondary: "July 6 to July 10", "Jul 6 - Jul 10"
 const MONTH_DAY_RANGE_REGEX = new RegExp(
-  '([A-Za-z]+\\.?)\\s+(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:to|–|—|-)\\s+'
-  + '([A-Za-z]+\\.?)\\s+(\\d{1,2})(?:st|nd|rd|th)?',
+  `(?:${WEEKDAY}\\s+)?([A-Za-z]+\\.?)\\s+(\\d{1,2})(?:st|nd|rd|th)?\\s+${RANGE_SEP}\\s+`
+  + `(?:${WEEKDAY}\\s+)?([A-Za-z]+\\.?)\\s+(\\d{1,2})(?:st|nd|rd|th)?`,
   'i',
 );
 
 // Secondary: "7/6 to 7/10", "07/06/2026 to 07/10/2026"
 const NUMERIC_RANGE_REGEX = new RegExp(
-  '(\\d{1,2})\\/(\\d{1,2})(?:\\/(\\d{2,4}))?\\s+(?:to|–|—|-)\\s+'
-  + '(\\d{1,2})\\/(\\d{1,2})(?:\\/(\\d{2,4}))?',
+  `(\\d{1,2})\\/(\\d{1,2})(?:\\/(\\d{2,4}))?\\s+${RANGE_SEP}\\s+`
+  + `(\\d{1,2})\\/(\\d{1,2})(?:\\/(\\d{2,4}))?`,
 );
 
 // Secondary: "2026-07-06 to 2026-07-10"
 const ISO_RANGE_REGEX = /(\d{4})-(\d{1,2})-(\d{1,2})\s+(?:to|–|—|-)\s+(\d{4})-(\d{1,2})-(\d{1,2})/;
 
-const MENU_LABEL_REGEX = /Campus Center Food Court Menu/i;
-const EMBEDDED_MENU_BLOCK_REGEX = new RegExp(
-  '"name":"(Campus Center Food Court Menu [^"]+)"[\\s\\S]*?'
-  + '"uri":"(\\/web\\/en-us\\/media\\/[^"]+\\.pdf)"',
-  'g',
-);
+const EMBEDDED_PDF_URI_REGEX = /"uri":"(\/web\/en-us\/media\/[^"]+\.pdf)"/g;
+const EMBEDDED_NAME_REGEX = /"name":"([^"]+)"/g;
+const PDF_FILENAME_YYMMDD_REGEX = /(?<!\d)(\d{2})-(\d{2})(\d{2})(?!\d)/g;
 
 export interface DateParts {
   year: number;
@@ -134,11 +139,88 @@ function buildDateRange(
   return { startDate, endDate };
 }
 
+function calendarUtc(year: number, month: number, day: number): number {
+  return Date.UTC(year, month, day);
+}
+
 export function isTodayWithinRange(today: DateParts, startDate: Date, endDate: Date): boolean {
-  const todayValue = Date.UTC(today.year, today.month, today.day);
-  const startValue = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-  const endValue = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+  const todayValue = calendarUtc(today.year, today.month, today.day);
+  const startValue = calendarUtc(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  const endValue = calendarUtc(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
   return todayValue >= startValue && todayValue <= endValue;
+}
+
+/** Sunday–Saturday week in HST calendar dates that contains `today`. */
+function currentWeekBoundsUtc(today: DateParts): { weekStart: number; weekEnd: number } {
+  const todayValue = calendarUtc(today.year, today.month, today.day);
+  const dayOfWeek = new Date(todayValue).getUTCDay();
+  return {
+    weekStart: calendarUtc(today.year, today.month, today.day - dayOfWeek),
+    weekEnd: calendarUtc(today.year, today.month, today.day - dayOfWeek + 6),
+  };
+}
+
+export function rangeOverlapsCurrentWeek(
+  today: DateParts,
+  startDate: Date,
+  endDate: Date,
+): boolean {
+  const { weekStart, weekEnd } = currentWeekBoundsUtc(today);
+  const startValue = calendarUtc(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  const endValue = calendarUtc(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+  return startValue <= weekEnd && endValue >= weekStart;
+}
+
+function isPlausibleMenuRange(startDate: Date, endDate: Date): boolean {
+  const startValue = calendarUtc(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  const endValue = calendarUtc(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+  if (endValue < startValue) {
+    return false;
+  }
+  const days = (endValue - startValue) / 86_400_000;
+  return days <= MAX_MENU_RANGE_DAYS;
+}
+
+function decodeHref(href: string): string {
+  try {
+    return decodeURIComponent(href);
+  } catch {
+    return href;
+  }
+}
+
+function pdfBasename(href: string): string {
+  const decoded = decodeHref(href);
+  const withoutQuery = decoded.split('?')[0] ?? decoded;
+  const segments = withoutQuery.split('/');
+  return segments[segments.length - 1] ?? withoutQuery;
+}
+
+export function parsePdfFilenameRange(
+  href: string,
+  today: DateParts,
+): ParsedMenuDateRange | null {
+  const basename = pdfBasename(href);
+  PDF_FILENAME_YYMMDD_REGEX.lastIndex = 0;
+  for (const match of basename.matchAll(PDF_FILENAME_YYMMDD_REGEX)) {
+    const year = parseOptionalYear(match[1], today);
+    const month = parseInt(match[2], 10) - 1;
+    const day = parseInt(match[3], 10);
+    if (month < 0 || month > 11 || day < 1 || day > 31) {
+      continue;
+    }
+
+    const startDate = new Date(year, month, day);
+    const endDate = new Date(year, month, day);
+    endDate.setDate(endDate.getDate() + FILENAME_MENU_DAY_SPAN);
+    if (!isPlausibleMenuRange(startDate, endDate)) {
+      continue;
+    }
+
+    return { startDate, endDate, format: 'filename' };
+  }
+
+  return null;
 }
 
 export function normalizePdfHref(href: string): string {
@@ -252,6 +334,10 @@ export function parseMenuDateRange(label: string, today: DateParts): ParsedMenuD
       continue;
     }
 
+    if (!isPlausibleMenuRange(result.startDate, result.endDate)) {
+      continue;
+    }
+
     return { ...result, format: parser.format };
   }
 
@@ -263,11 +349,7 @@ export function createMenuCandidate(
   href: string,
   today: DateParts,
 ): MenuCandidate | null {
-  if (!MENU_LABEL_REGEX.test(label)) {
-    return null;
-  }
-
-  const dateRange = parseMenuDateRange(label, today);
+  const dateRange = parseMenuDateRange(label, today) ?? parsePdfFilenameRange(href, today);
   if (!dateRange) {
     return null;
   }
@@ -300,27 +382,20 @@ export function collectCandidatesFromDom(doc: Document, today: DateParts): MenuC
   const candidates: MenuCandidate[] = [];
   const seenHrefs = new Set<string>();
 
-  const menuContainers = doc.querySelectorAll('div[class*="MenuLinkContainer"]');
-  menuContainers.forEach((container) => {
-    const anchor = container.querySelector('a') as HTMLAnchorElement | null;
-    if (!anchor?.href) {
+  const addAnchor = (node: Element): void => {
+    if (node.tagName !== 'A') {
       return;
     }
+    const href = node.getAttribute('href');
+    if (!href) {
+      return;
+    }
+    const label = (node.textContent || '').trim();
+    addCandidate(candidates, seenHrefs, label, href, today);
+  };
 
-    const label = (anchor.textContent || '').trim();
-    addCandidate(candidates, seenHrefs, label, anchor.href, today);
-  });
-
-  if (candidates.length === 0) {
-    doc.querySelectorAll('a[href*=".pdf"]').forEach((anchor) => {
-      const link = anchor as HTMLAnchorElement;
-      const label = (link.textContent || '').trim();
-      if (!label.includes('Food Court Menu')) {
-        return;
-      }
-      addCandidate(candidates, seenHrefs, label, link.href, today);
-    });
-  }
+  doc.querySelectorAll('div[class*="MenuLinkContainer"] a[href]').forEach(addAnchor);
+  doc.querySelectorAll('a[href*=".pdf"]').forEach(addAnchor);
 
   return candidates;
 }
@@ -329,8 +404,16 @@ export function collectCandidatesFromEmbeddedJson(html: string, today: DateParts
   const candidates: MenuCandidate[] = [];
   const seenHrefs = new Set<string>();
 
-  for (const match of html.matchAll(EMBEDDED_MENU_BLOCK_REGEX)) {
-    addCandidate(candidates, seenHrefs, match[1], match[2], today);
+  EMBEDDED_PDF_URI_REGEX.lastIndex = 0;
+  for (const match of html.matchAll(EMBEDDED_PDF_URI_REGEX)) {
+    const href = match[1];
+    const pdfIndex = match.index ?? 0;
+    const lookbackStart = Math.max(0, pdfIndex - EMBEDDED_NAME_LOOKBACK_CHARS);
+    const preceding = html.slice(lookbackStart, pdfIndex);
+    EMBEDDED_NAME_REGEX.lastIndex = 0;
+    const names = [...preceding.matchAll(EMBEDDED_NAME_REGEX)];
+    const nearestName = names.length > 0 ? names[names.length - 1][1] : '';
+    addCandidate(candidates, seenHrefs, nearestName, href, today);
   }
 
   return candidates;
@@ -352,8 +435,12 @@ export function mergeMenuCandidates(...groups: MenuCandidate[][]): MenuCandidate
 }
 
 export function findCurrentWeekMenu(candidates: MenuCandidate[], today: DateParts): MenuCandidate | null {
-  const currentWeekMenus = candidates.filter((candidate) =>
+  const containingToday = candidates.filter((candidate) =>
     isTodayWithinRange(today, candidate.startDate, candidate.endDate));
+  const currentWeekMenus = containingToday.length > 0
+    ? containingToday
+    : candidates.filter((candidate) =>
+      rangeOverlapsCurrentWeek(today, candidate.startDate, candidate.endDate));
 
   if (currentWeekMenus.length === 0) {
     return null;
