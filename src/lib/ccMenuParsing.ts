@@ -14,7 +14,8 @@ const MONTH_MAP: Record<string, number> = {};
   MONTH_MAP[month.slice(0, 3).toLowerCase()] = index;
 });
 
-const WEEKDAY = '(?:Sun(?:day)?|Mon(?:day)?|Tue(?:s(?:day)?)?|Wed(?:nesday)?|Thu(?:rs(?:day)?)?|Fri(?:day)?|Sat(?:urday)?)';
+const WEEKDAY = '(?:Sun(?:day)?|Mon(?:day)?|Tue(?:s(?:day)?)?|Wed(?:nesday)?'
+  + '|Thu(?:rs(?:day)?)?|Fri(?:day)?|Sat(?:urday)?)';
 const RANGE_SEP = '(?:to|–|—|-)';
 
 // Primary: "06 July to 10 July", "Mon 6 Jul - Fri 10 Jul", "6th July to 10th July"
