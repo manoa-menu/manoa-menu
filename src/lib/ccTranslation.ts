@@ -31,6 +31,90 @@ function isDayMenuArray(value: unknown): value is DayMenu[] {
   return Array.isArray(value);
 }
 
+function keepOrTranslate(
+  englishValue: string | undefined,
+  currentValue: string,
+  translations: Map<string, string>,
+): string {
+  if (!englishValue) {
+    return currentValue;
+  }
+  const translated = lookupTranslation(translations, englishValue);
+  if (translated == null || !translated.trim()) {
+    return currentValue;
+  }
+  return translated;
+}
+
+/**
+ * Apply translations onto an existing Campus Center menu. Missing map entries
+ * keep the stored text — they are never replaced with English.
+ */
+export function patchCcTranslatedMenu(
+  englishMenu: unknown,
+  translatedMenu: unknown,
+  translations: Map<string, string>,
+): DayMenu[] | null {
+  if (!isDayMenuArray(translatedMenu)) {
+    return null;
+  }
+  if (!isDayMenuArray(englishMenu) || englishMenu.length !== translatedMenu.length) {
+    return translatedMenu;
+  }
+
+  let changed = false;
+  const next = translatedMenu.map((translatedDay, dayIndex) => {
+    const englishDay = englishMenu[dayIndex];
+    if (!englishDay) {
+      return translatedDay;
+    }
+
+    const plateLunch = englishDay.plateLunch.length !== translatedDay.plateLunch.length
+      ? translatedDay.plateLunch
+      : translatedDay.plateLunch.map((item, itemIndex) => {
+        const patched = keepOrTranslate(englishDay.plateLunch[itemIndex], item, translations);
+        if (patched !== item) {
+          changed = true;
+        }
+        return patched;
+      });
+
+    const grabAndGo = englishDay.grabAndGo.length !== translatedDay.grabAndGo.length
+      ? translatedDay.grabAndGo
+      : translatedDay.grabAndGo.map((item, itemIndex) => {
+        const patched = keepOrTranslate(englishDay.grabAndGo[itemIndex], item, translations);
+        if (patched !== item) {
+          changed = true;
+        }
+        return patched;
+      });
+
+    const specialMessage = translatedDay.specialMessage
+      ? keepOrTranslate(englishDay.specialMessage, translatedDay.specialMessage, translations)
+      : translatedDay.specialMessage;
+    if (specialMessage !== translatedDay.specialMessage) {
+      changed = true;
+    }
+
+    if (
+      plateLunch === translatedDay.plateLunch
+      && grabAndGo === translatedDay.grabAndGo
+      && specialMessage === translatedDay.specialMessage
+    ) {
+      return translatedDay;
+    }
+
+    return {
+      ...translatedDay,
+      plateLunch,
+      grabAndGo,
+      specialMessage,
+    };
+  });
+
+  return changed ? next : translatedMenu;
+}
+
 export function extractCcTranslationPairs(
   englishMenu: unknown,
   translatedMenu: unknown,

@@ -8,6 +8,7 @@ import {
   extractSdxTranslationPairs,
   mergeSdxTranslations,
   mergeStoredAndCachedTranslations,
+  patchSdxTranslatedMenu,
 } from './sdxTranslation';
 import type { FilteredSodexoMeal } from '../types/menuTypes';
 
@@ -141,5 +142,58 @@ describe('applySdxTranslations', () => {
     assert.equal(translated[0].name, '昼食');
     assert.equal(translated[0].groups[0].name, 'Entrees');
     assert.equal(translated[0].groups[0].items[0].formalName, 'クリスピーセサミ豆腐ボウル');
+  });
+});
+
+describe('patchSdxTranslatedMenu', () => {
+  const english: FilteredSodexoMeal[] = [{
+    name: 'Lunch',
+    groups: [{
+      name: 'Entrees',
+      items: [
+        { ...sampleItem, formalName: 'Garlic Chicken', description: 'Chicken with garlic' },
+        { ...sampleItem, formalName: 'White Rice', description: 'White Rice' },
+      ],
+    }],
+  }];
+
+  const translated: FilteredSodexoMeal[] = [{
+    name: '昼食',
+    groups: [{
+      name: '主菜',
+      items: [
+        { ...sampleItem, formalName: 'ガーリックチキン', description: 'にんにくのチキン' },
+        { ...sampleItem, formalName: '白米', description: '白米' },
+      ],
+    }],
+  }];
+
+  it('patches one correction and leaves other stored translations intact', () => {
+    const patched = patchSdxTranslatedMenu(
+      english,
+      translated,
+      new Map([['Garlic Chicken', 'にんにくチキン']]),
+    );
+
+    assert.equal(patched?.[0].name, '昼食');
+    assert.equal(patched?.[0].groups[0].name, '主菜');
+    assert.equal(patched?.[0].groups[0].items[0].formalName, 'にんにくチキン');
+    assert.equal(patched?.[0].groups[0].items[0].description, 'にんにくのチキン');
+    assert.equal(patched?.[0].groups[0].items[1].formalName, '白米');
+  });
+
+  it('does not rewrite a mismatched menu into English', () => {
+    const mismatched: FilteredSodexoMeal[] = [{
+      name: '昼食',
+      groups: [],
+    }];
+
+    const patched = patchSdxTranslatedMenu(
+      english,
+      mismatched,
+      new Map([['Garlic Chicken', 'にんにくチキン']]),
+    );
+
+    assert.deepEqual(patched, mismatched);
   });
 });

@@ -6,14 +6,18 @@ import { getSdxMenu } from '@/lib/dbActions';
 import { getCurrentWeekDates, getCurrentWeekOf } from '@/lib/dateFunctions';
 import { prisma } from '@/lib/prisma';
 import {
-  applySdxTranslations,
   buildSdxTranslationMap,
   collectSdxTranslatableStrings,
   extractSdxTranslationPairs,
   mergeSdxTranslations,
   mergeStoredAndCachedTranslations,
+  patchSdxTranslatedMenu,
 } from '@/lib/sdxTranslation';
-import { applyCcTranslations, collectCcTranslatableStrings, extractCcTranslationPairs } from '@/lib/ccTranslation';
+import {
+  collectCcTranslatableStrings,
+  extractCcTranslationPairs,
+  patchCcTranslatedMenu,
+} from '@/lib/ccTranslation';
 import { attachCcEnglishSources, attachSdxEnglishNames } from '@/lib/englishSource';
 import { DayMenu, FilteredSodexoMeal, Location } from '@/types/menuTypes';
 import {
@@ -451,7 +455,10 @@ export async function overlaySdxMenusWithCorrections<T extends {
         extractSdxTranslationPairs(english, day.meals),
         table,
       );
-      day.meals = applySdxTranslations(english, merged);
+      const patched = patchSdxTranslatedMenu(english, day.meals, merged);
+      if (patched) {
+        day.meals = patched;
+      }
     });
   } catch (error) {
     if (!isMissingTableError(error)) {
@@ -483,7 +490,7 @@ export async function overlayCcMenuWithCorrections(
       extractCcTranslationPairs(englishMenu, translatedMenu),
       table,
     );
-    next = applyCcTranslations(englishMenu, merged);
+    next = patchCcTranslatedMenu(englishMenu, translatedMenu, merged) ?? translatedMenu;
   } catch (error) {
     if (!isMissingTableError(error)) {
       console.warn('[SDX translation cache] CC overlay failed; serving stored menu', error);
@@ -500,30 +507,33 @@ export async function persistTranslationToStoredMenus(
   translatedText: string,
 ): Promise<void> {
   const correction = new Map([[sourceText, translatedText]]);
+  const fromDate = getCurrentWeekOf();
+  const dateFilter = { date: { gte: fromDate } };
+  const weekFilter = { week_of: { gte: fromDate } };
 
   const [gwTranslated, gwEnglish, haTranslated, haEnglish, ccTranslated, ccEnglish] = await Promise.all([
     prisma.gatewayMenus.findMany({
-      where: { language },
+      where: { language, ...dateFilter },
       select: { id: true, date: true, menu: true },
     }),
     prisma.gatewayMenus.findMany({
-      where: { language: 'English' },
+      where: { language: 'English', ...dateFilter },
       select: { date: true, menu: true },
     }),
     prisma.haleAlohaMenus.findMany({
-      where: { language },
+      where: { language, ...dateFilter },
       select: { id: true, date: true, menu: true },
     }),
     prisma.haleAlohaMenus.findMany({
-      where: { language: 'English' },
+      where: { language: 'English', ...dateFilter },
       select: { date: true, menu: true },
     }),
     prisma.campusCenterMenus.findMany({
-      where: { language },
+      where: { language, ...weekFilter },
       select: { id: true, week_of: true, menu: true },
     }),
     prisma.campusCenterMenus.findMany({
-      where: { language: 'English' },
+      where: { language: 'English', ...weekFilter },
       select: { week_of: true, menu: true },
     }),
   ]);
@@ -535,18 +545,9 @@ export async function persistTranslationToStoredMenus(
   ) => {
     await Promise.all(translatedRows.map(async (row) => {
       const english = englishByDate.get(row.date);
-      if (!Array.isArray(english)) {
-        return;
-      }
-      const current = (Array.isArray(row.menu) ? row.menu : []) as FilteredSodexoMeal[];
-      const next = applySdxTranslations(
-        english as FilteredSodexoMeal[],
-        mergeStoredAndCachedTranslations(
-          extractSdxTranslationPairs(english, current),
-          correction,
-        ),
-      );
-      if (JSON.stringify(current) === JSON.stringify(next)) {
+      const current = Array.isArray(row.menu) ? row.menu : [];
+      const next = patchSdxTranslatedMenu(english, current, correction);
+      if (!next || JSON.stringify(current) === JSON.stringify(next)) {
         return;
       }
       await updateMenu(row.id, next as unknown as Prisma.InputJsonValue);
@@ -567,19 +568,9 @@ export async function persistTranslationToStoredMenus(
   const ccEnglishByWeek = new Map(ccEnglish.map((row) => [row.week_of, row.menu]));
   await Promise.all(ccTranslated.map(async (row) => {
     const english = ccEnglishByWeek.get(row.week_of);
-    if (!english || !Array.isArray(english)) {
-      return;
-    }
-    const englishDays = english as unknown as DayMenu[];
-    const current = (Array.isArray(row.menu) ? row.menu : []) as unknown as DayMenu[];
-    const patched = applyCcTranslations(
-      englishDays,
-      mergeStoredAndCachedTranslations(
-        extractCcTranslationPairs(englishDays, current),
-        correction,
-      ),
-    );
-    if (JSON.stringify(current) === JSON.stringify(patched)) {
+    const current = Array.isArray(row.menu) ? row.menu : [];
+    const patched = patchCcTranslatedMenu(english, current, correction);
+    if (!patched || JSON.stringify(current) === JSON.stringify(patched)) {
       return;
     }
     await prisma.campusCenterMenus.update({

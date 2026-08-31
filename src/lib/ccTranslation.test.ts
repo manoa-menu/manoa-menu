@@ -5,6 +5,7 @@ import {
   applyCcTranslations,
   collectCcTranslatableStrings,
   extractCcTranslationPairs,
+  patchCcTranslatedMenu,
 } from './ccTranslation';
 import type { DayMenu } from '../types/menuTypes';
 
@@ -79,5 +80,34 @@ describe('applyCcTranslations', () => {
     assert.deepEqual(result[0].plateLunch, ['カルアポーク', '白米']);
     assert.equal(result[0].grabAndGo[0], 'チキンラップ');
     assert.equal(result[0].specialMessage, '金曜日休業');
+  });
+});
+
+describe('patchCcTranslatedMenu', () => {
+  it('patches one dish and leaves other stored translations intact', () => {
+    const patched = patchCcTranslatedMenu(
+      english,
+      translated,
+      new Map([['Kalua Pork', 'カルア豚']]),
+    );
+
+    assert.deepEqual(patched?.[0].plateLunch, ['カルア豚', '白米']);
+    assert.equal(patched?.[0].grabAndGo[0], 'チキンラップ');
+    assert.equal(patched?.[0].specialMessage, '金曜日休業');
+  });
+
+  it('does not rewrite a mismatched menu into English', () => {
+    const mismatched: DayMenu[] = [{
+      ...translated[0],
+      plateLunch: ['カルアポーク'],
+    }];
+
+    const patched = patchCcTranslatedMenu(
+      english,
+      mismatched,
+      new Map([['Kalua Pork', 'カルアポーク']]),
+    );
+
+    assert.deepEqual(patched, mismatched);
   });
 });
