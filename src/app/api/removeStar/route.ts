@@ -1,9 +1,16 @@
+import { getServerSession } from 'next-auth';
+
+import authOptions from '@/lib/authOptions';
+
 export async function POST(request: Request) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { userId, item } = await request.json();
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return new Response('Unauthorized', { status: 401 });
+    }
 
-    if (!item) {
+    const body = await request.json() as { item?: unknown };
+    if (!body.item || typeof body.item !== 'string') {
       return new Response('Item is required', { status: 400 });
     }
 

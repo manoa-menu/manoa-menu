@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { FilteredSodexoMeal, SdxAPIResponse } from '@/types/menuTypes';
 import Card from '@mui/material/Card';

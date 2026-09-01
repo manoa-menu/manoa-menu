@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import getCheckCCMenu from '@/lib/menuActions';
 
- 
+import getCheckCCMenu from '@/lib/menuActions';
+import { parseMenuLanguage } from '@/lib/menuQuery';
+import { allowMenuRequest, menuClientKey } from '@/lib/menuRateLimit';
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const language = searchParams.get('language') || 'English';
+  const language = parseMenuLanguage(searchParams.get('language') || 'English');
+  if (!language) {
+    return NextResponse.json({ error: 'Invalid language' }, { status: 400 });
+  }
+  if (!allowMenuRequest(`cc-menu:${menuClientKey(req)}`)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   const start = performance.now();
 
   try {
@@ -16,15 +25,8 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     const elapsed = ((performance.now() - start) / 1000).toFixed(2);
-    if (error instanceof TypeError) {
-      console.error(`[cc-menu] TypeError after ${elapsed}s:`, error);
-      return NextResponse.json({ error: 'Type error occurred while fetching the menu.' }, { status: 500 });
-    } if (error instanceof SyntaxError) {
-      console.error(`[cc-menu] SyntaxError after ${elapsed}s:`, error);
-      return NextResponse.json({ error: 'Syntax error occurred while fetching the menu.' }, { status: 500 });
-    }
     console.error(`[cc-menu] Error after ${elapsed}s:`, error);
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch menu' }, { status: 500 });
   }
 }
 

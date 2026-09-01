@@ -9,7 +9,7 @@ import { DayMenu, SdxAPIResponse } from '@/types/menuTypes';
 import { openInMaps } from '@/lib/mapFunctions';
 import { FaMapMarkedAlt } from 'react-icons/fa';
 import { useSession } from 'next-auth/react';
-import { getUserLanguage } from '@/lib/dbActions';
+import { getUserLanguage } from '@/lib/userLanguageAction';
 import {
   useState, useEffect, useRef, useCallback, useLayoutEffect,
 } from 'react';
@@ -17,6 +17,7 @@ import { fixDayNames, getDisplayMenuNames, getLocationSwitcherLabel } from '@/li
 import SdxMenu from '@/components/SdxMenu';
 import SdxSpecialHoursNotice from '@/components/SdxSpecialHoursNotice';
 import { isSdxMenuBlank, SdxSpecialHours } from '@/lib/sdxSpecialHours';
+import { getTranslatedOpenStatus, isCurrentlyOpenStatus } from '@/lib/openHoursStatus';
 import {
   Box,
   Button,
@@ -47,25 +48,6 @@ const Page = () => {
         return ' 菜单';
       default:
         return ' Menu';
-    }
-  };
-
-  const getTranslatedStatus = (status: string, lang: string): string => {
-    const isOpen = status.toLowerCase().includes('open');
-    if (isOpen) {
-      switch (lang) {
-        case 'Japanese': return '営業中';
-        case 'Korean': return '영업 중';
-        case 'Chinese': return '营业中';
-        default: return 'Open';
-      }
-    } else {
-      switch (lang) {
-        case 'Japanese': return '営業終了';
-        case 'Korean': return '영업 종료';
-        case 'Chinese': return '已打烊';
-        default: return 'Closed';
-      }
     }
   };
 
@@ -171,15 +153,17 @@ const Page = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (session?.user?.email) {
-        const userLanguage = await getUserLanguage(session.user.email);
-        setUserId((session?.user as { id: number })?.id);
-        setLanguage(userLanguage);
-        console.log(`User language: ${userLanguage}`);
+      if (!session?.user?.email) {
+        return;
       }
+      const userLanguage = await getUserLanguage();
+      const sessionId = (session.user as { id?: string | number }).id;
+      const parsedId = typeof sessionId === 'number' ? sessionId : Number(sessionId);
+      setUserId(Number.isFinite(parsedId) ? parsedId : -21);
+      setLanguage(userLanguage);
     };
-    if (userId !== 21) fetchData();
-  }, [session, userId, setLanguage]);
+    void fetchData();
+  }, [session, setLanguage]);
 
 
 
@@ -238,9 +222,12 @@ const Page = () => {
     ) => {
       try {
         const locationQuery = location ? `&location=${location}` : '';
-        const response = await fetch(`/api/${menuType}-menu?language=${lang}${locationQuery}`, {
-          cache: 'no-store',
-        });
+        const response = await fetch(
+          `/api/${menuType}-menu?language=${encodeURIComponent(lang)}${locationQuery}`,
+          {
+            cache: 'no-store',
+          },
+        );
         if (!response.ok) {
           throw new Error(`Error: ${response.status} ${response.statusText}`);
         }
@@ -321,8 +308,8 @@ const Page = () => {
   const statusControls = locationHours ? (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0 }}>
       <Chip
-        label={getTranslatedStatus(locationHours, language)}
-        color={locationHours.toLowerCase().includes('open') ? 'success' : 'error'}
+        label={getTranslatedOpenStatus(locationHours, language)}
+        color={isCurrentlyOpenStatus(locationHours) ? 'success' : 'error'}
         size="small"
         sx={{
           fontWeight: 700,

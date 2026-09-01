@@ -107,6 +107,17 @@ describe('jpManualReplace', () => {
     assert.equal(withoutWeekTwo.weekTwo.length, 0);
   });
 
+  it('is idempotent for Value Bowl and Mixed Plate suffixes', () => {
+    const once = jpManualReplace(makeMenu([
+      makeDayMenu(['バリューボウル', 'ミックスプレート'], []),
+    ]));
+    const twice = jpManualReplace(once);
+
+    assert.equal(once.weekOne[0].plateLunch[0], 'バリューボウル (ミニボウル)');
+    assert.equal(once.weekOne[0].plateLunch[1], 'ミックスプレート (選べる2種盛りプレート)');
+    assert.deepEqual(twice.weekOne[0].plateLunch, once.weekOne[0].plateLunch);
+  });
+
   it('leaves unmatched items unchanged', () => {
     const result = jpManualReplace(makeMenu([
       makeDayMenu(['Regular plate lunch'], ['Regular grab and go']),

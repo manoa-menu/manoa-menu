@@ -26,11 +26,11 @@ import {
   withSdxTranslationLock,
 } from '@/lib/sdxTranslationCache';
 import { isSdxPlaceholderItemName } from '@/lib/sdxSpecialHours';
+import { parseMenuLanguage, parseSdxLocation } from '@/lib/menuQuery';
+import { allowMenuRequest, menuClientKey } from '@/lib/menuRateLimit';
 
 export const maxDuration = 180;
 export const dynamic = 'force-dynamic';
-
-const SUPPORTED_LANGUAGES = ['english', 'japanese', 'korean', 'chinese'];
 
 const getSdxTranslationPrompt = (translateLanguage: string): string => (
   `You are translating a cafeteria menu into ${translateLanguage}.
@@ -135,22 +135,24 @@ type ResolvedDay = {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
-  let language = searchParams.get('language');
-  language = language ? language.charAt(0).toUpperCase() + language.slice(1).toLowerCase() : null;
-
+  const language = parseMenuLanguage(searchParams.get('language'));
   if (!language) {
-    return NextResponse.json({ error: 'Missing Language Parameter' }, { status: 500 });
-  }
-  if (!SUPPORTED_LANGUAGES.includes(language.toLowerCase())) {
-    return NextResponse.json({ error: 'Invalid Language Parameter' }, { status: 500 });
+    return NextResponse.json({ error: 'Invalid or missing language' }, { status: 400 });
   }
 
-  if (language.toLowerCase() !== 'english') {
+  const location = parseSdxLocation(searchParams.get('location'));
+  if (!location) {
+    return NextResponse.json({ error: 'Invalid or missing location' }, { status: 400 });
+  }
+
+  if (!allowMenuRequest(`sdx-menu:${menuClientKey(req)}:${location}`)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
+  if (language !== 'English') {
     await ensureSdxTranslationCacheBackfilled(language);
   }
 
-  const location =
-    searchParams.get('location') || NextResponse.json({ error: 'Missing Location Parameter' }, { status: 500 });
   console.log(`Location: ${location}`);
 
   const locationOption = location === 'gw' ? Location.GATEWAY : Location.HALE_ALOHA;

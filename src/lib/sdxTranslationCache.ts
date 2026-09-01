@@ -27,7 +27,7 @@ import {
   translationSourceKey,
 } from '@/lib/translationSource';
 
-const LOCK_TTL_MS = 90_000;
+const LOCK_TTL_MS = 180_000;
 const LOCK_WAIT_MS = 45_000;
 const LOCK_POLL_MS = 800;
 
