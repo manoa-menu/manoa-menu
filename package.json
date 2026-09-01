@@ -2,6 +2,9 @@
   "name": "manoa-menu",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "overrides": {
     "tar": "^7.5.8",
     "@typescript-eslint/typescript-estree": {

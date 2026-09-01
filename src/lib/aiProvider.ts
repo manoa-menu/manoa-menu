@@ -131,6 +131,23 @@ export function createAiClient(): OpenAI {
   });
 }
 
+export function getOpenRouterChatCompletionsUrl(): string {
+  return `${OPENROUTER_BASE_URL}/chat/completions`;
+}
+
+export function getOpenRouterHeaders(): Record<string, string> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error('OPENROUTER_API_KEY is required when AI_PROVIDER=openrouter');
+  }
+  return {
+    Authorization: `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
+    'HTTP-Referer': process.env.NEXTAUTH_URL || 'https://manoamenu.app',
+    'X-OpenRouter-Title': 'Manoa Menu',
+  };
+}
+
 let cachedClient: { provider: AiProvider; client: OpenAI } | null = null;
 
 export function getAiClient(): OpenAI {
