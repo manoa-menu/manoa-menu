@@ -40,7 +40,7 @@ describe('englishSourceLabel', () => {
   it('hides Mini or Bowl instructional English', () => {
     assert.equal(
       englishSourceLabel(
-        'ミニまたはボウル：好きなメインを1つ選択',
+        '小盛り：好きなメインを1つ選択',
         'Mini or Bowl: Choice of any one (1) entrée',
       ),
       undefined,

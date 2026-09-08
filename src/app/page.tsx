@@ -78,6 +78,15 @@ const Page = () => {
     }
   };
 
+  const getMenuUnavailable = (lang: string): string => {
+    switch (lang) {
+      case 'Japanese': return 'メニュー利用不可';
+      case 'Korean': return '메뉴 사용 불가';
+      case 'Chinese': return '菜单不可用';
+      default: return 'Menu Unavailable';
+    }
+  };
+
   const { data: session } = useSession();
 
   const [userId, setUserId] = useState<number>(-21);
@@ -283,14 +292,14 @@ const Page = () => {
   const renderBlankSdxFallback = (specialHours: SdxSpecialHours | null) => (
     specialHours
       ? <SdxSpecialHoursNotice specialHours={specialHours} language={language} />
-      : <h2 className="text-center mt-2">Menu Unavailable</h2>
+      : <h2 className="text-center mt-2">{getMenuUnavailable(language)}</h2>
   );
 
   const renderMenu = () => {
     switch (menuState) {
       case 'cc':
         return (ccMenu === undefined || ccMenu.length === 0)
-          ? <h2 className="text-center mt-2">Menu Unavailable</h2>
+          ? <h2 className="text-center mt-2">{getMenuUnavailable(language)}</h2>
           : <CCMenuList menu={ccMenu} language={language} userId={userId} favArr={favArr} />;
       case 'gw':
         return isSdxMenuBlank(gwMenu)
