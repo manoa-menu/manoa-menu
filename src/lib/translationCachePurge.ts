@@ -1,12 +1,9 @@
 import type { DayMenu, FilteredSodexoMeal } from '@/types/menuTypes';
 import { prisma } from '@/lib/prisma';
 import { collectCcTranslatableStrings } from '@/lib/ccTranslation';
+import { MENU_LANGUAGES, type MenuLanguage } from '@/lib/menuQuery';
 import { collectSdxTranslatableStrings } from '@/lib/sdxTranslation';
 import { hashSdxSource } from '@/lib/sdxTranslationCache';
-import {
-  TRANSLATION_REVIEW_LANGUAGES,
-  type TranslationReviewLanguage,
-} from '@/lib/translationReviewShared';
 import {
   TRANSLATION_LOCATIONS,
   isIsoDate,
@@ -17,7 +14,7 @@ import {
 export type TranslationCachePurgeScope = {
   weekOf: string;
   locations: TranslationLocation[];
-  languages: TranslationReviewLanguage[];
+  languages: MenuLanguage[];
 };
 
 export type TranslationCachePurgeResult = {
@@ -56,8 +53,8 @@ export function parseTranslationCachePurgeScope(value: unknown): TranslationCach
   );
   const languages = uniqueValues(
     (Array.isArray(body.languages) ? body.languages : [])
-      .filter((language): language is TranslationReviewLanguage =>
-        TRANSLATION_REVIEW_LANGUAGES.includes(language as TranslationReviewLanguage)),
+      .filter((language): language is MenuLanguage =>
+        MENU_LANGUAGES.includes(language as MenuLanguage)),
   );
 
   if (locations.length === 0 || languages.length === 0) {
@@ -74,17 +71,14 @@ export function parseTranslationCachePurgeScope(value: unknown): TranslationCach
 export async function listTranslationCacheWeeks(): Promise<string[]> {
   const [gateway, haleAloha, campusCenter] = await Promise.all([
     prisma.gatewayMenus.findMany({
-      where: { language: 'English' },
       distinct: ['date'],
       select: { date: true },
     }),
     prisma.haleAlohaMenus.findMany({
-      where: { language: 'English' },
       distinct: ['date'],
       select: { date: true },
     }),
     prisma.campusCenterMenus.findMany({
-      where: { language: 'English' },
       distinct: ['week_of'],
       select: { week_of: true },
     }),
@@ -152,6 +146,7 @@ export async function purgeTranslationCache(
     }
   });
 
+  const translatedLanguages = scope.languages.filter((language) => language !== 'English');
   const sourceHashes = [...sourceStrings].map(hashSdxSource);
   const operations = [];
 
@@ -181,10 +176,10 @@ export async function purgeTranslationCache(
   }
 
   const menuOperationCount = operations.length;
-  if (sourceHashes.length > 0) {
+  if (sourceHashes.length > 0 && translatedLanguages.length > 0) {
     operations.push(prisma.sdxStringTranslation.deleteMany({
       where: {
-        language: { in: scope.languages },
+        language: { in: translatedLanguages },
         sourceHash: { in: sourceHashes },
       },
     }));
@@ -194,7 +189,7 @@ export async function purgeTranslationCache(
   const deletedMenuRows = results
     .slice(0, menuOperationCount)
     .reduce((total, result) => total + result.count, 0);
-  const deletedStringRows = sourceHashes.length > 0
+  const deletedStringRows = sourceHashes.length > 0 && translatedLanguages.length > 0
     ? (results[menuOperationCount]?.count ?? 0)
     : 0;
 

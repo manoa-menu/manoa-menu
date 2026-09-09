@@ -2,16 +2,14 @@
 
 import { useEffect, useState } from 'react';
 
-import {
-  TRANSLATION_REVIEW_LANGUAGES,
-  type TranslationReviewLanguage,
-} from '@/lib/translationReviewShared';
+import { MENU_LANGUAGES, type MenuLanguage } from '@/lib/menuQuery';
 import {
   TRANSLATION_LOCATIONS,
   TRANSLATION_LOCATION_LABELS,
   shiftIsoDate,
   type TranslationLocation,
 } from '@/lib/translationOccurrences';
+import type { TranslationReviewLanguage } from '@/lib/translationReviewShared';
 
 type Props = {
   initialLanguage: TranslationReviewLanguage;
@@ -44,7 +42,7 @@ export default function TranslationCachePurge({ initialLanguage, onPurged }: Pro
   const [locations, setLocations] = useState<TranslationLocation[]>([
     ...TRANSLATION_LOCATIONS,
   ]);
-  const [languages, setLanguages] = useState<TranslationReviewLanguage[]>([initialLanguage]);
+  const [languages, setLanguages] = useState<MenuLanguage[]>([initialLanguage]);
   const [loadingOptions, setLoadingOptions] = useState(false);
   const [purging, setPurging] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -83,7 +81,7 @@ export default function TranslationCachePurge({ initialLanguage, onPurged }: Pro
       : [...current, location]);
   };
 
-  const toggleLanguage = (language: TranslationReviewLanguage) => {
+  const toggleLanguage = (language: MenuLanguage) => {
     setLanguages((current) => current.includes(language)
       ? current.filter((item) => item !== language)
       : [...current, language]);
@@ -95,11 +93,16 @@ export default function TranslationCachePurge({ initialLanguage, onPurged }: Pro
       return;
     }
 
+    const includesEnglish = languages.includes('English');
+    const includesTranslated = languages.some((language) => language !== 'English');
     const confirmed = window.confirm(
       `Reset ${languages.join(', ')} for ${formatWeek(weekOf)}?\n\n`
-      + 'This deletes the selected translated menu rows and matching permanent string-cache '
-      + 'entries. English menus stay. Shared phrases may also be removed for these languages '
-      + 'and will translate again on next load.',
+      + 'This deletes the selected menu rows for those languages. '
+      + (includesEnglish ? 'English will be re-fetched on next load. ' : '')
+      + (includesTranslated
+        ? 'Matching permanent string-cache entries for translated languages are also deleted. '
+          + 'Shared phrases may also be removed and will translate again on next load.'
+        : ''),
     );
     if (!confirmed) {
       return;
@@ -140,8 +143,9 @@ export default function TranslationCachePurge({ initialLanguage, onPurged }: Pro
       <summary>Cache tools</summary>
       <div className="translation-cache-body">
         <p>
-          Reset selected translated menus for a week: deletes translated menu table rows
-          and matching permanent phrase translations. English menus are kept.
+          Reset selected menus for a week: deletes those menu table rows. For translated
+          languages, matching permanent phrase translations are also deleted. English is
+          re-fetched on the next load.
         </p>
         {loadingOptions ? <p className="translation-status">Loading weeks…</p> : null}
         {weeks.length > 0 ? (
@@ -169,7 +173,7 @@ export default function TranslationCachePurge({ initialLanguage, onPurged }: Pro
             </fieldset>
             <fieldset>
               <legend>Languages</legend>
-              {TRANSLATION_REVIEW_LANGUAGES.map((language) => (
+              {MENU_LANGUAGES.map((language) => (
                 <label key={language}>
                   <input
                     type="checkbox"
@@ -182,9 +186,11 @@ export default function TranslationCachePurge({ initialLanguage, onPurged }: Pro
             </fieldset>
           </div>
         ) : null}
-        <p className="translation-cache-warning">
-          Shared phrases are global: purging one menu can remove phrases also used by another menu.
-        </p>
+        {languages.some((language) => language !== 'English') ? (
+          <p className="translation-cache-warning">
+            Shared phrases are global: purging one menu can remove phrases also used by another menu.
+          </p>
+        ) : null}
         {error ? <p className="translation-error">{error}</p> : null}
         {message ? <p className="translation-cache-success">{message}</p> : null}
         <button
