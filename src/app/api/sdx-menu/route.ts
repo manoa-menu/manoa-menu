@@ -26,6 +26,12 @@ import {
   withSdxTranslationLock,
 } from '@/lib/sdxTranslationCache';
 import { isSdxPlaceholderItemName } from '@/lib/sdxSpecialHours';
+import {
+  resolveSdxMenuApiUrl,
+  SDX_LOCATION_PAGES,
+  sdxMenuApiUrlsMatch,
+  uniqueSdxMenuApiUrls,
+} from '@/lib/sdxMenuEndpoint';
 import { parseMenuLanguage, parseSdxLocation } from '@/lib/menuQuery';
 import { allowMenuRequest, menuClientKey } from '@/lib/menuRateLimit';
 
@@ -159,12 +165,15 @@ export async function GET(req: NextRequest) {
 
   const gwURL = process.env.GW_API_URL;
   const haURL = process.env.HA_API_URL;
+  const gwBackupURL = process.env.GW_API_URL_BACKUP;
+  const haBackupURL = process.env.HA_API_URL_BACKUP;
 
-  const url = location === 'gw' ? gwURL : haURL;
+  const configuredUrl = location === 'gw' ? gwURL : haURL;
+  const backupUrl = location === 'gw' ? gwBackupURL : haBackupURL;
 
   const apiKey = process.env.MMR_API_KEY;
 
-  if (!url || !apiKey) {
+  if (!configuredUrl || !apiKey) {
     return NextResponse.json({ error: 'Missing environment variables' }, { status: 500 });
   }
 
@@ -172,6 +181,37 @@ export async function GET(req: NextRequest) {
     'API-Key': apiKey,
     'Content-Type': 'application/json',
     Accept: 'application/json',
+  };
+
+  let menuApiUrls = uniqueSdxMenuApiUrls(configuredUrl, backupUrl);
+  let refreshPromise: Promise<string[]> | null = null;
+
+  const refreshMenuApiUrlsFromPage = (): Promise<string[]> => {
+    if (!refreshPromise) {
+      refreshPromise = (async () => {
+        const pageUrl = location === 'gw' ? SDX_LOCATION_PAGES.gw : SDX_LOCATION_PAGES.ha;
+        const resolved = await resolveSdxMenuApiUrl(pageUrl, configuredUrl);
+        menuApiUrls = uniqueSdxMenuApiUrls(configuredUrl, resolved, backupUrl);
+        if (!sdxMenuApiUrlsMatch(resolved, configuredUrl)) {
+          console.warn(
+            `[sdx-menu] ${location} live menu IDs differ from configured URL; also trying ${resolved}`,
+          );
+        }
+        return menuApiUrls;
+      })();
+    }
+    return refreshPromise;
+  };
+
+  const fetchMealsFromApi = async (day: string, apiUrl: string): Promise<FilteredSodexoMeal[]> => {
+    const queryUrl = `${apiUrl}?date=${day}`;
+    console.log(`Getting data for ${day} via API`);
+    const response = await axios.get(queryUrl, { headers });
+    const dataArr: SodexoMeal[] | [] = Array.isArray(response.data) ? response.data : [];
+    return dataArr
+      .map((data: SodexoMeal) => removeNutritionalFacts(data))
+      // Drop meals that only had placeholders (e.g. "Have A Nice Day")
+      .filter((meal) => meal.groups.length > 0);
   };
 
   const fetchEnglishSdxMenu = async (day: string): Promise<FilteredSodexoMeal[]> => {
@@ -184,14 +224,31 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const queryUrl = `${url}?date=${day}`;
-    console.log(`Getting data for ${day} via API`);
-    const response = await axios.get(queryUrl, { headers });
-    const dataArr: SodexoMeal[] | [] = response.data;
-    const filteredData: FilteredSodexoMeal[] = dataArr
-      .map((data: SodexoMeal) => removeNutritionalFacts(data))
-      // Drop meals that only had placeholders (e.g. "Have A Nice Day")
-      .filter((meal) => meal.groups.length > 0);
+    let filteredData: FilteredSodexoMeal[] = [];
+    const tried = new Set<string>();
+
+    const tryUrls = async (urls: string[]): Promise<boolean> => {
+      const remaining = urls.filter((apiUrl) => (
+        ![...tried].some((seen) => sdxMenuApiUrlsMatch(seen, apiUrl))
+      ));
+      remaining.forEach((apiUrl) => tried.add(apiUrl));
+
+      for (const apiUrl of remaining) {
+        const meals = await fetchMealsFromApi(day, apiUrl);
+        if (meals.length > 0) {
+          filteredData = meals;
+          menuApiUrls = uniqueSdxMenuApiUrls(apiUrl, ...menuApiUrls);
+          console.log(`[sdx-menu] ${location} ${day} using ${apiUrl}`);
+          return true;
+        }
+      }
+      return false;
+    };
+
+    if (!await tryUrls(menuApiUrls)) {
+      const refreshedUrls = await refreshMenuApiUrlsFromPage();
+      await tryUrls(refreshedUrls);
+    }
 
     if (filteredData.length > 0) {
       console.log(`Inserting menu for ${day} in English`);

@@ -4,6 +4,7 @@ import process from "node:process";
 import dotenv from "dotenv";
 
 dotenv.config({ path: ".env.local" });
+dotenv.config({ path: ".env" });
 
 const dateArg = process.argv[2];
 const saveArg = process.argv[3];
@@ -15,10 +16,12 @@ const shouldSave = saveArg === "--save" || dateArg === "--save";
 const apiKey = process.env.MMR_API_KEY;
 const endpoints = [
   { name: "gw", url: process.env.GW_API_URL },
+  { name: "gw-backup", url: process.env.GW_API_URL_BACKUP },
   { name: "ha", url: process.env.HA_API_URL },
-];
+  { name: "ha-backup", url: process.env.HA_API_URL_BACKUP },
+].filter((endpoint) => Boolean(endpoint.url));
 
-if (!apiKey || endpoints.some((endpoint) => !endpoint.url)) {
+if (!apiKey || !process.env.GW_API_URL || !process.env.HA_API_URL) {
   console.error("Missing one or more required env vars: MMR_API_KEY, GW_API_URL, HA_API_URL");
   process.exit(1);
 }
