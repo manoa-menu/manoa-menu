@@ -33,7 +33,7 @@ const SHARED_REPLACEMENTS: SubstringReplacement[] = [
   { from: /(.*クラブ)$/, to: '$1サンドイッチ' },
   { from: /テイタートッツ|テイタートット|テイタートツ|タタートッツ/g, to: 'ポテトフライド' },
   { from: 'ロード', to: 'トッピング盛りだくさん' },
-  { from: /ミックスプレート(?! \(選べる2種盛りプレート\))/, to: 'ミックスプレート (メイン2品を選択)' },
+  { from: /ミックスプレート(?! \(メイン2品を選択\))/, to: 'ミックスプレート (メイン2品を選択)' },
 ];
 
 const rules = toRules(SHARED_REPLACEMENTS);

@@ -55,7 +55,7 @@ describe('jpManualReplace', () => {
     assert.equal(result.weekOne[0].plateLunch[3], 'Turkey with グレービー');
     assert.equal(result.weekOne[0].grabAndGo[0], 'ポテトフライド side');
     assert.equal(result.weekOne[0].grabAndGo[1], 'トッピング盛りだくさん fries');
-    assert.equal(result.weekOne[0].grabAndGo[2], 'ミックスプレート (選べる2種盛りプレート)');
+    assert.equal(result.weekOne[0].grabAndGo[2], 'ミックスプレート (メイン2品を選択)');
     assert.equal(result.weekOne[0].grabAndGo[3], 'Turkeyクラブサンドイッチ');
     assert.equal(result.weekOne[0].grabAndGo[4], 'ラップ');
   });
@@ -116,7 +116,7 @@ describe('jpManualReplace', () => {
     const twice = jpManualReplace(once);
 
     assert.equal(once.weekOne[0].plateLunch[0], 'バリューボウル (ミニボウル)');
-    assert.equal(once.weekOne[0].plateLunch[1], 'ミックスプレート (選べる2種盛りプレート)');
+    assert.equal(once.weekOne[0].plateLunch[1], 'ミックスプレート (メイン2品を選択)');
     assert.deepEqual(twice.weekOne[0].plateLunch, once.weekOne[0].plateLunch);
   });
 
