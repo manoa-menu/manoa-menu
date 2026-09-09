@@ -19,6 +19,7 @@ import {
 } from '@/lib/translationReviewers';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 function unauthorized() {
   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

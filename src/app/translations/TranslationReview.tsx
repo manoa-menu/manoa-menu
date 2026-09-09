@@ -153,6 +153,56 @@ function occurrenceTitle(row: TranslationReviewRow): string {
   }).join(' · ');
 }
 
+function mergeTranslationDrafts(
+  current: Record<number, string>,
+  rows: TranslationReviewRow[],
+): Record<number, string> {
+  const next: Record<number, string> = {};
+  rows.forEach((row) => {
+    const draft = current[row.id];
+    next[row.id] = draft != null && draft !== row.translatedText
+      ? draft
+      : row.translatedText;
+  });
+  return next;
+}
+
+function applySavedReviewRow(
+  current: ListResponse,
+  saved: TranslationReviewRow,
+  previous: TranslationReviewRow,
+  status: TranslationReviewStatus,
+): ListResponse {
+  const wasCorrected = previous.isCorrected;
+  const nowCorrected = saved.isCorrected;
+  let { uncorrectedCount, correctedCount, total } = current;
+  if (wasCorrected !== nowCorrected) {
+    if (nowCorrected) {
+      uncorrectedCount = Math.max(0, uncorrectedCount - 1);
+      correctedCount += 1;
+    } else {
+      correctedCount = Math.max(0, correctedCount - 1);
+      uncorrectedCount += 1;
+    }
+  }
+
+  const hide = (status === 'uncorrected' && nowCorrected)
+    || (status === 'corrected' && !nowCorrected);
+  let rows = current.rows.map((row) => (row.id === saved.id ? saved : row));
+  if (hide) {
+    rows = rows.filter((row) => row.id !== saved.id);
+    total = Math.max(0, total - 1);
+  }
+
+  return {
+    ...current,
+    rows,
+    total,
+    uncorrectedCount,
+    correctedCount,
+  };
+}
+
 export default function TranslationReview({ reviewer, initialLanguage }: Props) {
   const [language, setLanguage] = useState<TranslationReviewLanguage>(initialLanguage);
   const [status, setStatus] = useState<TranslationReviewStatus>('uncorrected');
@@ -202,7 +252,7 @@ export default function TranslationReview({ reviewer, initialLanguage }: Props) 
       }
       const payload = await response.json() as ListResponse;
       setData(payload);
-      setDrafts(Object.fromEntries(payload.rows.map((row) => [row.id, row.translatedText])));
+      setDrafts((current) => mergeTranslationDrafts(current, payload.rows));
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Could not load translations.');
     } finally {
@@ -230,10 +280,23 @@ export default function TranslationReview({ reviewer, initialLanguage }: Props) 
           }),
       });
       if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
+        const payload = await response.json().catch(() => ({})) as { error?: string };
         throw new Error(payload.error || 'Could not save translation.');
       }
-      await load();
+      const saved = await response.json() as TranslationReviewRow;
+      setData((current) => (
+        current ? applySavedReviewRow(current, saved, row, status) : current
+      ));
+      setDrafts((current) => {
+        const hide = (status === 'uncorrected' && saved.isCorrected)
+          || (status === 'corrected' && !saved.isCorrected);
+        if (hide) {
+          const next = { ...current };
+          delete next[saved.id];
+          return next;
+        }
+        return { ...current, [saved.id]: saved.translatedText };
+      });
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Could not save translation.');
     } finally {

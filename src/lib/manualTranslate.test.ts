@@ -44,18 +44,20 @@ describe('jpManualReplace', () => {
   it('applies shared substring replacements to plate lunch and grab-and-go', () => {
     const result = jpManualReplace(makeMenu([
       makeDayMenu(
-        ['バリューボウル with chicken', 'ミニまたは丼', 'Turkey with グレービー'],
-        ['テイタートッツ side', 'ロード fries', 'ミックスプレート', 'Turkeyクラブ'],
+        ['バリューボウル with chicken', 'ミニまたは丼', 'ミニまたはボウル', 'Turkey with グレービー'],
+        ['テイタートッツ side', 'ロード fries', 'ミックスプレート', 'Turkeyクラブ', 'パブラップ'],
       ),
     ]));
 
     assert.equal(result.weekOne[0].plateLunch[0], 'バリューボウル (ミニボウル) with chicken');
-    assert.equal(result.weekOne[0].plateLunch[1], 'ミニまたはボウル');
-    assert.equal(result.weekOne[0].plateLunch[2], 'Turkey with グレービー');
+    assert.equal(result.weekOne[0].plateLunch[1], '小盛り');
+    assert.equal(result.weekOne[0].plateLunch[2], '小盛り');
+    assert.equal(result.weekOne[0].plateLunch[3], 'Turkey with グレービー');
     assert.equal(result.weekOne[0].grabAndGo[0], 'ポテトフライド side');
     assert.equal(result.weekOne[0].grabAndGo[1], 'トッピング盛りだくさん fries');
-    assert.equal(result.weekOne[0].grabAndGo[2], 'ミックスプレート (選べる2種盛りプレート)');
+    assert.equal(result.weekOne[0].grabAndGo[2], 'ミックスプレート (メイン2品を選択)');
     assert.equal(result.weekOne[0].grabAndGo[3], 'Turkeyクラブサンドイッチ');
+    assert.equal(result.weekOne[0].grabAndGo[4], 'ラップ');
   });
 
   it('does not let the generic blackened rule override dish-specific black bean shrimp', () => {
@@ -105,6 +107,17 @@ describe('jpManualReplace', () => {
     assert.equal(withWeekTwo.weekTwo[0].name, '月曜日');
     assert.equal(withWeekTwo.weekTwo[0].plateLunch[0], 'バリューボウル (ミニボウル)');
     assert.equal(withoutWeekTwo.weekTwo.length, 0);
+  });
+
+  it('is idempotent for Value Bowl and Mixed Plate suffixes', () => {
+    const once = jpManualReplace(makeMenu([
+      makeDayMenu(['バリューボウル', 'ミックスプレート'], []),
+    ]));
+    const twice = jpManualReplace(once);
+
+    assert.equal(once.weekOne[0].plateLunch[0], 'バリューボウル (ミニボウル)');
+    assert.equal(once.weekOne[0].plateLunch[1], 'ミックスプレート (メイン2品を選択)');
+    assert.deepEqual(twice.weekOne[0].plateLunch, once.weekOne[0].plateLunch);
   });
 
   it('leaves unmatched items unchanged', () => {

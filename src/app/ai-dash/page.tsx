@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { isAiDashAuthorized } from '@/lib/aiDashAuth';
 import {
   getAiUsageDashboard,
   parseAiUsagePeriod,
@@ -37,25 +38,6 @@ const PERIODS: { id: AiUsagePeriod; label: string }[] = [
   { id: 'month', label: 'Month' },
   { id: 'all', label: 'All-time' },
 ];
-
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) {
-    return false;
-  }
-  let mismatch = 0;
-  for (let i = 0; i < a.length; i += 1) {
-    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-  return mismatch === 0;
-}
-
-function isAuthorized(providedKey: string | undefined): boolean {
-  const expected = process.env.AI_DASH;
-  if (!expected || !providedKey) {
-    return false;
-  }
-  return timingSafeEqual(providedKey, expected);
-}
 
 function formatUsd(value: number): string {
   if (value >= 1) {
@@ -302,7 +284,7 @@ function UsageTable({ rows }: { rows: AiUsageRow[] }) {
 
 export default async function AiDashPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  if (!isAuthorized(params.key)) {
+  if (!isAiDashAuthorized(params.key)) {
     notFound();
   }
 

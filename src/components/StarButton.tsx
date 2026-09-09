@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect, useState } from 'react';
 import { StarFill, Star } from 'react-bootstrap-icons';
 import { Button, Modal } from 'react-bootstrap';

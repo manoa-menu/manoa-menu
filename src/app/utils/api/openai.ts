@@ -9,6 +9,9 @@ import { overlayCcMenuWithCorrections, saveSdxTranslations } from '@/lib/sdxTran
 import { getCurrentWeekOf, getNextWeekOf } from '@/lib/dateFunctions';
 import { recordAiTokenUsage } from '@/lib/aiTokenUsage';
 import { getAiClient, getAiLogLabel, getAiProvider, selectAiConfig } from '@/lib/aiProvider';
+import { parseCcMenuJson } from '@/lib/ccMenuResponse';
+import { parsePdfWithOpenRouter } from '@/lib/openRouterPdfParse';
+import { installPdfJsDomPolyfills } from '@/lib/pdfJsDomPolyfill';
 
 import { MenuResponse, Location, FilteredSodexoMeal, DayMenu, SdxSchemaObject } from '@/types/menuTypes';
 
@@ -665,6 +668,33 @@ async function translateCcStrings(
   return translateMenuStrings(prompt, strings, language, 'cc_translate_batch');
 }
 
+async function extractPdfText(pdfData: Uint8Array): Promise<string> {
+  installPdfJsDomPolyfills();
+  try {
+    const { PDFParse } = await import('pdf-parse');
+    const workerPath = path.join(
+      process.cwd(),
+      'node_modules',
+      'pdf-parse',
+      'dist',
+      'pdf-parse',
+      'esm',
+      'pdf.worker.mjs',
+    );
+    PDFParse.setWorker(pathToFileURL(workerPath).toString());
+
+    const parser = new PDFParse({ data: pdfData });
+    const textResult = await parser.getText();
+    await parser.destroy();
+
+    console.log(`Extracted ${textResult.text.length} chars from PDF (${textResult.total} pages)`);
+    return textResult.text;
+  } catch (pdfExtractError) {
+    console.warn(`Local PDF extraction failed: ${pdfExtractError}`);
+    return '';
+  }
+}
+
 async function parseCCMenuFromPDF(pdfUrl: string): Promise<MenuResponse> {
   console.log(`Starting PDF parsing for URL: ${pdfUrl}`);
 
@@ -686,37 +716,8 @@ async function parseCCMenuFromPDF(pdfUrl: string): Promise<MenuResponse> {
   if (!pdfResponse.ok) {
     throw new Error(`Failed to download PDF: ${pdfResponse.status} ${pdfResponse.statusText}`);
   }
-  let menuText = '';
-
-  try {
-    const { PDFParse } = await import('pdf-parse');
-    const workerPath = path.join(
-      process.cwd(),
-      'node_modules',
-      'pdf-parse',
-      'dist',
-      'pdf-parse',
-      'esm',
-      'pdf.worker.mjs',
-    );
-    PDFParse.setWorker(pathToFileURL(workerPath).toString());
-
-    const pdfData = new Uint8Array(await pdfResponse.arrayBuffer());
-    const parser = new PDFParse({ data: pdfData });
-    const textResult = await parser.getText();
-    await parser.destroy();
-
-    menuText = textResult.text;
-    console.log(`Extracted ${menuText.length} chars from PDF (${textResult.total} pages)`);
-  } catch (pdfExtractError) {
-    console.warn(`Local PDF extraction failed, falling back to file_url input: ${pdfExtractError}`);
-  }
-
-  if (menuText.length === 0 && getAiProvider() === 'openrouter') {
-    throw new Error(
-      'Local PDF text extraction failed; OpenRouter cannot use OpenAI file_url PDF input.',
-    );
-  }
+  const pdfData = new Uint8Array(await pdfResponse.arrayBuffer());
+  const menuText = await extractPdfText(pdfData);
 
   const promptText = `You are a menu parser.
 Analyze this Campus Center menu text (extracted from a PDF) and extract the menu items into the specified JSON format.
@@ -739,80 +740,112 @@ Return the data in the exact JSON schema format specified.`;
 
   const { model, reasoningEffort } = selectAiConfig('cc_pdf_parse', 'English');
   const maxTokens = 12000;
-
-  const response = await client.responses.create({
-    model,
-    reasoning: { effort: reasoningEffort },
-    input: [
-      { role: 'system', content: promptText },
-      {
-        role: 'user',
-        content: menuText.length > 0
-          ? `Here is the menu text extracted from the PDF:\n\n${menuText}`
-          : [
-            {
-              type: 'input_text',
-              text: 'Local PDF text extraction failed. Parse this PDF directly and return the structured menu.',
-            },
-            {
-              type: 'input_file',
-              file_url: pdfUrl,
-            },
-          ],
-      },
-    ],
-    text: {
-      format: {
-        type: 'json_schema',
-        ...ccJsonSchema,
-      },
-    },
-    max_output_tokens: maxTokens,
-  });
-
-  const reasoningTokens = response.usage?.output_tokens_details?.reasoning_tokens ?? 0;
-  console.log(
-    `Total tokens used for PDF parsing: ${response.usage?.total_tokens} `
-    + `(model=${response.model || model}, reasoning=${reasoningEffort}, `
-    + `status=${response.status}, reasoning_tokens=${reasoningTokens})`,
-  );
-
-  await recordAiTokenUsage({
-    operation: 'cc_pdf_parse',
-    model: response.model || model,
-    language: 'English',
-    inputTokens: response.usage?.input_tokens ?? 0,
-    outputTokens: response.usage?.output_tokens ?? 0,
-    reasoningTokens,
-    cachedInputTokens: response.usage?.input_tokens_details?.cached_tokens ?? 0,
-    totalTokens: response.usage?.total_tokens,
-    responseId: response.id,
-  });
-
-  if (response.status === 'incomplete') {
-    console.error(`${providerTag} PDF parse was incomplete.`, {
-      incompleteDetails: response.incomplete_details,
-      usage: response.usage,
-    });
-    throw new Error(
-      `${providerTag} PDF parse was incomplete – increase max_output_tokens or lower reasoning effort.`,
-    );
-  }
-
-  const content = response.output_text;
-  if (!content) {
-    throw new Error(`Failed to parse CC menu from PDF using ${providerTag} (empty response)`);
-  }
-
   let parsed: MenuResponse;
-  try {
-    parsed = JSON.parse(content) as MenuResponse;
-  } catch (parseError) {
-    console.error('Failed to parse CC PDF JSON. Preview:', content.slice(0, 500));
-    throw new Error(
-      `Failed to parse CC menu JSON from ${providerTag}: `
-      + `${parseError instanceof Error ? parseError.message : String(parseError)}`,
+
+  if (menuText.length === 0 && getAiProvider() === 'openrouter') {
+    console.log('Local PDF text extraction failed; sending PDF bytes to OpenRouter file input.');
+    const openRouterResult = await parsePdfWithOpenRouter({
+      model,
+      reasoningEffort,
+      prompt: promptText,
+      pdfUrl,
+      pdfBytes: pdfData,
+      jsonSchema: ccJsonSchema,
+      maxTokens,
+    });
+    console.log(
+      `Total tokens used for PDF parsing: ${openRouterResult.totalTokens} `
+      + `(model=${openRouterResult.model || model}, reasoning=${reasoningEffort}, `
+      + `reasoning_tokens=${openRouterResult.reasoningTokens})`,
     );
+    await recordAiTokenUsage({
+      operation: 'cc_pdf_parse',
+      model: openRouterResult.model || model,
+      language: 'English',
+      inputTokens: openRouterResult.inputTokens,
+      outputTokens: openRouterResult.outputTokens,
+      reasoningTokens: openRouterResult.reasoningTokens,
+      cachedInputTokens: openRouterResult.cachedInputTokens,
+      totalTokens: openRouterResult.totalTokens,
+      responseId: openRouterResult.responseId,
+    });
+    try {
+      parsed = parseCcMenuJson(openRouterResult.content);
+    } catch (parseError) {
+      console.error('Failed to parse CC PDF JSON. Preview:', openRouterResult.content.slice(0, 500));
+      throw parseError;
+    }
+  } else {
+    const response = await client.responses.create({
+      model,
+      reasoning: { effort: reasoningEffort },
+      input: [
+        { role: 'system', content: promptText },
+        {
+          role: 'user',
+          content: menuText.length > 0
+            ? `Here is the menu text extracted from the PDF:\n\n${menuText}`
+            : [
+              {
+                type: 'input_text',
+                text: 'Local PDF text extraction failed. Parse this PDF directly and return the structured menu.',
+              },
+              {
+                type: 'input_file',
+                file_url: pdfUrl,
+              },
+            ],
+        },
+      ],
+      text: {
+        format: {
+          type: 'json_schema',
+          ...ccJsonSchema,
+        },
+      },
+      max_output_tokens: maxTokens,
+    });
+
+    const reasoningTokens = response.usage?.output_tokens_details?.reasoning_tokens ?? 0;
+    console.log(
+      `Total tokens used for PDF parsing: ${response.usage?.total_tokens} `
+      + `(model=${response.model || model}, reasoning=${reasoningEffort}, `
+      + `status=${response.status}, reasoning_tokens=${reasoningTokens})`,
+    );
+
+    await recordAiTokenUsage({
+      operation: 'cc_pdf_parse',
+      model: response.model || model,
+      language: 'English',
+      inputTokens: response.usage?.input_tokens ?? 0,
+      outputTokens: response.usage?.output_tokens ?? 0,
+      reasoningTokens,
+      cachedInputTokens: response.usage?.input_tokens_details?.cached_tokens ?? 0,
+      totalTokens: response.usage?.total_tokens,
+      responseId: response.id,
+    });
+
+    if (response.status === 'incomplete') {
+      console.error(`${providerTag} PDF parse was incomplete.`, {
+        incompleteDetails: response.incomplete_details,
+        usage: response.usage,
+      });
+      throw new Error(
+        `${providerTag} PDF parse was incomplete – increase max_output_tokens or lower reasoning effort.`,
+      );
+    }
+
+    const content = response.output_text;
+    if (!content) {
+      throw new Error(`Failed to parse CC menu from PDF using ${providerTag} (empty response)`);
+    }
+
+    try {
+      parsed = parseCcMenuJson(content);
+    } catch (parseError) {
+      console.error('Failed to parse CC PDF JSON. Preview:', content.slice(0, 500));
+      throw parseError;
+    }
   }
 
   await insertCCMenu(parsed.weekOne, Location.CAMPUS_CENTER, 'English', currentWeek);

@@ -93,6 +93,117 @@ function isSdxMenuShape(value: unknown): value is FilteredSodexoMeal[] {
   return Array.isArray(value);
 }
 
+function keepOrTranslate(
+  englishValue: string | undefined,
+  currentValue: string,
+  translations: Map<string, string>,
+): string {
+  if (!englishValue) {
+    return currentValue;
+  }
+  const translated = lookupTranslation(translations, englishValue);
+  if (translated == null || !translated.trim()) {
+    return currentValue;
+  }
+  return translated;
+}
+
+/**
+ * Apply translations onto an existing translated menu. Missing map entries keep
+ * the stored text — they are never replaced with English, and items are never dropped.
+ */
+export function patchSdxTranslatedMenu(
+  englishMenu: unknown,
+  translatedMenu: unknown,
+  translations: Map<string, string>,
+): FilteredSodexoMeal[] | null {
+  if (!isSdxMenuShape(translatedMenu)) {
+    return null;
+  }
+  if (!isSdxMenuShape(englishMenu) || englishMenu.length !== translatedMenu.length) {
+    return translatedMenu;
+  }
+
+  let changed = false;
+  const next = translatedMenu.map((translatedMeal, mealIndex) => {
+    const englishMeal = englishMenu[mealIndex];
+    if (!englishMeal?.groups || !translatedMeal?.groups) {
+      return translatedMeal;
+    }
+
+    const mealName = keepOrTranslate(englishMeal.name, translatedMeal.name, translations);
+    if (mealName !== translatedMeal.name) {
+      changed = true;
+    }
+
+    const groups = englishMeal.groups.length !== translatedMeal.groups.length
+      ? translatedMeal.groups
+      : translatedMeal.groups.map((translatedGroup, groupIndex) => {
+        const englishGroup = englishMeal.groups[groupIndex];
+        if (!englishGroup?.items || !translatedGroup?.items) {
+          return translatedGroup;
+        }
+
+        const groupName = keepOrTranslate(englishGroup.name, translatedGroup.name, translations);
+        if (groupName !== translatedGroup.name) {
+          changed = true;
+        }
+
+        const items = englishGroup.items.length !== translatedGroup.items.length
+          ? translatedGroup.items
+          : translatedGroup.items.map((translatedItem, itemIndex) => {
+            const englishItem = englishGroup.items[itemIndex];
+            if (!englishItem) {
+              return translatedItem;
+            }
+
+            const formalName = keepOrTranslate(
+              englishItem.formalName,
+              translatedItem.formalName,
+              translations,
+            );
+            const description = translatedItem.description
+              ? keepOrTranslate(
+                englishItem.description,
+                translatedItem.description,
+                translations,
+              )
+              : translatedItem.description;
+            if (formalName === translatedItem.formalName
+              && description === translatedItem.description) {
+              return translatedItem;
+            }
+            changed = true;
+            return {
+              ...translatedItem,
+              formalName,
+              description,
+            };
+          });
+
+        if (groupName === translatedGroup.name && items === translatedGroup.items) {
+          return translatedGroup;
+        }
+        return {
+          ...translatedGroup,
+          name: groupName,
+          items,
+        };
+      });
+
+    if (mealName === translatedMeal.name && groups === translatedMeal.groups) {
+      return translatedMeal;
+    }
+    return {
+      ...translatedMeal,
+      name: mealName,
+      groups,
+    };
+  });
+
+  return changed ? next : translatedMenu;
+}
+
 /** Pair English and translated menus by structure. Returns [] if the trees do not match. */
 export function extractSdxTranslationPairs(
   englishMenu: unknown,
