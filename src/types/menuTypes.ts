@@ -43,6 +43,7 @@ export interface FilteredSodexoModRoot {
 }
 
 export interface SdxAPIResponse {
+  status?: 'unavailable' | 'english-fallback';
   date: string;
   meals: FilteredSodexoMeal[];
 }

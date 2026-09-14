@@ -26,7 +26,19 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     const elapsed = ((performance.now() - start) / 1000).toFixed(2);
     console.error(`[cc-menu] Error after ${elapsed}s:`, error);
-    return NextResponse.json({ error: 'Failed to fetch menu' }, { status: 500 });
+    if (language !== 'English') {
+      try {
+        const english = await getCheckCCMenu('English');
+        if (english.length) {
+          return NextResponse.json(english, {
+            headers: { 'Cache-Control': 'no-store', 'X-Menu-Language': 'English' },
+          });
+        }
+      } catch {
+        console.warn('[cc-menu] English fallback also unavailable');
+      }
+    }
+    return NextResponse.json({ error: 'Menu is temporarily unavailable' }, { status: 503 });
   }
 }
 

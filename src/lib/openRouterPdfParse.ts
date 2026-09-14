@@ -163,6 +163,7 @@ export async function parsePdfWithOpenRouter(args: {
 
   const response = await fetch(getOpenRouterChatCompletionsUrl(), {
     method: 'POST',
+    signal: AbortSignal.timeout(90_000),
     headers: getOpenRouterHeaders(),
     body: JSON.stringify(body),
   });

@@ -25,3 +25,7 @@ jobs:
         run: npm run lint
       - name: Run unit tests
         run: npm test
+      - name: Install browser for recovery checks
+        run: npx playwright install --with-deps chromium
+      - name: Check menu recovery in the browser
+        run: npx playwright test tests/menu-recovery.spec.ts --project=chromium --reporter=line

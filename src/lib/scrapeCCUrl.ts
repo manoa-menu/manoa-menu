@@ -1,6 +1,6 @@
 /* eslint-disable max-len */
 import { JSDOM, VirtualConsole } from 'jsdom';
-import fetch from 'node-fetch';
+import { fetchUpstreamText } from './upstreamFetch';
 
 import {
   collectCandidatesFromDom,
@@ -21,21 +21,7 @@ export default async function scrapeCCUrl(url: string): Promise<string | null> {
   }
 
   console.log(`Fetching URL: ${url}`);
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      Pragma: 'no-cache',
-      Expires: '0',
-    },
-  });
-
-  if (!response.ok) {
-    console.error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
-    throw new Error(`Failed to fetch the URL: ${response.statusText}`);
-  }
-
-  const html = await response.text();
+  const html = await fetchUpstreamText(url);
   console.log(`HTML length: ${html.length} characters`);
 
   const virtualConsole = new VirtualConsole();
@@ -59,6 +45,8 @@ export default async function scrapeCCUrl(url: string): Promise<string | null> {
     collectCandidatesFromDom(doc, today),
     collectCandidatesFromEmbeddedJson(html, today),
   );
+
+  dom.window.close();
 
   console.log(`Found ${candidates.length} menu candidate(s) on page`);
   candidates.forEach((candidate, index) => {
@@ -91,22 +79,7 @@ export async function scrapeCCHours(url: string): Promise<string | null> {
   }
 
   console.log('[scrapeCCHours] Fetching page HTML...');
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      Pragma: 'no-cache',
-      Expires: '0',
-    },
-  });
-
-  console.log(`[scrapeCCHours] Response status: ${response.status} ${response.statusText}`);
-  if (!response.ok) {
-    console.error(`[scrapeCCHours] Fetch failed with status ${response.status}`);
-    throw new Error(`Failed to fetch the URL: ${response.statusText}`);
-  }
-
-  const html = await response.text();
+  const html = await fetchUpstreamText(url);
   console.log(`[scrapeCCHours] HTML received, length: ${html.length} characters`);
 
   console.log('[scrapeCCHours] Parsing OpenChip status from HTML...');
@@ -130,20 +103,7 @@ export async function scrapeSdxLocationHours(url: string): Promise<{
     throw new Error('scrapeSdxLocationHours can only be run in a Node.js environment');
   }
 
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      Pragma: 'no-cache',
-      Expires: '0',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch the URL: ${response.statusText}`);
-  }
-
-  const html = await response.text();
+  const html = await fetchUpstreamText(url);
   const hours = parseOpenChipStatus(html);
   const specialHours = parseSdxSpecialHours(html);
 

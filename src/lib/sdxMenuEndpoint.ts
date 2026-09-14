@@ -1,3 +1,5 @@
+import { fetchUpstreamText } from './upstreamFetch';
+
 export type SdxMenuIds = {
   locationId: string;
   menuId: string;
@@ -8,22 +10,18 @@ export const SDX_LOCATION_PAGES = {
   ha: 'https://uhm.sodexomyway.com/en-us/locations/hale-aloha-cafe',
 } as const;
 
-const LOCATION_THEN_MENU = /"locationId"\s*:\s*"(\d+)"\s*,\s*"menuId"\s*:\s*"(\d+)"/;
-const MENU_THEN_LOCATION = /"menuId"\s*:\s*"(\d+)"\s*,\s*"locationId"\s*:\s*"(\d+)"/;
-const API_PATH_IDS = /\/data\/menu\/(\d+)\/(\d+)/;
+const API_PATH_IDS = /\/data\/menu\/(\d+)\/(\d+)(?=[/?#"\s]|$)/;
 
 export function parseSdxMenuIds(html: string): SdxMenuIds | null {
-  const locFirst = html.match(LOCATION_THEN_MENU);
-  if (locFirst) {
-    return { locationId: locFirst[1], menuId: locFirst[2] };
+  const decoded = html.replace(/\\"/g, '"').replace(/&quot;/g, '"').replace(/\\\//g, '/');
+  // Keep both IDs in the same object so unrelated page metadata cannot be paired.
+  for (const match of decoded.matchAll(/\{[^{}]*\}/g)) {
+    const location = match[0].match(/"locationId"\s*:\s*"?(\d+)"?(?=\s*[,}])/);
+    const menu = match[0].match(/"menuId"\s*:\s*"?(\d+)"?(?=\s*[,}])/);
+    if (location && menu) return { locationId: location[1], menuId: menu[1] };
   }
-
-  const menuFirst = html.match(MENU_THEN_LOCATION);
-  if (menuFirst) {
-    return { locationId: menuFirst[2], menuId: menuFirst[1] };
-  }
-
-  return null;
+  const path = decoded.match(API_PATH_IDS);
+  return path ? { locationId: path[1], menuId: path[2] } : null;
 }
 
 export function parseSdxMenuIdsFromApiUrl(url: string): SdxMenuIds | null {
@@ -35,20 +33,24 @@ export function parseSdxMenuIdsFromApiUrl(url: string): SdxMenuIds | null {
 }
 
 export function buildSdxMenuApiUrl(ids: SdxMenuIds, templateUrl: string): string {
-  const origin = new URL(templateUrl).origin;
-  return `${origin}/v0.2/data/menu/${ids.locationId}/${ids.menuId}`;
+  const url = new URL(templateUrl);
+  url.pathname = url.pathname.replace(/\/data\/menu\/\d+\/\d+\/?$/,
+    `/data/menu/${ids.locationId}/${ids.menuId}`);
+  return url.toString();
 }
 
 export function sdxMenuApiUrlsMatch(left: string, right: string): boolean {
-  const leftIds = parseSdxMenuIdsFromApiUrl(left);
-  const rightIds = parseSdxMenuIdsFromApiUrl(right);
-  if (leftIds && rightIds) {
-    return leftIds.locationId === rightIds.locationId && leftIds.menuId === rightIds.menuId;
+  try {
+    const a = new URL(left);
+    const b = new URL(right);
+    return a.origin === b.origin && a.pathname.replace(/\/+$/, '') === b.pathname.replace(/\/+$/, '')
+      && a.search === b.search;
+  } catch {
+    return left.replace(/\/+$/, '') === right.replace(/\/+$/, '');
   }
-  return left.replace(/\/+$/, '') === right.replace(/\/+$/, '');
 }
 
-/** Primary first, then extras; duplicate menu IDs are skipped. */
+/** Primary first, then extras; preserve distinct hosts, API versions, and query parameters. */
 export function uniqueSdxMenuApiUrls(
   ...urls: Array<string | null | undefined>
 ): string[] {
@@ -85,15 +87,5 @@ export async function resolveSdxMenuApiUrl(
 }
 
 async function defaultFetchHtml(url: string): Promise<string> {
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      Pragma: 'no-cache',
-    },
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to fetch location page: ${response.status} ${response.statusText}`);
-  }
-  return response.text();
+  return fetchUpstreamText(url);
 }

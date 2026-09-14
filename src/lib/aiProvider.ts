@@ -117,6 +117,8 @@ export function createAiClient(): OpenAI {
     }
 
     return new OpenAI({
+      timeout: 45_000,
+      maxRetries: 1,
       apiKey,
       baseURL: OPENROUTER_BASE_URL,
       defaultHeaders: {
@@ -127,6 +129,8 @@ export function createAiClient(): OpenAI {
   }
 
   return new OpenAI({
+    timeout: 45_000,
+    maxRetries: 1,
     apiKey: process.env.OPENAI_API_KEY,
   });
 }

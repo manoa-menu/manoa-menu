@@ -1,10 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
+import { readUpstream, singleFlight } from '@/lib/upstreamFetch';
+import { fetchSdxWithFallbacks, parseSdxMeals } from '@/lib/sdxMenuSource';
 
 import {
-  SodexoMeal,
   FilteredSodexoMeal,
   Location,
   SdxAPIResponse,
@@ -25,7 +23,6 @@ import {
   translateSdxStringsCached,
   withSdxTranslationLock,
 } from '@/lib/sdxTranslationCache';
-import { isSdxPlaceholderItemName } from '@/lib/sdxSpecialHours';
 import {
   resolveSdxMenuApiUrl,
   SDX_LOCATION_PAGES,
@@ -88,54 +85,13 @@ SPECIAL CASES
 Return ONLY the JSON object with the translations array.\n`
 );
 
-const removeNutritionalFacts = (rootObject: SodexoMeal): FilteredSodexoMeal => ({
-  name: rootObject.name,
-  groups: rootObject.groups
-    .map((group) => ({
-      name: (group.name || '').trim(),
-      items: group.items
-        // Drop placeholders / blank names first so empty groups can be removed below
-        .filter((item) => !isSdxPlaceholderItemName(item.formalName))
-        .map((item) => {
-          // Remove nutritional facts from items
-          const {
-            price,
-            addons,
-            sizes,
-            allergens,
-            courseSortOrder,
-            menuItemId,
-            isMindful,
-            isSwell,
-            calories,
-            caloriesFromFat,
-            fat,
-            saturatedFat,
-            transFat,
-            polyunsaturatedFat,
-            cholesterol,
-            sodium,
-            carbohydrates,
-            dietaryFiber,
-            sugar,
-            protein,
-            potassium,
-            iron,
-            calcium,
-            vitaminA,
-            vitaminC,
-            ...rest
-          } = item;
-          return rest;
-        }),
-    }))
-    .filter((group) => group.name && group.items.length > 0),
-});
+const shareEnglishFetch = singleFlight<FilteredSodexoMeal[]>();
 
 type ResolvedDay = {
   date: string;
   meals: FilteredSodexoMeal[];
   englishMenu?: FilteredSodexoMeal[];
+  status?: 'unavailable' | 'english-fallback';
 };
 
 export async function GET(req: NextRequest) {
@@ -155,9 +111,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 
-  if (language !== 'English') {
-    await ensureSdxTranslationCacheBackfilled(language);
-  }
 
   console.log(`Location: ${location}`);
 
@@ -204,61 +157,36 @@ export async function GET(req: NextRequest) {
   };
 
   const fetchMealsFromApi = async (day: string, apiUrl: string): Promise<FilteredSodexoMeal[]> => {
-    const queryUrl = `${apiUrl}?date=${day}`;
-    console.log(`Getting data for ${day} via API`);
-    const response = await axios.get(queryUrl, { headers });
-    const dataArr: SodexoMeal[] | [] = Array.isArray(response.data) ? response.data : [];
-    return dataArr
-      .map((data: SodexoMeal) => removeNutritionalFacts(data))
-      // Drop meals that only had placeholders (e.g. "Have A Nice Day")
-      .filter((meal) => meal.groups.length > 0);
+    const queryUrl = new URL(apiUrl);
+    queryUrl.searchParams.set('date', day);
+    return readUpstream(queryUrl.toString(), async response => parseSdxMeals(await response.json()), { headers });
   };
 
-  const fetchEnglishSdxMenu = async (day: string): Promise<FilteredSodexoMeal[]> => {
-    const existingEnglish = await getSdxMenu(day, 'English', locationOption);
-    if (existingEnglish) {
-      const cached = (existingEnglish.menu as unknown as FilteredSodexoMeal[]) || [];
-      // Blank rows are ignored so closed days re-hit the API instead of sticking.
-      if (cached.length > 0) {
-        return cached;
-      }
+  const readCachedMenu = async (day: string, lang: string): Promise<FilteredSodexoMeal[]> => {
+    try {
+      const row = await getSdxMenu(day, lang, locationOption);
+      return row ? parseSdxMeals(row.menu) : [];
+    } catch {
+      console.warn('[sdx-menu] Cache read failed; using the menu source');
+      return [];
     }
+  };
 
-    let filteredData: FilteredSodexoMeal[] = [];
-    const tried = new Set<string>();
-
-    const tryUrls = async (urls: string[]): Promise<boolean> => {
-      const remaining = urls.filter((apiUrl) => (
-        ![...tried].some((seen) => sdxMenuApiUrlsMatch(seen, apiUrl))
-      ));
-      remaining.forEach((apiUrl) => tried.add(apiUrl));
-
-      for (const apiUrl of remaining) {
-        const meals = await fetchMealsFromApi(day, apiUrl);
-        if (meals.length > 0) {
-          filteredData = meals;
-          menuApiUrls = uniqueSdxMenuApiUrls(apiUrl, ...menuApiUrls);
-          console.log(`[sdx-menu] ${location} ${day} using ${apiUrl}`);
-          return true;
+  const fetchEnglishSdxMenu = (day: string): Promise<FilteredSodexoMeal[]> =>
+    shareEnglishFetch(`${location}:${day}`, async () => {
+      const cached = await readCachedMenu(day, 'English');
+      if (cached.length) return cached;
+      const meals = await fetchSdxWithFallbacks(menuApiUrls, refreshMenuApiUrlsFromPage,
+        apiUrl => fetchMealsFromApi(day, apiUrl));
+      if (meals.length) {
+        try {
+          await insertSdxMenu(meals, locationOption, 'English', day);
+        } catch {
+          console.warn('[sdx-menu] Cache write failed; serving the fetched menu');
         }
       }
-      return false;
-    };
-
-    if (!await tryUrls(menuApiUrls)) {
-      const refreshedUrls = await refreshMenuApiUrlsFromPage();
-      await tryUrls(refreshedUrls);
-    }
-
-    if (filteredData.length > 0) {
-      console.log(`Inserting menu for ${day} in English`);
-      await insertSdxMenu(filteredData, locationOption, 'English', day);
-    } else {
-      console.log(`Skipping blank English menu for ${day} (location closed / no meals)`);
-    }
-
-    return filteredData;
-  };
+      return meals;
+    });
 
   const currentWeekDates = getCurrentWeekDates();
 
@@ -267,16 +195,9 @@ export async function GET(req: NextRequest) {
       try {
         console.log(`Attempting to get menu for ${day} from database`);
 
-        const cachedMenu = await getSdxMenu(day, language, locationOption);
-        if (cachedMenu) {
-          const dayMenu = (cachedMenu.menu as unknown as FilteredSodexoMeal[]) || [];
-          if (dayMenu.length > 0) {
-            console.log(`Returning cached ${language} menu for ${day}`);
-            return {
-              date: day,
-              meals: dayMenu,
-            };
-          }
+        if (language !== 'English') {
+          const dayMenu = await readCachedMenu(day, language);
+          if (dayMenu.length) return { date: day, meals: dayMenu };
         }
 
         const englishMenu = await fetchEnglishSdxMenu(day);
@@ -306,6 +227,7 @@ export async function GET(req: NextRequest) {
         return {
           date: day,
           meals: [],
+          status: 'unavailable',
         };
       }
     }),
@@ -354,27 +276,41 @@ export async function GET(req: NextRequest) {
         await Promise.all(
           stillPending.map(async (day) => {
             const translatedMenu = applySdxTranslations(day.englishMenu ?? [], translationMap);
-            await insertSdxMenu(translatedMenu, locationOption, language, day.date);
             day.meals = translatedMenu;
+            try {
+              await insertSdxMenu(translatedMenu, locationOption, language, day.date);
+            } catch {
+              console.warn('[sdx-menu] Could not cache translated menu');
+            }
           }),
         );
       });
     } catch (error) {
       console.error('Error translating SDX menus for the week:', error);
-      return NextResponse.json(
-        { error: 'Failed to translate SDX menus for the week.' },
-        { status: 500 },
-      );
+      pendingTranslations.forEach(day => {
+        if (!day.meals.length) {
+          day.meals = day.englishMenu;
+          day.status = 'english-fallback';
+        }
+      });
     }
   }
 
   if (language.toLowerCase() !== 'english') {
-    await overlaySdxMenusWithCorrections(resolvedDays, language, locationOption);
+    try {
+      await overlaySdxMenusWithCorrections(
+        resolvedDays.filter(day => day.status !== 'english-fallback'), language, locationOption,
+      );
+    } catch {
+      console.warn('[sdx-menu] Translation corrections unavailable; serving the menu');
+    }
   }
 
-  const nextSevenDaysMenu: SdxAPIResponse[] = resolvedDays.map(({ date, meals }) => ({
-    date,
-    meals,
+  if (resolvedDays.every(day => day.status === 'unavailable')) {
+    return NextResponse.json({ error: 'Menu sources are temporarily unavailable' }, { status: 503 });
+  }
+  const nextSevenDaysMenu: SdxAPIResponse[] = resolvedDays.map(({ date, meals, status }) => ({
+    date, meals, ...(status ? { status } : {}),
   }));
 
   return NextResponse.json(nextSevenDaysMenu, {

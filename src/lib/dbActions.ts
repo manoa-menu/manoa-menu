@@ -1,5 +1,7 @@
 import { DayMenu, Location, FilteredSodexoMeal } from '@/types/menuTypes';
 import { prisma } from '@/lib/prisma';
+import { isDayMenu } from './ccMenuResponse';
+import { parseSdxMeals } from './sdxMenuSource';
 
 export async function insertCCMenu(
   menuInfo: DayMenu[],
@@ -17,7 +19,7 @@ export async function insertCCMenu(
     const existing = await getCCMenu(date, language);
     if (existing) {
       const existingMenu = (existing.menu as unknown as DayMenu[]) || [];
-      if (existingMenu.length > 0) {
+      if (Array.isArray(existingMenu) && existingMenu.length > 0 && existingMenu.every(isDayMenu)) {
         console.log(`CC menu already exists for ${date} (${language}); skipping insert`);
         return;
       }
@@ -74,7 +76,12 @@ export async function insertSdxMenu(
     const existing = await getSdxMenu(date, language, location);
 
     if (existing) {
-      const existingMenu = (existing.menu as unknown as FilteredSodexoMeal[]) || [];
+      let existingMenu: FilteredSodexoMeal[] = [];
+      try {
+        existingMenu = parseSdxMeals(existing.menu);
+      } catch {
+        console.warn('[sdx-menu] Replacing a damaged cached menu');
+      }
       if (existingMenu.length > 0) {
         console.log(`SDX menu already exists for ${date} (${language}, ${location}); skipping insert`);
         return;

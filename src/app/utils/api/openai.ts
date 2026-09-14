@@ -1,3 +1,6 @@
+import { readCcMenuCache } from '@/lib/ccMenuCache';
+import { readUpstream } from '@/lib/upstreamFetch';
+import { isDayMenu } from '@/lib/ccMenuResponse';
 // import axios from 'axios';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -701,10 +704,11 @@ async function parseCCMenuFromPDF(pdfUrl: string): Promise<MenuResponse> {
   const currentWeek = getCurrentWeekOf();
   const nextWeek = getNextWeekOf();
   const [existingMenu, existingWeekTwo] = await Promise.all([
-    getCCMenu(currentWeek, 'English'),
-    getCCMenu(nextWeek, 'English'),
+    readCcMenuCache(currentWeek, 'English'),
+    readCcMenuCache(nextWeek, 'English'),
   ]);
-  if (existingMenu) {
+  if (existingMenu && Array.isArray(existingMenu.menu)
+    && existingMenu.menu.length > 0 && existingMenu.menu.every(isDayMenu)) {
     const weekOneMenu = existingMenu.menu as unknown as DayMenu[];
     const weekTwoMenu = existingWeekTwo ? (existingWeekTwo.menu as unknown as DayMenu[]) : [];
     console.log(`Returning existing English CC menu from DB for week ${currentWeek}`);
@@ -712,11 +716,13 @@ async function parseCCMenuFromPDF(pdfUrl: string): Promise<MenuResponse> {
   }
 
   console.log(`Downloading PDF from: ${pdfUrl}`);
-  const pdfResponse = await fetch(pdfUrl);
-  if (!pdfResponse.ok) {
-    throw new Error(`Failed to download PDF: ${pdfResponse.status} ${pdfResponse.statusText}`);
-  }
-  const pdfData = new Uint8Array(await pdfResponse.arrayBuffer());
+  const pdfData = await readUpstream(pdfUrl, async response => {
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (new TextDecoder().decode(bytes.slice(0, 5)) !== '%PDF-') {
+      throw new Error('Menu download did not contain a PDF');
+    }
+    return bytes;
+  });
   const menuText = await extractPdfText(pdfData);
 
   const promptText = `You are a menu parser.
@@ -848,9 +854,14 @@ Return the data in the exact JSON schema format specified.`;
     }
   }
 
-  await insertCCMenu(parsed.weekOne, Location.CAMPUS_CENTER, 'English', currentWeek);
-  if (parsed.weekTwo && parsed.weekTwo.length > 0) {
-    await insertCCMenu(parsed.weekTwo, Location.CAMPUS_CENTER, 'English', getNextWeekOf());
+  if (parsed.weekOne.length === 0) throw new Error('PDF contained no usable weekly menu');
+  try {
+    await insertCCMenu(parsed.weekOne, Location.CAMPUS_CENTER, 'English', currentWeek);
+    if (parsed.weekTwo && parsed.weekTwo.length > 0) {
+      await insertCCMenu(parsed.weekTwo, Location.CAMPUS_CENTER, 'English', nextWeek);
+    }
+  } catch {
+    console.warn('[cc-menu] Cache write failed; serving parsed menu');
   }
   console.log(`Inserted English CC menu into DB for week ${currentWeek}`);
 

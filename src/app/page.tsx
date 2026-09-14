@@ -3,6 +3,7 @@
 // import '@/styles/Menu.css';
 // import '@/styles/Scrollbar.css';
 
+import { requestMenu, menuNoticeText, type MenuNotice } from '@/lib/menuClient';
 import CCMenuList from '@/components/CCMenuList';
 import { Container } from 'react-bootstrap';
 import { DayMenu, SdxAPIResponse } from '@/types/menuTypes';
@@ -19,6 +20,7 @@ import SdxSpecialHoursNotice from '@/components/SdxSpecialHoursNotice';
 import { isSdxMenuBlank, SdxSpecialHours } from '@/lib/sdxSpecialHours';
 import { getTranslatedOpenStatus, isCurrentlyOpenStatus } from '@/lib/openHoursStatus';
 import {
+  Alert,
   Box,
   Button,
   ButtonBase,
@@ -95,14 +97,18 @@ const Page = () => {
 
   const { menuState, setMenuState, language, setLanguage, preferencesReady } = useMenu();
 
+  const [menuNotice, setMenuNotice] = useState<MenuNotice>(null);
+  const [retryCount, setRetryCount] = useState(0);
+
   const [ccMenu, setCCMenu] = useState<DayMenu[]>([]);
   const [gwMenu, setGWMenu] = useState<SdxAPIResponse[]>([]);
   const [haMenu, setHAMenu] = useState<SdxAPIResponse[]>([]);
 
-  const [isCCLoading, setCCLoading] = useState(false);
-  const [isGWLoading, setGWLoading] = useState(false);
-  const [isHALoading, setHALoading] = useState(false);
-  const [showMenuSpinner, setShowMenuSpinner] = useState(true);
+  const requestKey = `${menuState}:${language}:${retryCount}`;
+  const [loadedRequestKey, setLoadedRequestKey] = useState<string | null>(null);
+  const [spinnerRequestKey, setSpinnerRequestKey] = useState<string | null>(null);
+  const isMenuFetching = !preferencesReady || loadedRequestKey !== requestKey;
+  const showMenuSpinner = !preferencesReady || (isMenuFetching && spinnerRequestKey === requestKey);
 
   const locationTabListRef = useRef<HTMLDivElement>(null);
   const locationTabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -165,23 +171,16 @@ const Page = () => {
       if (!session?.user?.email) {
         return;
       }
-      const userLanguage = await getUserLanguage();
+      const userLanguage = await getUserLanguage().catch(() => null);
       const sessionId = (session.user as { id?: string | number }).id;
       const parsedId = typeof sessionId === 'number' ? sessionId : Number(sessionId);
       setUserId(Number.isFinite(parsedId) ? parsedId : -21);
-      setLanguage(userLanguage);
+      if (userLanguage) setLanguage(userLanguage);
     };
     void fetchData();
   }, [session, setLanguage]);
 
 
-
-  useLayoutEffect(() => {
-    if (!preferencesReady) return;
-    if (menuState === 'cc') setCCLoading(true);
-    else if (menuState === 'gw') setGWLoading(true);
-    else setHALoading(true);
-  }, [preferencesReady, menuState, language]);
 
   useEffect(() => {
     if (!preferencesReady) return;
@@ -221,73 +220,37 @@ const Page = () => {
   useEffect(() => {
     if (!preferencesReady) return;
 
-    const fetchMenu = async (
-      menuType: string,
-      lang: string,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setMenu: React.Dispatch<React.SetStateAction<any>>,
-      setLoading: React.Dispatch<React.SetStateAction<boolean>>,
-      location?: string,
-    ) => {
-      try {
-        const locationQuery = location ? `&location=${location}` : '';
-        const response = await fetch(
-          `/api/${menuType}-menu?language=${encodeURIComponent(lang)}${locationQuery}`,
-          {
-            cache: 'no-store',
-          },
-        );
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} ${response.statusText}`);
-        }
-        const data = await response.json();
-        const fixedMenu = fixDayNames(data, lang);
+    const controller = new AbortController();
+    let active = true;
+    const kind = menuState === 'cc' ? 'cc' : 'sdx';
+    const query = new URLSearchParams({ language });
+    if (kind === 'sdx') query.set('location', menuState);
 
-        setMenu(fixedMenu);
-      } catch (error) {
-        console.error(`Failed to fetch ${menuType} menu:`, error);
-      } finally {
-        setLoading(false);
-      }
+    void requestMenu(`/api/${kind}-menu?${query}`, kind, controller.signal)
+      .then(result => {
+        if (!active) return;
+        if (result.kind === 'cc') setCCMenu(fixDayNames(result.menu, language));
+        else if (menuState === 'gw') setGWMenu(result.menu);
+        else setHAMenu(result.menu);
+        setMenuNotice(result.notice);
+      })
+      .catch(() => {
+        if (active) setMenuNotice('unavailable');
+      })
+      .finally(() => {
+        if (active) setLoadedRequestKey(requestKey);
+      });
+    return () => {
+      active = false;
+      controller.abort();
     };
-
-    if (menuState === 'cc') {
-      setCCLoading(true);
-      fetchMenu(menuState, language, setCCMenu, setCCLoading);
-    } else if (menuState === 'gw') {
-      setGWLoading(true);
-      fetchMenu('sdx', language, setGWMenu, setGWLoading, menuState);
-    } else if (menuState === 'ha') {
-      setHALoading(true);
-      fetchMenu('sdx', language, setHAMenu, setHALoading, menuState);
-    }
-  }, [language, menuState, preferencesReady]);
-
-  const isCurrentMenuLoading = menuState === 'cc'
-    ? isCCLoading
-    : menuState === 'gw'
-      ? isGWLoading
-      : isHALoading;
-  const isMenuFetching = !preferencesReady || isCurrentMenuLoading;
+  }, [language, menuState, preferencesReady, retryCount, requestKey]);
 
   useEffect(() => {
-    if (!isMenuFetching) {
-      setShowMenuSpinner(false);
-      return undefined;
-    }
-
-    // Show immediately during prefs init; delay only for later menu refetches.
-    if (!preferencesReady) {
-      setShowMenuSpinner(true);
-      return undefined;
-    }
-
-    const timer = setTimeout(() => {
-      setShowMenuSpinner(true);
-    }, MENU_SPINNER_DELAY_MS);
-
+    if (!isMenuFetching) return;
+    const timer = setTimeout(() => setSpinnerRequestKey(requestKey), MENU_SPINNER_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [isMenuFetching, preferencesReady]);
+  }, [isMenuFetching, requestKey]);
 
   const renderBlankSdxFallback = (specialHours: SdxSpecialHours | null) => (
     specialHours
@@ -460,19 +423,7 @@ const Page = () => {
 
   // Key by location only — including language remounted the menu and reset the day tab.
   const menuContentKey = menuState;
-  const hasDisplayableMenu = (() => {
-    switch (menuState) {
-      case 'cc':
-        return ccMenu.length > 0;
-      case 'gw':
-        return !isSdxMenuBlank(gwMenu);
-      case 'ha':
-        return !isSdxMenuBlank(haMenu);
-      default:
-        return false;
-    }
-  })();
-  const showMenuContent = !showMenuSpinner && (!isMenuFetching || hasDisplayableMenu);
+  const showMenuContent = !isMenuFetching;
 
   return (
     <Container
@@ -572,7 +523,20 @@ const Page = () => {
               overflowX: 'clip',
             }}
           >
-            {renderMenu()}
+            {menuNotice && (
+              <Alert
+                severity={menuNotice === 'unavailable' ? 'warning' : 'info'}
+                action={(
+                  <Button color="inherit" size="small" onClick={() => setRetryCount(count => count + 1)}>
+                    {(menuNoticeText[language] ?? menuNoticeText.English).retry}
+                  </Button>
+                )}
+                sx={{ mb: 2 }}
+              >
+                {(menuNoticeText[language] ?? menuNoticeText.English)[menuNotice]}
+              </Alert>
+            )}
+            {menuNotice !== 'unavailable' && renderMenu()}
           </Box>
         </Fade>
       </Box>

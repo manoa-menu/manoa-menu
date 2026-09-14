@@ -1,3 +1,5 @@
+import { parseFlexibleMenuRange, validCalendarDate } from './menuDateRange';
+
 export const PDF_MEDIA_BASE = 'https://media-prd.sodexomyway.net';
 export const HST_TIMEZONE = 'Pacific/Honolulu';
 
@@ -5,45 +7,9 @@ const MAX_MENU_RANGE_DAYS = 14;
 const FILENAME_MENU_DAY_SPAN = 4;
 const EMBEDDED_NAME_LOOKBACK_CHARS = 800;
 
-const MONTH_MAP: Record<string, number> = {};
-[
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-].forEach((month, index) => {
-  MONTH_MAP[month.toLowerCase()] = index;
-  MONTH_MAP[month.slice(0, 3).toLowerCase()] = index;
-});
-
-const WEEKDAY = '(?:Sun(?:day)?|Mon(?:day)?|Tue(?:s(?:day)?)?|Wed(?:nesday)?'
-  + '|Thu(?:rs(?:day)?)?|Fri(?:day)?|Sat(?:urday)?)';
-const RANGE_SEP = '(?:to|–|—|-)';
-
-// Primary: "06 July to 10 July", "Mon 6 Jul - Fri 10 Jul", "6th July to 10th July"
-const DAY_MONTH_RANGE_REGEX = new RegExp(
-  `(?:${WEEKDAY}\\s+)?(\\d{1,2})(?:st|nd|rd|th)?\\s+([A-Za-z]+\\.?)\\s+${RANGE_SEP}\\s+`
-  + `(?:${WEEKDAY}\\s+)?(\\d{1,2})(?:st|nd|rd|th)?\\s+([A-Za-z]+\\.?)`,
-  'i',
-);
-
-// Secondary: "July 6 to July 10", "Jul 6 - Jul 10"
-const MONTH_DAY_RANGE_REGEX = new RegExp(
-  `(?:${WEEKDAY}\\s+)?([A-Za-z]+\\.?)\\s+(\\d{1,2})(?:st|nd|rd|th)?\\s+${RANGE_SEP}\\s+`
-  + `(?:${WEEKDAY}\\s+)?([A-Za-z]+\\.?)\\s+(\\d{1,2})(?:st|nd|rd|th)?`,
-  'i',
-);
-
-// Secondary: "7/6 to 7/10", "07/06/2026 to 07/10/2026"
-const NUMERIC_RANGE_REGEX = new RegExp(
-  `(\\d{1,2})\\/(\\d{1,2})(?:\\/(\\d{2,4}))?\\s+${RANGE_SEP}\\s+`
-  + `(\\d{1,2})\\/(\\d{1,2})(?:\\/(\\d{2,4}))?`,
-);
-
-// Secondary: "2026-07-06 to 2026-07-10"
-const ISO_RANGE_REGEX = /(\d{4})-(\d{1,2})-(\d{1,2})\s+(?:to|–|—|-)\s+(\d{4})-(\d{1,2})-(\d{1,2})/;
-
-const EMBEDDED_PDF_URI_REGEX = /"uri":"(\/web\/en-us\/media\/[^"]+\.pdf)"/g;
-const EMBEDDED_NAME_REGEX = /"name":"([^"]+)"/g;
-const PDF_FILENAME_YYMMDD_REGEX = /(?<!\d)(\d{2})-(\d{2})(\d{2})(?!\d)/g;
+const EMBEDDED_PDF_URI_REGEX = /"(?:uri|url|href)"\s*:\s*"([^"]+\.pdf(?:[?#][^"]*)?)"/gi;
+const EMBEDDED_NAME_REGEX = /"(?:name|title|label)"\s*:\s*"([^"]+)"/g;
+const PDF_FILENAME_YYMMDD_REGEX = /(?<!\d)(\d{4}|\d{2})[-_](\d{2})[-_]?(\d{2})(?!\d)/g;
 
 export interface DateParts {
   year: number;
@@ -84,59 +50,6 @@ export function formatDateParts(parts: DateParts): string {
   const month = String(parts.month + 1).padStart(2, '0');
   const day = String(parts.day).padStart(2, '0');
   return `${parts.year}-${month}-${day}`;
-}
-
-function parseMonth(monthText: string): number | undefined {
-  const normalized = monthText.toLowerCase().replace(/\./g, '');
-  return MONTH_MAP[normalized];
-}
-
-function parseOptionalYear(yearText: string | undefined, today: DateParts): number {
-  if (!yearText) {
-    return today.year;
-  }
-
-  const year = parseInt(yearText, 10);
-  if (yearText.length === 2) {
-    return 2000 + year;
-  }
-
-  return year;
-}
-
-function buildDateRangeWithYears(
-  startDay: number,
-  startMonth: number,
-  startYear: number,
-  endDay: number,
-  endMonth: number,
-  endYear: number,
-): { startDate: Date; endDate: Date } {
-  return {
-    startDate: new Date(startYear, startMonth, startDay),
-    endDate: new Date(endYear, endMonth, endDay),
-  };
-}
-
-function buildDateRange(
-  startDay: number,
-  startMonth: number,
-  endDay: number,
-  endMonth: number,
-  today: DateParts,
-): { startDate: Date; endDate: Date } {
-  const startDate = new Date(today.year, startMonth, startDay);
-  const endDate = new Date(today.year, endMonth, endDay);
-
-  if (endDate < startDate) {
-    if (today.month <= endMonth) {
-      startDate.setFullYear(startDate.getFullYear() - 1);
-    } else {
-      endDate.setFullYear(endDate.getFullYear() + 1);
-    }
-  }
-
-  return { startDate, endDate };
 }
 
 function calendarUtc(year: number, month: number, day: number): number {
@@ -201,16 +114,19 @@ export function parsePdfFilenameRange(
   today: DateParts,
 ): ParsedMenuDateRange | null {
   const basename = pdfBasename(href);
+  const explicitRange = parseMenuDateRange(basename.replace(/_/g, ' '), today);
+  if (explicitRange) return { ...explicitRange, format: 'filename' };
   PDF_FILENAME_YYMMDD_REGEX.lastIndex = 0;
   for (const match of basename.matchAll(PDF_FILENAME_YYMMDD_REGEX)) {
-    const year = parseOptionalYear(match[1], today);
+    const year = Number(match[1]) + (match[1].length === 2 ? 2000 : 0);
     const month = parseInt(match[2], 10) - 1;
     const day = parseInt(match[3], 10);
     if (month < 0 || month > 11 || day < 1 || day > 31) {
       continue;
     }
 
-    const startDate = new Date(year, month, day);
+    const startDate = validCalendarDate(year, month, day);
+    if (!startDate) continue;
     const endDate = new Date(year, month, day);
     endDate.setDate(endDate.getDate() + FILENAME_MENU_DAY_SPAN);
     if (!isPlausibleMenuRange(startDate, endDate)) {
@@ -224,6 +140,7 @@ export function parsePdfFilenameRange(
 }
 
 export function normalizePdfHref(href: string): string {
+  if (href.startsWith('//')) return `https:${href}`;
   if (href.startsWith('http://') || href.startsWith('https://')) {
     return href;
   }
@@ -233,115 +150,8 @@ export function normalizePdfHref(href: string): string {
   return href;
 }
 
-function parseDayMonthRange(label: string, today: DateParts): { startDate: Date; endDate: Date } | null {
-  const match = label.match(DAY_MONTH_RANGE_REGEX);
-  if (!match) {
-    return null;
-  }
-
-  const startDay = parseInt(match[1], 10);
-  const startMonth = parseMonth(match[2]);
-  const endDay = parseInt(match[3], 10);
-  const endMonth = parseMonth(match[4]);
-
-  if (startMonth === undefined || endMonth === undefined) {
-    return null;
-  }
-
-  return buildDateRange(startDay, startMonth, endDay, endMonth, today);
-}
-
-function parseMonthDayRange(label: string, today: DateParts): { startDate: Date; endDate: Date } | null {
-  const match = label.match(MONTH_DAY_RANGE_REGEX);
-  if (!match) {
-    return null;
-  }
-
-  const startMonth = parseMonth(match[1]);
-  const startDay = parseInt(match[2], 10);
-  const endMonth = parseMonth(match[3]);
-  const endDay = parseInt(match[4], 10);
-
-  if (startMonth === undefined || endMonth === undefined) {
-    return null;
-  }
-
-  return buildDateRange(startDay, startMonth, endDay, endMonth, today);
-}
-
-function parseNumericRange(label: string, today: DateParts): { startDate: Date; endDate: Date } | null {
-  const match = label.match(NUMERIC_RANGE_REGEX);
-  if (!match) {
-    return null;
-  }
-
-  const startMonth = parseInt(match[1], 10) - 1;
-  const startDay = parseInt(match[2], 10);
-  const startYear = parseOptionalYear(match[3], today);
-  const endMonth = parseInt(match[4], 10) - 1;
-  const endDay = parseInt(match[5], 10);
-  const endYear = parseOptionalYear(match[6], today);
-
-  if (
-    startMonth < 0 || startMonth > 11
-    || endMonth < 0 || endMonth > 11
-    || startDay < 1 || startDay > 31
-    || endDay < 1 || endDay > 31
-  ) {
-    return null;
-  }
-
-  if (!match[3] && !match[6]) {
-    return buildDateRange(startDay, startMonth, endDay, endMonth, today);
-  }
-
-  return buildDateRangeWithYears(startDay, startMonth, startYear, endDay, endMonth, endYear);
-}
-
-function parseIsoRange(label: string): { startDate: Date; endDate: Date } | null {
-  const match = label.match(ISO_RANGE_REGEX);
-  if (!match) {
-    return null;
-  }
-
-  const startYear = parseInt(match[1], 10);
-  const startMonth = parseInt(match[2], 10) - 1;
-  const startDay = parseInt(match[3], 10);
-  const endYear = parseInt(match[4], 10);
-  const endMonth = parseInt(match[5], 10) - 1;
-  const endDay = parseInt(match[6], 10);
-
-  return buildDateRangeWithYears(startDay, startMonth, startYear, endDay, endMonth, endYear);
-}
-
 export function parseMenuDateRange(label: string, today: DateParts): ParsedMenuDateRange | null {
-  const parsers: Array<{
-    format: string;
-    parse: (text: string, referenceToday: DateParts) => { startDate: Date; endDate: Date } | null;
-  }> = [
-    { format: 'day-month', parse: parseDayMonthRange },
-    { format: 'month-day', parse: parseMonthDayRange },
-    { format: 'numeric', parse: parseNumericRange },
-    {
-      format: 'iso',
-      parse: (text) => parseIsoRange(text),
-    },
-  ];
-
-  for (const parser of parsers) {
-    const result = parser.parse(label, today);
-    if (!result) {
-      continue;
-    }
-
-    if (!isPlausibleMenuRange(result.startDate, result.endDate)) {
-      continue;
-    }
-
-    return { ...result, format: parser.format };
-  }
-
-  return null;
+  return parseFlexibleMenuRange(label, today);
 }
 
 export function createMenuCandidate(
@@ -390,12 +200,15 @@ export function collectCandidatesFromDom(doc: Document, today: DateParts): MenuC
     if (!href) {
       return;
     }
-    const label = (node.textContent || '').trim();
+    const label = [node.textContent, node.getAttribute('aria-label'), node.getAttribute('title')]
+      .filter(Boolean).join(' ').trim();
     addCandidate(candidates, seenHrefs, label, href, today);
   };
 
   doc.querySelectorAll('div[class*="MenuLinkContainer"] a[href]').forEach(addAnchor);
-  doc.querySelectorAll('a[href*=".pdf"]').forEach(addAnchor);
+  doc.querySelectorAll('a[href]').forEach(node => {
+    if (/\.pdf(?:[?#]|$)/i.test(node.getAttribute('href') ?? '')) addAnchor(node);
+  });
 
   return candidates;
 }
@@ -404,6 +217,20 @@ export function collectCandidatesFromEmbeddedJson(html: string, today: DateParts
   const candidates: MenuCandidate[] = [];
   const seenHrefs = new Set<string>();
 
+  html = html.replace(/\\"/g, '"').replace(/\\\//g, '/').replace(/&quot;/g, '"');
+  // Prefer metadata from the same object, regardless of name/URI field ordering.
+  for (const match of html.matchAll(/\{[^{}]*\}/g)) {
+    try {
+      const data = JSON.parse(match[0]);
+      const href = data.uri ?? data.url ?? data.href;
+      const label = data.name ?? data.title ?? data.label;
+      if (typeof href === 'string' && typeof label === 'string' && /\.pdf(?:[?#]|$)/i.test(href)) {
+        addCandidate(candidates, seenHrefs, label, href, today);
+      }
+    } catch {
+      // Script wrappers may not be standalone JSON; retain the text fallback below.
+    }
+  }
   EMBEDDED_PDF_URI_REGEX.lastIndex = 0;
   for (const match of html.matchAll(EMBEDDED_PDF_URI_REGEX)) {
     const href = match[1];

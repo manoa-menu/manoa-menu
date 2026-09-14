@@ -183,8 +183,9 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
         </Box>
       )}
 
-      {(grabAndGo.length > 0 && plateLunch.length > 0) ? (
+      {(grabAndGo.length > 0 || plateLunch.length > 0) ? (
         <CardContent sx={{ px: 1.75, py: 1.5 }}>
+          {plateLunch.length > 0 && <>
           <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.75 }}>
             <UtensilsCrossed size={16} color="#717171" />
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#363636', fontSize: '0.95rem' }}>
@@ -202,7 +203,9 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
             ))}
           </Box>
 
-          <Divider sx={{ my: 1.25 }} />
+          </>}
+          {plateLunch.length > 0 && grabAndGo.length > 0 && <Divider sx={{ my: 1.25 }} />}
+          {grabAndGo.length > 0 && <>
 
           <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.75, mt: 1 }}>
             <ShoppingBag size={16} color="#717171" />
@@ -220,6 +223,7 @@ const CCMenuCard: React.FC<MenuCardProps> = ({
               </React.Fragment>
             ))}
           </Box>
+          </>}
         </CardContent>
       ) : (
         <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>

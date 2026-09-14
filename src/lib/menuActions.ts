@@ -1,6 +1,7 @@
-
+import { readCcMenuCache as getCCMenu } from './ccMenuCache';
+import { singleFlight } from './upstreamFetch';
 import scrapeCCUrl from '@/lib/scrapeCCUrl';
-import { getCCMenu, insertCCMenu } from '@/lib/dbActions';
+import { insertCCMenu } from '@/lib/dbActions';
 import { Location, DayMenu, MenuResponse } from '@/types/menuTypes';
 import { parseCCMenuFromPDF, translateCcStrings } from '../app/utils/api/openai';
 import { getCurrentWeekOf, getNextWeekOf } from './dateFunctions';
@@ -279,7 +280,7 @@ async function finalizeCcMenu(
   return next;
 }
 
-async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
+async function loadCCMenu(language: string): Promise<DayMenu[]> {
   try {
     console.log(`Fetching menu for language: ${language}`);
 
@@ -334,7 +335,7 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
 
       console.log(`Scraped PDF URL: ${menuPdf}`);
       console.log(`Parsing PDF for week ${currentWeekOf}`);
-      englishMenuFromDb = await parseCCMenuFromPDF(menuPdf);
+      englishMenuFromDb = await shareEnglishParse(currentWeekOf, () => parseCCMenuFromPDF(menuPdf));
 
       if (!englishMenuFromDb.weekOne || englishMenuFromDb.weekOne.length === 0) {
         console.warn(`English menu is missing after PDF parse for ${currentWeekOf}`);
@@ -407,4 +408,9 @@ async function getCheckCCMenu(language: string): Promise<DayMenu[]> {
   }
 }
 
-export default getCheckCCMenu;
+const shareEnglishParse = singleFlight<MenuResponse>();
+const shareMenuRequest = singleFlight<DayMenu[]>();
+
+export default function getCheckCCMenu(language: string): Promise<DayMenu[]> {
+  return shareMenuRequest(`${getCurrentWeekOf()}:${language}`, () => loadCCMenu(language));
+}
