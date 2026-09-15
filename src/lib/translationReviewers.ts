@@ -38,6 +38,11 @@ const REVIEWER_DEFS = [
     envVar: 'TRANSLATION_REVIEW_MAX',
     languages: ['Chinese'],
   },
+  {
+    name: 'Kou',
+    envVar: 'TRANSLATION_REVIEW_KOU',
+    languages: ['Japanese'],
+  },
 ] as const satisfies ReadonlyArray<{
   name: string;
   envVar: string;

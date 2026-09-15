@@ -14,6 +14,7 @@ const env = {
   TRANSLATION_REVIEW_YOUJIN: 'youjin-token-bbb',
   TRANSLATION_REVIEW_MATTHEW: 'matthew-token-ccc',
   TRANSLATION_REVIEW_MAX: 'max-token-ddd',
+  TRANSLATION_REVIEW_KOU: 'kou-token-eee',
 };
 
 describe('translation reviewers', () => {
@@ -38,11 +39,15 @@ describe('translation reviewers', () => {
   it('scopes languages per person', () => {
     const justin = toPublicReviewer(getReviewerByToken('justin-token-aaa', env)!);
     const max = toPublicReviewer(getReviewerByToken('max-token-ddd', env)!);
+    const kou = toPublicReviewer(getReviewerByToken('kou-token-eee', env)!);
 
     assert.equal(reviewerCanAccessLanguage(justin, 'Japanese'), true);
     assert.equal(reviewerCanAccessLanguage(justin, 'Chinese'), true);
     assert.equal(reviewerCanAccessLanguage(max, 'Chinese'), true);
     assert.equal(reviewerCanAccessLanguage(max, 'Korean'), false);
     assert.equal(defaultReviewerLanguage(max), 'Chinese');
+    assert.equal(reviewerCanAccessLanguage(kou, 'Japanese'), true);
+    assert.equal(reviewerCanAccessLanguage(kou, 'Korean'), false);
+    assert.equal(defaultReviewerLanguage(kou), 'Japanese');
   });
 });
